@@ -41,7 +41,7 @@ namespace GlobalAcademy.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Academy");
+                    b.ToTable("Academies");
                 });
 
             modelBuilder.Entity("GlobalAcademy.Models.Booking", b =>

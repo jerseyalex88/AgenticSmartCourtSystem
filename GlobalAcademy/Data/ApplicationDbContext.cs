@@ -68,7 +68,6 @@ public class ApplicationDbContext : IdentityDbContext
         
         return System.Linq.Expressions.Expression.Lambda(body, parameter);
     }
-
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var entries = ChangeTracker.Entries<IMultiTenant>()
@@ -78,14 +77,24 @@ public class ApplicationDbContext : IdentityDbContext
         {
             if (entry.State == EntityState.Added)
             {
-                entry.Entity.AcademyId = _tenantId;
+                // FIX: Only overwrite the AcademyId if we have a valid, authenticated human tenant session.
+                // If _tenantId is empty, it means an automated background script (like our seed engine) 
+                // is explicitly setting up system infrastructure data rows.
+                if (_tenantId != Guid.Empty)
+                {
+                    entry.Entity.AcademyId = _tenantId;
+                }
             }
             else if (entry.State == EntityState.Modified)
             {
-                entry.Property(x => x.AcademyId).IsModified = false;
+                if (_tenantId != Guid.Empty)
+                {
+                    entry.Property(x => x.AcademyId).IsModified = false;
+                }
             }
         }
 
         return base.SaveChangesAsync(cancellationToken);
     }
+
 }

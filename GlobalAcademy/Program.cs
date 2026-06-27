@@ -106,4 +106,28 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// =========================================================================
+// AUTOMATED SEED DATA INJECTION PIPELINE
+// =========================================================================
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<GlobalAcademy.Data.ApplicationDbContext>();
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        // RUNTIME CONFIGURATION PARAMETER:
+        // Set 'resetDatabase: true' to completely nuke and recreate all tables on every fresh application boot.
+        // Set 'resetDatabase: false' to perform a safe conditional skip check instead.
+        await GlobalAcademy.Data.DbInitializer.SeedAsync(context, userManager, roleManager, resetDatabase: false);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An anomaly occurred during system startup data initialization sequences.");
+    }
+}
+
 app.Run();
