@@ -1,30 +1,54 @@
 
 namespace GlobalAcademy.Models {
     public class Booking : Security.IMultiTenant { public Guid Id { get; set; } public Guid AcademyId { get; set; } }
+    public class Academy
+    {
+        public Guid Id { get; set; }
+        
+        // Core descriptive identity properties
+        public string Name { get; set; } = string.Empty; // e.g., "Mouratoglou Global Academy"
+        public string Description { get; set; } = string.Empty;
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow; // Anchored to UTC!
+
+        // Navigation property mapping downward to branches
+        public ICollection<Branch> Branches { get; set; } = new List<Branch>();
+    }
     public class Branch : Security.IMultiTenant
     {
         public Guid Id { get; set; }
-        public Guid AcademyId { get; set; }
+        public Guid AcademyId { get; set; } // Foreign key to top-level Academy
+
+        public string Name { get; set; } = string.Empty; 
+        public string Description { get; set; } = string.Empty; 
         
-        // Core descriptive identity properties
-        public string Name { get; set; } = string.Empty; // e.g., "Dubai Desert Hardcourts"
-        public string Description { get; set; } = string.Empty; // e.g., "Main tournament hub featuring 6 outdoor plexicushion courts."
-        
-        public string TimeZoneId { get; set; } = "UTC"; // Used for our Phase 1 Local Time Engine
+        // THE LOCAL MATRIX: Strict IANA identifier format (e.g., "Europe/London", "Asia/Dubai")
+        public string TimeZoneId { get; set; } = "UTC"; 
+
+        // THE GOLDEN RULE: Standard auditing markers locked exclusively to UTC
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        // Relational navigation properties
+        public Academy? Academy { get; set; }
+        public ICollection<Court> Courts { get; set; } = new List<Court>();
     }
     public class Court : Security.IMultiTenant
     {
         public Guid Id { get; set; }
         public Guid AcademyId { get; set; }
-        public Guid BranchId { get; set; } // Links back to its physical branch parent
+        public Guid BranchId { get; set; } 
 
-        // Descriptive identity parameters
-        public string Name { get; set; } = string.Empty; // e.g., "Stadium Clay Court 1"
-        public string Description { get; set; } = string.Empty; // e.g., "Premium Italian red clay equipped with smart drainage sensors."
+        public string Name { get; set; } = string.Empty; 
+        public string Description { get; set; } = string.Empty; 
         
-        public string SurfaceType { get; set; } = "Hard"; // e.g., "Clay", "Grass", "Hard"
+        public string SurfaceType { get; set; } = "Hard"; 
         public bool IsIndoor { get; set; }
-        public double DryCoefficient { get; set; } = 1.0; // Used for Phase 2 dynamic weather adjustments
+        public double DryCoefficient { get; set; } = 1.0; 
+
+        // THE GOLDEN RULE: Audit marker locked to UTC
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        // Relational navigation property back to branch parent
+        public Branch? Branch { get; set; }
     }
     public class UserBranch : Security.IMultiTenant
     {

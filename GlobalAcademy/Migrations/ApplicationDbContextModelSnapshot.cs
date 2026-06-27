@@ -22,6 +22,28 @@ namespace GlobalAcademy.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GlobalAcademy.Models.Academy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Academy");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.Booking", b =>
                 {
                     b.Property<Guid>("Id")
@@ -45,6 +67,9 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("AcademyId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
@@ -58,6 +83,8 @@ namespace GlobalAcademy.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AcademyId");
 
                     b.ToTable("Branches");
                 });
@@ -73,6 +100,9 @@ namespace GlobalAcademy.Migrations
 
                     b.Property<Guid>("BranchId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -93,6 +123,8 @@ namespace GlobalAcademy.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
 
                     b.ToTable("Courts");
                 });
@@ -339,6 +371,28 @@ namespace GlobalAcademy.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.Branch", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.Academy", "Academy")
+                        .WithMany("Branches")
+                        .HasForeignKey("AcademyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Academy");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.Court", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.Branch", "Branch")
+                        .WithMany("Courts")
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.UserCourt", b =>
                 {
                     b.HasOne("GlobalAcademy.Models.UserBranch", null)
@@ -397,6 +451,16 @@ namespace GlobalAcademy.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.Academy", b =>
+                {
+                    b.Navigation("Branches");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.Branch", b =>
+                {
+                    b.Navigation("Courts");
                 });
 
             modelBuilder.Entity("GlobalAcademy.Models.UserBranch", b =>

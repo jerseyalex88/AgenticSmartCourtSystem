@@ -15,6 +15,9 @@ builder.Services.AddControllers();
 // FIX: Registers native Microsoft OpenAPI document engine instead of old Swagger
 builder.Services.AddOpenApi();
 
+// Register the Local Time Matrix translation service
+builder.Services.AddSingleton<GlobalAcademy.Security.ILocalTimeEngine, GlobalAcademy.Security.LocalTimeEngine>();
+
 // =========================================================================
 // STEP 1 IMPLEMENTATION: MULTI-TENANCY & POSTGRESQL INFRASTRUCTURE
 // =========================================================================

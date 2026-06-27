@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="GlobalAcademy.Tests/GlobalAcademy.Tests.csproj" />
   <Project Path="GlobalAcademy/GlobalAcademy.csproj" />
 </Solution>
