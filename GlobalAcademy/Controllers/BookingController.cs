@@ -93,6 +93,30 @@ public class BookingController : ControllerBase
             Notes = model.Notes
         };
 
+        // =========================================================================
+        // AUTOMATED SURFACE DEGRADATION ENGINE
+        // =========================================================================
+        
+        // 1. Calculate how many minutes of physical wear this booking impacts
+        TimeSpan calculatedDuration = model.EndTimeUtc - model.StartTimeUtc;
+        int matchMinutes = (int)calculatedDuration.TotalMinutes;
+
+        // 2. Accumulate the wear runtime straight onto the physical court entity row
+        court.AggregateMinutesPlayed += matchMinutes;
+
+        // 3. THRESHOLD SAFETY INTERCEPTOR
+        // If the aggregate minutes exceed the maintenance boundary threshold, lock the court down
+        if (court.AggregateMinutesPlayed >= court.MaintenanceThresholdMinutes)
+        {
+            court.Status = "Maintenance_Locked";
+            
+            // Log automated alerts that our Phase 3 AI Facility Manager Agent will pick up later
+            Console.WriteLine($"--> Wear Limit Breached on {court.Name}. System auto-locking asset for maintenance window operations.");
+            
+            // System Note: We attach an explanation onto the booking record for display clarity
+            booking.Notes += " [SYSTEM NOTICE: This match triggers an automated facility maintenance lockout loop]";
+        }
+
         _context.Bookings.Add(booking);
         await _context.SaveChangesAsync(); // Stamped cleanly with AcademyId through our database filter layer!
 

@@ -127,6 +127,9 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("AcademyId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AggregateMinutesPlayed")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("BranchId")
                         .HasColumnType("uuid");
 
@@ -140,10 +143,20 @@ namespace GlobalAcademy.Migrations
                     b.Property<double>("DryCoefficient")
                         .HasColumnType("double precision");
 
+                    b.Property<DateTime?>("EstimatedReopenTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("IsIndoor")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("MaintenanceThresholdMinutes")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
 

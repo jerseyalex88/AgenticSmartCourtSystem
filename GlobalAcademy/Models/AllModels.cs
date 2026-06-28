@@ -38,15 +38,26 @@ namespace GlobalAcademy.Models {
 
         public string Name { get; set; } = string.Empty; 
         public string Description { get; set; } = string.Empty; 
-        
-        public string SurfaceType { get; set; } = "Hard"; 
+        public string SurfaceType { get; set; } = "Hard"; // Clay, Grass, Hard
         public bool IsIndoor { get; set; }
-        public double DryCoefficient { get; set; } = 1.0; 
-
-        // THE GOLDEN RULE: Audit marker locked to UTC
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-        // Relational navigation property back to branch parent
+        // --- PHASE 2 WEATHER TELEMETRY ---
+        public string Status { get; set; } = "Open"; // "Open", "Rained_Out", "Maintenance_Locked"
+        public double DryCoefficient { get; set; } = 1.0; 
+        public DateTime? EstimatedReopenTimeUtc { get; set; }
+
+        // =========================================================================
+        // SURFACE DEGRADATION & WEAR METRICS
+        // =========================================================================
+        
+        // Aggregated running counter of all completed play minutes since the last service threshold reset
+        public int AggregateMinutesPlayed { get; set; } = 0;
+
+        // The hard ceiling threshold triggering maintenance locks. 
+        // e.g., Clay triggers every 270 minutes (3 matches); Grass requires mowing/lining every 600 minutes
+        public int MaintenanceThresholdMinutes { get; set; } = 270; 
+
         public Branch? Branch { get; set; }
     }
     public class UserBranch : Security.IMultiTenant
