@@ -53,7 +53,36 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("AcademyId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("BookedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BookingType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CourtId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OpponentUserId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CourtId");
 
                     b.ToTable("Bookings");
                 });
@@ -369,6 +398,17 @@ namespace GlobalAcademy.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.Booking", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.Court", "Court")
+                        .WithMany()
+                        .HasForeignKey("CourtId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Court");
                 });
 
             modelBuilder.Entity("GlobalAcademy.Models.Branch", b =>

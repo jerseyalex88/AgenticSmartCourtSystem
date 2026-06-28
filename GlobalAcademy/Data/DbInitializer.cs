@@ -183,6 +183,64 @@ public static class DbInitializer
             context.UserBranches.Add(new UserBranch { AcademyId = dubaiAcademyId, UserId = dubaiDirector.Id, BranchId = dubaiBranchId, AssignmentRole = "Director" });
         }
 
+        // =========================================================================
+        // PART 3: SCHEDULING INFRASTRUCTURE SEED DATA (THE CALENDAR MATRIX)
+        // =========================================================================
+        Console.WriteLine("--> Seeding deterministic booking matrix constraints into PostgreSQL...");
+
+        // Establish relative date parameters anchored cleanly to UTC
+        var baseDate = DateTime.UtcNow.Date;
+
+        // --- LONDON SCHEDULE LINEUP ---
+        // Booking 1: Standard Member Singles Match on Stadium Center Clay
+        var memberBooking1 = new Booking
+        {
+            Id = Guid.NewGuid(),
+            AcademyId = londonAcademyId,
+            CourtId = londonCourt1.Id,
+            BookedByUserId = "player.alex@vanguard.com",
+            OpponentUserId = "player.ben@vanguard.com",
+            StartTimeUtc = baseDate.AddHours(9), // 09:00 UTC
+            EndTimeUtc = baseDate.AddHours(10).AddMinutes(30), // 10:30 UTC
+            BookingType = "MemberBooking",
+            Notes = "Friendly ladder ranking match.",
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        // Booking 2: High-Priority Executive Training Clinic on Indoor Clay Court 2
+        var clinicBooking1 = new Booking
+        {
+            Id = Guid.NewGuid(),
+            AcademyId = londonAcademyId,
+            CourtId = londonCourt2.Id,
+            BookedByUserId = londonDirectorEmail,
+            StartTimeUtc = baseDate.AddHours(14), // 14:00 UTC
+            EndTimeUtc = baseDate.AddHours(16), // 16:00 UTC
+            BookingType = "Clinic",
+            Notes = "Elite Under-18 National Topspin Clinic block.",
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        context.Bookings.Add(memberBooking1);
+        context.Bookings.Add(clinicBooking1);
+
+        // --- DUBAI SCHEDULE LINEUP ---
+        // Booking 3: International Tournament Block on Grand Oasis Stadium
+        var tournamentBooking1 = new Booking
+        {
+            Id = Guid.NewGuid(),
+            AcademyId = dubaiAcademyId,
+            CourtId = dubaiCourt1.Id,
+            BookedByUserId = dubaiDirectorEmail,
+            StartTimeUtc = baseDate.AddHours(18), // 18:00 UTC
+            EndTimeUtc = baseDate.AddHours(21), // 21:00 UTC
+            BookingType = "Clinic", // Handled under executive scheduling rule templates
+            Notes = "Middle East Junior Desert Championship Opening Rounds.",
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        context.Bookings.Add(tournamentBooking1);
+
         // Commit all generated records cleanly into PostgreSQL storage
         await context.SaveChangesAsync();
         Console.WriteLine("--> Database seeding operations finalized successfully.");

@@ -1,6 +1,5 @@
 
 namespace GlobalAcademy.Models {
-    public class Booking : Security.IMultiTenant { public Guid Id { get; set; } public Guid AcademyId { get; set; } }
     public class Academy
     {
         public Guid Id { get; set; }
@@ -77,5 +76,29 @@ namespace GlobalAcademy.Models {
         
         public string AccessType { get; set; } = "Maintenance"; // e.g., "PrimaryGroundskeeper", "CoachSlot"
     }
+    public class Booking : Security.IMultiTenant
+    {
+        public Guid Id { get; set; }
+        public Guid AcademyId { get; set; } // Enforces our global query filter firewall
+        public Guid CourtId { get; set; }   // The targeted tennis asset
 
+        // Human Context Tracking parameters
+        public string BookedByUserId { get; set; } = string.Empty; // IdentityUser ID of the creator
+        public string? OpponentUserId { get; set; } = string.Empty; // Nullable (useful for solo ball-machine training)
+
+        // THE GOLDEN RULE TIMESTAMPS: Always stored as absolute UTC in PostgreSQL
+        public DateTime StartTimeUtc { get; set; }
+        public DateTime EndTimeUtc { get; set; }
+
+        // THE ACADEMY VS. MEMBER SPLIT MATRIX MATRIX
+        // String-based discrimination flag (e.g., "Clinic", "MemberBooking", "TournamentBlock", "Maintenance")
+        public string BookingType { get; set; } = "MemberBooking"; 
+
+        // Metadata & Audit trail logging
+        public string Notes { get; set; } = string.Empty; // e.g., "Elite Junior Advanced Topspin Class"
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        // Navigation property back to the physical court asset
+        public Court? Court { get; set; }
+    }
 }
