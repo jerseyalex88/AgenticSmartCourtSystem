@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using GlobalAcademy.Data;
 using GlobalAcademy.Security;
+using GlobalAcademy.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,9 @@ builder.Services.AddControllers();
 
 // FIX: Registers native Microsoft OpenAPI document engine instead of old Swagger
 builder.Services.AddOpenApi();
+
+// Register the Phase 2 Microclimatic Evaporation Service
+builder.Services.AddSingleton<IWeatherGuardEngine, WeatherGuardEngine>();
 
 // Register the Local Time Matrix translation service
 builder.Services.AddSingleton<GlobalAcademy.Security.ILocalTimeEngine, GlobalAcademy.Security.LocalTimeEngine>();

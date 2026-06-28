@@ -59,6 +59,9 @@ namespace GlobalAcademy.Models {
         public int MaintenanceThresholdMinutes { get; set; } = 270; 
 
         public Branch? Branch { get; set; }
+        // Tracks the real-world state of the physical court hardware: "Off" or "On"
+        public string FloodlightState { get; set; } = "Off";
+
     }
     public class UserBranch : Security.IMultiTenant
     {

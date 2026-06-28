@@ -67,13 +67,14 @@ public class SeedDataTests
         Assert.Null(exception);
 
         // 2. Verify physical data rows are mapped correctly down the operational pipeline
-        Assert.True(await context.Academies.AnyAsync(), "Seeding failed: Academies table is empty.");
-        Assert.True(await context.Branches.AnyAsync(), "Seeding failed: Branches table is empty.");
-        Assert.True(await context.Courts.AnyAsync(), "Seeding failed: Courts table is empty.");
-        Assert.True(await context.UserBranches.AnyAsync(), "Seeding failed: User-Branch assignments are empty.");
+        // FIX: Add .IgnoreQueryFilters() to allow our mock test to look past the security query firewall filters
+        Assert.True(await context.Academies.IgnoreQueryFilters().AnyAsync(), "Seeding failed: Academies table is empty.");
+        Assert.True(await context.Branches.IgnoreQueryFilters().AnyAsync(), "Seeding failed: Branches table is empty.");
+        Assert.True(await context.Courts.IgnoreQueryFilters().AnyAsync(), "Seeding failed: Courts table is empty.");
+        Assert.True(await context.UserBranches.IgnoreQueryFilters().AnyAsync(), "Seeding failed: User-Branch assignments are empty.");
 
         // 3. Verify that the child elements carry correct relational parent links
-        var sampleCourt = await context.Courts.FirstOrDefaultAsync(c => c.Name == "Stadium Center Clay");
+        var sampleCourt = await context.Courts.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Name == "Stadium Center Clay");
         Assert.NotNull(sampleCourt);
         Assert.NotEqual(Guid.Empty, sampleCourt.BranchId);
     }

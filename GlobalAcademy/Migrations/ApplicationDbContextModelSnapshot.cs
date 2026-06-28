@@ -146,6 +146,10 @@ namespace GlobalAcademy.Migrations
                     b.Property<DateTime?>("EstimatedReopenTimeUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("FloodlightState")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsIndoor")
                         .HasColumnType("boolean");
 
