@@ -175,6 +175,89 @@ namespace GlobalAcademy.Migrations
                     b.ToTable("Courts");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.MaintenanceTicket", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CourtId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PriorityLevel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResolutionNotes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TicketStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MaintenanceTickets");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.ShadowQueue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("DisplacedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplacementReason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OpponentUserId")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OriginalCourtId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("OriginalEndTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("OriginalStartTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PlayerUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("QueueStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShadowQueues");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.UserBranch", b =>
                 {
                     b.Property<string>("UserId")

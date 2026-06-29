@@ -115,4 +115,44 @@ namespace GlobalAcademy.Models {
         // Navigation property back to the physical court asset
         public Court? Court { get; set; }
     }
+    public class ShadowQueue : Security.IMultiTenant
+    {
+        public Guid Id { get; set; }
+        public Guid AcademyId { get; set; } // Protected by our multi-tenant firewall
+        public Guid OriginalCourtId { get; set; }
+
+        // Human Tracking parameters
+        public string PlayerUserId { get; set; } = string.Empty;
+        public string? OpponentUserId { get; set; } = string.Empty;
+
+        // The preferred timing window parameters the player originally requested
+        public DateTime OriginalStartTimeUtc { get; set; }
+        public DateTime OriginalEndTimeUtc { get; set; }
+
+        // Queue Status tracking: "Pending_Reschedule", "Successfully_Relocated", "Cancelled"
+        public string QueueStatus { get; set; } = "Pending_Reschedule";
+        
+        public string DisplacementReason { get; set; } = "Executive Clinic Override";
+        public DateTime DisplacedAtUtc { get; set; } = DateTime.UtcNow;
+    }
+    public class MaintenanceTicket : Security.IMultiTenant
+    {
+        public Guid Id { get; set; }
+        public Guid AcademyId { get; set; }
+        public Guid CourtId { get; set; }
+
+        // Target Assignment Parameters
+        public string Title { get; set; } = string.Empty; // e.g., "Clay Surface Sweep & Line Reset"
+        public string Description { get; set; } = string.Empty;
+        
+        // Status tracking: "Open_Queued", "In_Progress", "Resolved_Completed"
+        public string TicketStatus { get; set; } = "Open_Queued";
+        
+        // Severity tracking: "Routine_Wear", "Microclimatic_Storm_Damage", "Emergency"
+        public string PriorityLevel { get; set; } = "Routine_Wear";
+
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+        public DateTime? ResolvedAtUtc { get; set; }
+        public string? ResolutionNotes { get; set; } = string.Empty;
+    }
 }

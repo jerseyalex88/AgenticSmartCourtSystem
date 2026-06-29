@@ -22,12 +22,13 @@ public class ApplicationDbContext : IdentityDbContext
 
     // 1. Add these physical table hooks inside your main ApplicationDbContext class body:
     public DbSet<Academy> Academies { get; set; }
-
     public DbSet<Branch> Branches { get; set; }
     public DbSet<Court> Courts { get; set; }
     public DbSet<UserBranch> UserBranches { get; set; }
     public DbSet<UserCourt> UserCourts { get; set; }
     public DbSet<Booking> Bookings { get; set; }
+    public DbSet<ShadowQueue> ShadowQueues { get; set; }
+    public DbSet<MaintenanceTicket> MaintenanceTickets { get; set; }
 
     // 2. Append this relational configuration inside your existing OnModelCreating method:
     protected override void OnModelCreating(ModelBuilder modelBuilder)

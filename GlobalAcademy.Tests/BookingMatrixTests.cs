@@ -55,11 +55,11 @@ public class BookingMatrixTests
         var baseTime = DateTime.UtcNow.Date.AddHours(10);
 
         // --- ACT --- Create booking from 10:00 to 11:00 UTC
-        var dto1 = new CreateBookingDto(courtId, baseTime, baseTime.AddHours(1), "MemberBooking", "Slot 1");
+        var dto1 = new CreateBookingDto(courtId, baseTime, baseTime.AddHours(1), "MemberBooking", "Slot 1", null);
         var result1 = await controller.CreateBooking(dto1);
 
         // Create subsequent clean booking from 11:00 to 12:00 UTC
-        var dto2 = new CreateBookingDto(courtId, baseTime.AddHours(1), baseTime.AddHours(2), "MemberBooking", "Slot 2");
+        var dto2 = new CreateBookingDto(courtId, baseTime.AddHours(1), baseTime.AddHours(2), "MemberBooking", "Slot 2", null);
         var result2 = await controller.CreateBooking(dto2);
 
         // --- ASSERT ---
@@ -86,11 +86,11 @@ public class BookingMatrixTests
         var baseTime = DateTime.UtcNow.Date.AddHours(14);
 
         // Commit initial booking: 14:00 - 15:30 UTC
-        var initialDto = new CreateBookingDto(courtId, baseTime, baseTime.AddHours(1.5), "MemberBooking", "Original");
+        var initialDto = new CreateBookingDto(courtId, baseTime, baseTime.AddHours(1.5), "MemberBooking", "Original", null);
         await controller.CreateBooking(initialDto);
 
         // --- ACT --- Attempt malicious overlapping booking: 15:00 - 16:00 UTC
-        var collidingDto = new CreateBookingDto(courtId, baseTime.AddHours(1), baseTime.AddHours(2), "MemberBooking", "Collision Attempt");
+        var collidingDto = new CreateBookingDto(courtId, baseTime.AddHours(1), baseTime.AddHours(2), "MemberBooking", "Collision Attempt", null);
         var result = await controller.CreateBooking(collidingDto);
 
         // --- ASSERT ---
@@ -116,7 +116,7 @@ public class BookingMatrixTests
         MockUserSessionContext(controller, "Player", mockTenant.ActiveTenantId);
         
         var baseTime = DateTime.UtcNow.Date.AddHours(9);
-        var memberDto = new CreateBookingDto(courtId, baseTime, baseTime.AddHours(1.5), "MemberBooking", "Casual Match");
+        var memberDto = new CreateBookingDto(courtId, baseTime, baseTime.AddHours(1.5), "MemberBooking", "Casual Match", null);
         await controller.CreateBooking(memberDto);
         Assert.Equal(1, await context.Bookings.CountAsync());
 
@@ -124,7 +124,7 @@ public class BookingMatrixTests
         MockUserSessionContext(controller, "AcademyDirector", mockTenant.ActiveTenantId);
 
         // --- ACT --- Attempt elite Clinic override across the intersecting window: 08:30 - 10:00 UTC
-        var overrideDto = new CreateBookingDto(courtId, baseTime.AddMinutes(-30), baseTime.AddHours(1), "Clinic", "High-Priority Academy Override");
+        var overrideDto = new CreateBookingDto(courtId, baseTime.AddMinutes(-30), baseTime.AddHours(1), "Clinic", "High-Priority Academy Override", null);
         var result = await controller.CreateBooking(overrideDto);
 
         // --- ASSERT ---

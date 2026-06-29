@@ -60,13 +60,28 @@ public class BookingController : ControllerBase
 
                 if (standardMemberConflicts.Count == overlappingBookings.Count)
                 {
-                    // SYSTEM UPGRADE POINT: Instead of throwing a blind scheduling crash error,
-                    // we remove the conflicting member slots from the public inventory grid.
-                    // This forces them into the Shadow Queue, clearing the baseline path for the Elite clinic.
+                    // FIX: Instead of dropping players, preserve them in the Shadow Queue for the AI Agent
+                    foreach (var conflict in standardMemberConflicts)
+                    {
+                        var queueEntry = new ShadowQueue
+                        {
+                            Id = Guid.NewGuid(),
+                            AcademyId = conflict.AcademyId, // Match original tenant scope
+                            OriginalCourtId = conflict.CourtId,
+                            PlayerUserId = conflict.BookedByUserId,
+                            OpponentUserId = conflict.OpponentUserId,
+                            OriginalStartTimeUtc = conflict.StartTimeUtc,
+                            OriginalEndTimeUtc = conflict.EndTimeUtc,
+                            QueueStatus = "Pending_Reschedule",
+                            DisplacementReason = "Executive Clinic Override"
+                        };
+                        _context.ShadowQueues.Add(queueEntry);
+                    }
+
+                    // Now safely remove them from the active calendar pool grid
                     _context.Bookings.RemoveRange(standardMemberConflicts);
-                    
-                    // Log audit metrics so our Phase 3 AI "Match-Saver" Agent can instantly discover them
-                    Console.WriteLine($"--> Elite Clinic override fired. Evicting {standardMemberConflicts.Count} member booking(s) to Shadow Queue.");
+                    Console.WriteLine($"--> Elite Clinic override fired. Preserved {standardMemberConflicts.Count} member booking(s) in Shadow Queue.");
+
                 }
                 else
                 {
@@ -76,9 +91,44 @@ public class BookingController : ControllerBase
             }
             else
             {
-                // Scenario B: A standard Member or Coach is trying to book space over an existing block
+                // =========================================================================
+                // SCENARIO B EXPANSION: STANDARD USER COLLISION MATRIX
+                // =========================================================================
+                
+                // Check if the collision is happening because the physical facility asset is currently offline
+                if (court.Status == "Rained_Out" || court.Status == "Maintenance_Locked")
+                {
+                    // Instead of a blind rejection, funnel the member into the Shadow Queue tracker pool
+                    var standbyEntry = new ShadowQueue
+                    {
+                        Id = Guid.NewGuid(),
+                        AcademyId = court.AcademyId,
+                        OriginalCourtId = court.Id,
+                        PlayerUserId = userId,
+                        OpponentUserId = model.OpponentUserId,
+                        OriginalStartTimeUtc = model.StartTimeUtc,
+                        OriginalEndTimeUtc = model.EndTimeUtc,
+                        QueueStatus = "Pending_Reschedule",
+                        DisplacementReason = $"Attempted booking during facility asset lockout status ({court.Status})"
+                    };
+
+                    _context.ShadowQueues.Add(standbyEntry);
+                    await _context.SaveChangesAsync();
+
+                    return BadRequest(new { 
+                        Message = $"Court Availability Exception: This court is currently {court.Status}. Your request has been safely queued in our system standby logs.",
+                        QueueId = standbyEntry.Id
+                    });
+                }
+
+                // Standard baseline human-over-human collision block
                 return BadRequest("Court Availability Exception: The requested court window is locked or already occupied.");
             }
+            // else
+            // {
+            //     // Scenario B: A standard Member or Coach is trying to book space over an existing block
+            //     return BadRequest("Court Availability Exception: The requested court window is locked or already occupied.");
+            // }
         }
 
         // 4. INVENTORY ASSIGNMENT
@@ -109,10 +159,22 @@ public class BookingController : ControllerBase
         if (court.AggregateMinutesPlayed >= court.MaintenanceThresholdMinutes)
         {
             court.Status = "Maintenance_Locked";
-            
-            // Log automated alerts that our Phase 3 AI Facility Manager Agent will pick up later
-            Console.WriteLine($"--> Wear Limit Breached on {court.Name}. System auto-locking asset for maintenance window operations.");
-            
+
+            // FIX: Automatically log a physical work order tracking ticket for the grounds crew
+            var maintenanceTicket = new MaintenanceTicket
+            {
+                Id = Guid.NewGuid(),
+                AcademyId = court.AcademyId,
+                CourtId = court.Id,
+                Title = $"Automated Surface Maintenance Required: {court.Name}",
+                Description = $"Court wear limit exceeded. Aggregate runtime hit {court.AggregateMinutesPlayed} minutes. Surface type ({court.SurfaceType}) requires standard refurbishment sweep or mowing routine.",
+                TicketStatus = "Open_Queued",
+                PriorityLevel = "Routine_Wear"
+            };
+
+            _context.MaintenanceTickets.Add(maintenanceTicket);
+            Console.WriteLine($"--> Wear Limit Breached on {court.Name}. Maintenance Ticket generated successfully.");
+
             // System Note: We attach an explanation onto the booking record for display clarity
             booking.Notes += " [SYSTEM NOTICE: This match triggers an automated facility maintenance lockout loop]";
         }
@@ -136,4 +198,6 @@ public class BookingController : ControllerBase
     }
 }
 
-public record CreateBookingDto(Guid CourtId, DateTime StartTimeUtc, DateTime EndTimeUtc, string BookingType, string Notes);
+// FIX: Appended string? OpponentUserId to the input contract data transfer record
+public record CreateBookingDto(Guid CourtId, DateTime StartTimeUtc, DateTime EndTimeUtc, string BookingType, string Notes, string? OpponentUserId);
+
