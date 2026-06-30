@@ -25,7 +25,7 @@ public static class DbInitializer
             
             // Execute raw TRUNCATE commands to bypass foreign key constraint restrictions
             await context.Database.ExecuteSqlRawAsync(@"
-                TRUNCATE TABLE ""UserCourts"", ""UserBranches"", ""Courts"", ""Branches"", ""Academies"", 
+                TRUNCATE TABLE ""ShadowQueues"", ""MaintenanceTickets"", ""Bookings"", ""UserCourts"", ""UserBranches"", ""Courts"", ""Branches"", ""Academies"", 
                                ""AspNetUserClaims"", ""AspNetUserRoles"", ""AspNetUsers"", ""AspNetRoles"" CASCADE;");
             
             Console.WriteLine("--> Database wiped clean successfully.");

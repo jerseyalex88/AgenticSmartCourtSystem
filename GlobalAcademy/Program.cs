@@ -10,6 +10,9 @@ using GlobalAcademy.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// FIX: Prevent .NET from silently scrambling custom token claim strings into long XML schemas
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
 // FIX: Force .NET 10 to recognize and discover MVC controllers
 builder.Services.AddControllers();
 
@@ -125,7 +128,7 @@ using (var scope = app.Services.CreateScope())
         // RUNTIME CONFIGURATION PARAMETER:
         // Set 'resetDatabase: true' to completely nuke and recreate all tables on every fresh application boot.
         // Set 'resetDatabase: false' to perform a safe conditional skip check instead.
-        await GlobalAcademy.Data.DbInitializer.SeedAsync(context, userManager, roleManager, resetDatabase: false);
+        //await GlobalAcademy.Data.DbInitializer.SeedAsync(context, userManager, roleManager, resetDatabase: false);
     }
     catch (Exception ex)
     {

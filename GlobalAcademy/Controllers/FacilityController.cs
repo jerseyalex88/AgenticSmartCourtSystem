@@ -4,12 +4,15 @@ using GlobalAcademy.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace GlobalAcademy.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "RequireDirector")]
+[Authorize(Roles = "AcademyDirector,Groundskeeper")]
 public class FacilityController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -21,7 +24,9 @@ public class FacilityController : ControllerBase
         _timeEngine = timeEngine;
     }
 
-    // --- BRANCH MANAGEMENT CRUD ---
+    // =========================================================================
+    // BRANCH MANAGEMENT FULL CRUD MATRIX
+    // =========================================================================
 
     [HttpGet("branches")]
     public async Task<IActionResult> GetBranches()
@@ -33,6 +38,10 @@ public class FacilityController : ControllerBase
     [HttpPost("branches")]
     public async Task<IActionResult> CreateBranch([FromBody] CreateBranchDto model)
     {
+        // HIERARCHY GUARDRAIL: Verify the parent academy row physically exists BEFORE allowing branch inserts
+        var academyExists = await _context.Academies.AnyAsync();
+        if (!academyExists) return BadRequest("Relational Exception: Top-level Academy infrastructure profile record must be created first before deploying local branch venues.");
+
         var branch = new Branch
         {
             Id = Guid.NewGuid(),
@@ -47,6 +56,21 @@ public class FacilityController : ControllerBase
         return Ok(branch);
     }
 
+    // --- ADDED: BRANCH UPDATE METHOD ---
+    [HttpPut("branches/{id:guid}")]
+    public async Task<IActionResult> UpdateBranch(Guid id, [FromBody] UpdateBranchDto model)
+    {
+        var branch = await _context.Branches.FindAsync(id);
+        if (branch == null) return NotFound("Target branch venue profile context missing or unauthorized.");
+
+        branch.Name = model.Name;
+        branch.Description = model.Description;
+        branch.TimeZoneId = model.TimeZoneId;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { Message = "Branch facility metadata updated smoothly.", Branch = branch });
+    }
+
     [HttpDelete("branches/{id:guid}")]
     public async Task<IActionResult> DeleteBranch(Guid id)
     {
@@ -58,12 +82,13 @@ public class FacilityController : ControllerBase
         return Ok(new { Message = "Branch and its downstream child courts removed successfully from database storage." });
     }
 
-    // --- COURT MANAGEMENT CRUD ---
+    // =========================================================================
+    // COURT MANAGEMENT FULL CRUD MATRIX
+    // =========================================================================
 
     [HttpGet("branches/{branchId:guid}/courts")]
     public async Task<IActionResult> GetCourtsForBranch(Guid branchId)
     {
-        // Enforce the physical location validation constraint hierarchy
         var branchExists = await _context.Branches.AnyAsync(b => b.Id == branchId);
         if (!branchExists) return NotFound("Target branch location does not exist under your tenant profile.");
 
@@ -94,33 +119,45 @@ public class FacilityController : ControllerBase
         return Ok(court);
     }
 
-    // --- TIME Engine TRANSLATION INSPECTION ENDPOINT ---
-    [HttpGet("branches/{branchId:guid}/current-local-time")]
-    public async Task<IActionResult> GetBranchLocalTime(Guid branchId)
+    // --- ADDED: COURT UPDATE METHOD ---
+    [HttpPut("courts/{id:guid}")]
+    public async Task<IActionResult> UpdateCourt(Guid id, [FromBody] UpdateCourtDto model)
     {
-        var branch = await _context.Branches.FindAsync(branchId);
-        if (branch == null) return NotFound("Target branch profile missing.");
+        var court = await _context.Courts.FindAsync(id);
+        if (court == null) return NotFound("Target court entity configuration layout missing.");
 
-        var utcNow = DateTime.UtcNow;
-        var localTime = _timeEngine.ToLocalTime(utcNow, branch.TimeZoneId);
+        court.Name = model.Name;
+        court.Description = model.Description;
+        court.SurfaceType = model.SurfaceType;
+        court.IsIndoor = model.IsIndoor;
+        court.DryCoefficient = model.DryCoefficient;
 
-        return Ok(new {
-            ServerUtcAnchor = utcNow,
-            BranchNativeTime = localTime,
-            ActiveZoneIana = branch.TimeZoneId
-        });
+        await _context.SaveChangesAsync();
+        return Ok(new { Message = "Court configuration telemetry matrix updated.", Court = court });
     }
 
-        // --- USER-BRANCH MANAGEMENT CRUD ---
+    // --- ADDED: COURT EXPLICIT DELETE METHOD ---
+    [HttpDelete("courts/{id:guid}")]
+    public async Task<IActionResult> DeleteCourt(Guid id)
+    {
+        var court = await _context.Courts.FindAsync(id);
+        if (court == null) return NotFound("Target court record missing.");
+
+        _context.Courts.Remove(court);
+        await _context.SaveChangesAsync();
+        return Ok(new { Message = "Physical court asset unlinked and removed successfully." });
+    }
+
+    // =========================================================================
+    // USER-ROSTER MAPPINGS MATRIX MANAGEMENT
+    // =========================================================================
 
     [HttpGet("branches/{branchId:guid}/roster")]
     public async Task<IActionResult> GetBranchRoster(Guid branchId)
     {
-        // Enforce data hierarchy validation
         var branchExists = await _context.Branches.AnyAsync(b => b.Id == branchId);
         if (!branchExists) return NotFound("Target branch location does not exist under your tenant profile.");
 
-        // Pull down all staff/players assigned to this branch, including their specific court restrictions
         var roster = await _context.UserBranches
             .Include(ub => ub.AssignedCourts)
             .Where(ub => ub.BranchId == branchId)
@@ -135,7 +172,6 @@ public class FacilityController : ControllerBase
         var branchExists = await _context.Branches.AnyAsync(b => b.Id == model.BranchId);
         if (!branchExists) return BadRequest("Invalid operational request: Target branch parent assignment missing.");
 
-        // Check if the user assignment mapping is already active in the system
         var alreadyAssigned = await _context.UserBranches
             .AnyAsync(ub => ub.UserId == model.UserId && ub.BranchId == model.BranchId);
         if (alreadyAssigned) return BadRequest("This user is already mapped to the requested branch location.");
@@ -161,18 +197,14 @@ public class FacilityController : ControllerBase
             
         if (assignment == null) return NotFound("Target user-branch assignment context missing or unauthorized.");
 
-        // Cascade rule: Removing a user from a branch automatically clears down their nested court files
         _context.UserBranches.Remove(assignment);
         await _context.SaveChangesAsync();
         return Ok(new { Message = "User successfully removed from branch roster. Nested court clearances purged." });
     }
 
-    // --- USER-COURT MANAGEMENT CRUD ---
-
     [HttpPost("courts/assign-user")]
     public async Task<IActionResult> AssignUserToCourt([FromBody] AssignUserCourtDto model)
     {
-        // HIERARCHY GUARDRAIL: Verify the user is a registered member of the branch BEFORE locking them to a court
         var hasBranchAccess = await _context.UserBranches
             .AnyAsync(ub => ub.UserId == model.UserId && ub.BranchId == model.BranchId);
         if (!hasBranchAccess) 
@@ -180,7 +212,6 @@ public class FacilityController : ControllerBase
             return BadRequest("Security Exception: Target user must be explicitly added to the Branch Roster before receiving specific court tasks.");
         }
 
-        // Verify the court actually exists inside that specific branch boundary
         var courtExists = await _context.Courts
             .AnyAsync(c => c.Id == model.CourtId && c.BranchId == model.BranchId);
         if (!courtExists) return BadRequest("Target court asset configuration missing inside the designated branch venue.");
@@ -214,10 +245,24 @@ public class FacilityController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { Message = "User court clearance task unlinked successfully." });
     }
-
+        
+    [HttpGet("branches/{branchId:guid}/current-local-time")]
+    public async Task<IActionResult> GetBranchLocalTime(Guid branchId)
+    {
+        var branch = await _context.Branches.FindAsync(branchId);
+        
+        if (branch == null) return NotFound("Target branch profile missing.");
+        
+        var utcNow = DateTime.UtcNow;
+        var localTime = _timeEngine.ToLocalTime(utcNow, branch.TimeZoneId);
+        
+        return Ok(new {ServerUtcAnchor = utcNow,BranchNativeTime = localTime,ActiveZoneIana = branch.TimeZoneId});
+    }
 }
 
 public record CreateBranchDto(string Name, string Description, string TimeZoneId);
+public record UpdateBranchDto(string Name, string Description, string TimeZoneId);
 public record CreateCourtDto(Guid BranchId, string Name, string Description, string SurfaceType, bool IsIndoor, double DryCoefficient);
+public record UpdateCourtDto(string Name, string Description, string SurfaceType, bool IsIndoor, double DryCoefficient);
 public record AssignUserBranchDto(string UserId, Guid BranchId, string AssignmentRole);
 public record AssignUserCourtDto(string UserId, Guid BranchId, Guid CourtId, string AccessType);

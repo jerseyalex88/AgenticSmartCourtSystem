@@ -51,14 +51,20 @@ public class ApplicationDbContext : IdentityDbContext
             .OnDelete(DeleteBehavior.Cascade); // If a user is removed from a branch, clear their court tasks automatically
 
         // --- GLOBAL QUERY FILTERS ---
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (typeof(IMultiTenant).IsAssignableFrom(entityType.ClrType))
-            {
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(ConvertFilterExpression(entityType.ClrType));
-            }
-        }
+        // foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        // {
+        //     if (typeof(IMultiTenant).IsAssignableFrom(entityType.ClrType))
+        //     {
+        //         modelBuilder.Entity(entityType.ClrType)
+        //             .HasQueryFilter(ConvertFilterExpression(entityType.ClrType));
+        //     }
+        // }
+
+        modelBuilder.Entity<Branch>().HasQueryFilter(b => b.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<Court>().HasQueryFilter(c => c.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<Booking>().HasQueryFilter(bk => bk.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<ShadowQueue>().HasQueryFilter(sq => sq.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<MaintenanceTicket>().HasQueryFilter(mt => mt.AcademyId == CurrentTenantId);        
     }
     private System.Linq.Expressions.LambdaExpression ConvertFilterExpression(Type type)
     {
@@ -98,4 +104,6 @@ public class ApplicationDbContext : IdentityDbContext
         return base.SaveChangesAsync(cancellationToken);
     }
 
+    // Reusable dynamic context evaluation helper property
+    private Guid CurrentTenantId => _tenantProvider.GetTenantId();
 }

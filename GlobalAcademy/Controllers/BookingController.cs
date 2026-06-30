@@ -3,13 +3,16 @@ using GlobalAcademy.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace GlobalAcademy.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // Every caller must possess a valid authenticated JWT token profile
+[Authorize] 
 public class BookingController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -19,54 +22,73 @@ public class BookingController : ControllerBase
         _context = context;
     }
 
+    // --- READ (GET ALL FOR TENANT) ---
+    [HttpGet]
+    public async Task<IActionResult> GetAllBookings()
+    {
+        var bookings = await _context.Bookings.ToListAsync();
+        return Ok(bookings);
+    }
+
+    // --- READ SINGLE ---
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetBookingById(Guid id)
+    {
+        var booking = await _context.Bookings.FindAsync(id);
+        if (booking == null) return NotFound("Target booking configuration record missing or unauthorized access attempt.");
+        return Ok(booking);
+    }
+
+    // --- CREATE ---
     [HttpPost("create")]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingDto model)
     {
-        // Enforce basic logical baseline: End time must strictly follow start time
         if (model.StartTimeUtc >= model.EndTimeUtc)
         {
             return BadRequest("Invalid schedule sequence: End time must follow start time parameters.");
         }
 
-        // 1. Verify the targeted court asset physically exists under this tenant context boundary
         var court = await _context.Courts.FindAsync(model.CourtId);
-        if (court == null)
+        if (court == null) return NotFound("Target court configuration missing or unauthorized access attempt isolated.");
+
+        TimeSpan bookingDuration = model.EndTimeUtc - model.StartTimeUtc;
+        double totalMinutes = bookingDuration.TotalMinutes;
+
+        if (totalMinutes != 60 && totalMinutes != 90)
         {
-            return NotFound("Target court configuration missing or unauthorized access attempt isolated.");
+            return BadRequest("Operational Constraint: The academy time-slot grid only accepts fixed 60-minute or 90-minute intervals.");
         }
 
-        // Extract the user identity contexts out of the validated token claims arrays
+        if (model.StartTimeUtc.Minute != 0 && model.StartTimeUtc.Minute != 30)
+        {
+            return BadRequest("Grid Alignment Error: Bookings must align to the academy time-slot grid (starting at :00 or :30 minutes past the hour).");
+        }
+
         var userId = User.Identity?.Name ?? "Anonymous_User";
         var isDirector = User.IsInRole("AcademyDirector");
 
-        // 2. DETERMINISTIC COLLISION ENGINE
-        // Query PostgreSQL for any overlapping bookings on this specific court during the requested window
         var overlappingBookings = await _context.Bookings
             .Where(b => b.CourtId == model.CourtId && 
                         model.StartTimeUtc < b.EndTimeUtc && 
                         model.EndTimeUtc > b.StartTimeUtc)
             .ToListAsync();
 
-        // 3. THE ACADEMY VS. MEMBER SPLIT MATRIX DETERMINATION TREE
         if (overlappingBookings.Any())
         {
-            // Scenario A: An Executive Director is reserving a hard schedule block for an Elite Clinic
             if (isDirector && model.BookingType == "Clinic")
             {
-                // Isolate and identify standard member bookings that are causing the collision conflict
                 var standardMemberConflicts = overlappingBookings
                     .Where(b => b.BookingType == "MemberBooking")
                     .ToList();
 
                 if (standardMemberConflicts.Count == overlappingBookings.Count)
                 {
-                    // FIX: Instead of dropping players, preserve them in the Shadow Queue for the AI Agent
                     foreach (var conflict in standardMemberConflicts)
                     {
                         var queueEntry = new ShadowQueue
                         {
                             Id = Guid.NewGuid(),
-                            AcademyId = conflict.AcademyId, // Match original tenant scope
+                            AcademyId = conflict.AcademyId,
                             OriginalCourtId = conflict.CourtId,
                             PlayerUserId = conflict.BookedByUserId,
                             OpponentUserId = conflict.OpponentUserId,
@@ -78,27 +100,18 @@ public class BookingController : ControllerBase
                         _context.ShadowQueues.Add(queueEntry);
                     }
 
-                    // Now safely remove them from the active calendar pool grid
                     _context.Bookings.RemoveRange(standardMemberConflicts);
                     Console.WriteLine($"--> Elite Clinic override fired. Preserved {standardMemberConflicts.Count} member booking(s) in Shadow Queue.");
-
                 }
                 else
                 {
-                    // If there is another Clinic already sitting in this slot, even a Director cannot overwrite it
                     return BadRequest("Scheduling Collision: Another Elite Training Clinic is already locked into this court window.");
                 }
             }
             else
             {
-                // =========================================================================
-                // SCENARIO B EXPANSION: STANDARD USER COLLISION MATRIX
-                // =========================================================================
-                
-                // Check if the collision is happening because the physical facility asset is currently offline
                 if (court.Status == "Rained_Out" || court.Status == "Maintenance_Locked")
                 {
-                    // Instead of a blind rejection, funnel the member into the Shadow Queue tracker pool
                     var standbyEntry = new ShadowQueue
                     {
                         Id = Guid.NewGuid(),
@@ -121,46 +134,28 @@ public class BookingController : ControllerBase
                     });
                 }
 
-                // Standard baseline human-over-human collision block
                 return BadRequest("Court Availability Exception: The requested court window is locked or already occupied.");
             }
-            // else
-            // {
-            //     // Scenario B: A standard Member or Coach is trying to book space over an existing block
-            //     return BadRequest("Court Availability Exception: The requested court window is locked or already occupied.");
-            // }
         }
 
-        // 4. INVENTORY ASSIGNMENT
         var booking = new Booking
         {
             Id = Guid.NewGuid(),
             CourtId = model.CourtId,
             BookedByUserId = userId,
+            OpponentUserId = model.OpponentUserId,
             StartTimeUtc = model.StartTimeUtc,
             EndTimeUtc = model.EndTimeUtc,
-            BookingType = isDirector ? model.BookingType : "MemberBooking", // Standard accounts cannot forge Clinic priorities
+            BookingType = isDirector ? model.BookingType : "MemberBooking",
             Notes = model.Notes
         };
 
-        // =========================================================================
-        // AUTOMATED SURFACE DEGRADATION ENGINE
-        // =========================================================================
-        
-        // 1. Calculate how many minutes of physical wear this booking impacts
-        TimeSpan calculatedDuration = model.EndTimeUtc - model.StartTimeUtc;
-        int matchMinutes = (int)calculatedDuration.TotalMinutes;
-
-        // 2. Accumulate the wear runtime straight onto the physical court entity row
+        int matchMinutes = (int)bookingDuration.TotalMinutes;
         court.AggregateMinutesPlayed += matchMinutes;
 
-        // 3. THRESHOLD SAFETY INTERCEPTOR
-        // If the aggregate minutes exceed the maintenance boundary threshold, lock the court down
         if (court.AggregateMinutesPlayed >= court.MaintenanceThresholdMinutes)
         {
             court.Status = "Maintenance_Locked";
-
-            // FIX: Automatically log a physical work order tracking ticket for the grounds crew
             var maintenanceTicket = new MaintenanceTicket
             {
                 Id = Guid.NewGuid(),
@@ -173,22 +168,46 @@ public class BookingController : ControllerBase
             };
 
             _context.MaintenanceTickets.Add(maintenanceTicket);
-            Console.WriteLine($"--> Wear Limit Breached on {court.Name}. Maintenance Ticket generated successfully.");
-
-            // System Note: We attach an explanation onto the booking record for display clarity
             booking.Notes += " [SYSTEM NOTICE: This match triggers an automated facility maintenance lockout loop]";
+            Console.WriteLine($"--> Wear Limit Breached on {court.Name}. Maintenance Ticket generated successfully.");
         }
 
         _context.Bookings.Add(booking);
-        await _context.SaveChangesAsync(); // Stamped cleanly with AcademyId through our database filter layer!
+        await _context.SaveChangesAsync();
 
         return Ok(new { Message = "Inventory position secured successfully.", Booking = booking });
+    }
+
+    // --- UPDATE (PUT) ---
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateBooking(Guid id, [FromBody] UpdateBookingDto model)
+    {
+        var booking = await _context.Bookings.FindAsync(id);
+        if (booking == null) return NotFound("Target booking configuration layout missing.");
+
+        booking.Notes = model.Notes;
+        booking.BookingType = User.IsInRole("AcademyDirector") ? model.BookingType : "MemberBooking";
+        booking.OpponentUserId = model.OpponentUserId;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { Message = "Booking transaction modifications committed.", Booking = booking });
+    }
+
+    // --- DELETE ---
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteBooking(Guid id)
+    {
+        var booking = await _context.Bookings.FindAsync(id);
+        if (booking == null) return NotFound("Target booking transaction record missing.");
+
+        _context.Bookings.Remove(booking);
+        await _context.SaveChangesAsync();
+        return Ok(new { Message = "Booking record unlinked and removed successfully from database storage." });
     }
 
     [HttpGet("court/{courtId:guid}/schedule")]
     public async Task<IActionResult> GetCourtSchedule(Guid courtId)
     {
-        // Fetch upcoming schedule array listings for the targeted asset
         var schedule = await _context.Bookings
             .Where(b => b.CourtId == courtId)
             .OrderBy(b => b.StartTimeUtc)
@@ -198,6 +217,5 @@ public class BookingController : ControllerBase
     }
 }
 
-// FIX: Appended string? OpponentUserId to the input contract data transfer record
 public record CreateBookingDto(Guid CourtId, DateTime StartTimeUtc, DateTime EndTimeUtc, string BookingType, string Notes, string? OpponentUserId);
-
+public record UpdateBookingDto(string Notes, string BookingType, string? OpponentUserId);
