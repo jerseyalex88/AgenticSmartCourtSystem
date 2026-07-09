@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Layout from './components/Layout';
 import CourtsDashboard from './pages/CourtsDashboard';
+import ChangePassword from './pages/ChangePassword';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -26,6 +27,8 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':
         return <CourtsDashboard />;
+      case 'password':
+        return <ChangePassword />;
       case 'bookings':
         return (
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">

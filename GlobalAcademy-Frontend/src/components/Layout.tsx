@@ -17,6 +17,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     { id: 'bookings', label: '⏱️ Bookings & Intervals', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
     { id: 'shadow-queue', label: '🔄 Displaced Player Queue', roles: ['AcademyDirector', 'Groundskeeper'] },
     { id: 'maintenance', label: '🔧 Work Order Tickets', roles: ['AcademyDirector', 'Groundskeeper'] },
+    { id: 'password', label: '🔐 Security Passwords', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
   ];
 
   // Filters links in real-time based on the user's encrypted token claims

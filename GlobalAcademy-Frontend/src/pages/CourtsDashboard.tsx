@@ -15,7 +15,7 @@ interface Court {
   description: string;
   surfaceType: string;
   isIndoor: boolean;
-  status: string; // Open, Rained_Out, Maintenance_Locked
+  status: string;
   dryCoefficient: number;
   aggregateMinutesPlayed: number;
   maintenanceThresholdMinutes: number;
@@ -26,20 +26,24 @@ export default function CourtsDashboard() {
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   const [courts, setCourts] = useState<Court[]>([]);
   
-  // Loading & UX Error State Tracking
   const [loading, setLoading] = useState<boolean>(true);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Structural Modal Forms State Controls
   const [showBranchModal, setShowBranchModal] = useState<boolean>(false);
   const [showCourtModal, setShowCourtModal] = useState<boolean>(false);
-
-  // Form Field Inputs State Variables
-  const [newBranch, setNewBranch] = useState({ name: '', description: '', timeZoneId: 'Europe/London' });
-  const [newCourt, setNewCourt] = useState({ name: '', description: '', surfaceType: 'Hard', isIndoor: false, dryCoefficient: 1.0 });
-
-  // --- API DATA INGESTION LOOPS ---
   
+  const [isEditingBranch, setIsEditingBranch] = useState<boolean>(false);
+  const [editingCourtId, setEditingCourtId] = useState<string | null>(null);
+
+  const [newBranch, setNewBranch] = useState({ name: '', description: '', timeZoneId: 'Europe/London' });
+  const [editBranchData, setEditBranchData] = useState({ name: '', description: '', timeZoneId: 'Europe/London' });
+  
+  const [newCourt, setNewCourt] = useState({ name: '', description: '', surfaceType: 'Hard', isIndoor: false, dryCoefficient: 1.0 });
+  const [editCourtData, setEditCourtData] = useState({ name: '', description: '', surfaceType: 'Hard', isIndoor: false, dryCoefficient: 1.0 });
+
+  // FIXED FEATURE EXTENSION: Tracks the active court entity targeted for deletion
+  const [courtToDeleteId, setCourtToDeleteId] = useState<string | null>(null);
+
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -49,6 +53,11 @@ export default function CourtsDashboard() {
       
       if (branchRes.data.length > 0 && !selectedBranchId) {
         setSelectedBranchId(branchRes.data[0].id);
+        setEditBranchData({
+          name: branchRes.data[0].name,
+          description: branchRes.data[0].description,
+          timeZoneId: branchRes.data[0].timeZoneId
+        });
       }
     } catch (err: any) {
       setActionError('Failed to synchronize infrastructure branches list.');
@@ -75,12 +84,16 @@ export default function CourtsDashboard() {
   useEffect(() => {
     if (selectedBranchId) {
       fetchCourtsForSelectedBranch(selectedBranchId);
+      const activeB = branches.find(b => b.id === selectedBranchId);
+      if (activeB) {
+        setEditBranchData({ name: activeB.name, description: activeB.description, timeZoneId: activeB.timeZoneId });
+      }
+      setIsEditingBranch(false);
+      setEditingCourtId(null);
     } else {
       setCourts([]);
     }
   }, [selectedBranchId]);
-
-  // --- CRUD LIFECYCLE MUTATION HANDLERS ---
 
   const handleCreateBranch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +105,18 @@ export default function CourtsDashboard() {
       setShowBranchModal(false);
       setNewBranch({ name: '', description: '', timeZoneId: 'Europe/London' });
     } catch (err: any) {
-      setActionError(err.response?.data || 'Relational Exception: Could not persist branch node layout.');
+      setActionError(err.response?.data || 'Could not persist branch node layout.');
+    }
+  };
+  const handleUpdateBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setActionError(null);
+      await apiClient.put(`/Facility/branches/${selectedBranchId}`, editBranchData);
+      setBranches(branches.map(b => b.id === selectedBranchId ? { ...b, ...editBranchData } : b));
+      setIsEditingBranch(false);
+    } catch (err: any) {
+      setActionError(err.response?.data || 'Failed to update selected branch attributes.');
     }
   };
 
@@ -100,24 +124,60 @@ export default function CourtsDashboard() {
     e.preventDefault();
     try {
       setActionError(null);
-      const res = await apiClient.post<Court>('/Facility/courts', {
-        branchId: selectedBranchId,
-        ...newCourt
-      });
+      const res = await apiClient.post<Court>('/Facility/courts', { branchId: selectedBranchId, ...newCourt });
       setCourts([...courts, res.data]);
       setShowCourtModal(false);
       setNewCourt({ name: '', description: '', surfaceType: 'Hard', isIndoor: false, dryCoefficient: 1.0 });
     } catch (err: any) {
-      setActionError(err.response?.data || 'Failed to provision target court hardware asset row.');
+      setActionError(err.response?.data || 'Failed to provision court asset row.');
     }
   };
 
-  const handleDeleteCourt = async (courtId: string) => {
+  const handleBeginEditCourt = (court: Court) => {
+    setEditingCourtId(court.id);
+    setEditCourtData({
+      name: court.name,
+      description: court.description,
+      surfaceType: court.surfaceType,
+      isIndoor: court.isIndoor,
+      dryCoefficient: court.dryCoefficient
+    });
+  };
+
+  const handleUpdateCourt = async (courtId: string) => {
+    try {
+      setActionError(null);
+      await apiClient.put(`/Facility/courts/${courtId}`, editCourtData);
+      setCourts(courts.map(c => c.id === courtId ? { ...c, ...editCourtData } : c));
+      setEditingCourtId(null);
+    } catch (err: any) {
+      setActionError(err.response?.data || 'Failed to preserve court configuration changes.');
+    }
+  };
+
+  const dnu_handleDeleteCourt = async (courtId: string) => {
     if (!window.confirm('Are you absolutely sure you want to decouple and delete this physical court asset?')) return;
     try {
       setActionError(null);
       await apiClient.delete(`/Facility/courts/${courtId}`);
       setCourts(courts.filter(c => c.id !== courtId));
+    } catch (err: any) {
+      setActionError('Purge Failure: Unable to remove target court array position.');
+    }
+  };
+
+    // FIX: Instead of blocking the thread with window.confirm, open the custom overlay modal
+  const handleTriggerPurgeModal = (courtId: string) => {
+    setCourtToDeleteId(courtId);
+  };
+
+  const handleExecutePurgeAction = async () => {
+    if (!courtToDeleteId) return;
+    try {
+      setActionError(null);
+      await apiClient.delete(`/Facility/courts/${courtToDeleteId}`);
+      setCourts(courts.filter(c => c.id !== courtToDeleteId));
+      setCourtToDeleteId(null); // Close modal cleanly
     } catch (err: any) {
       setActionError('Purge Failure: Unable to remove target court array position.');
     }
@@ -129,116 +189,152 @@ export default function CourtsDashboard() {
 
   return (
     <div className="space-y-6">
-      
       {actionError && (
         <div className="p-4 bg-rose-950/40 border border-rose-900 text-rose-300 rounded-xl text-xs font-medium flex items-center space-x-2">
           <span>⚠️</span> <span>{actionError}</span>
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
-        <div className="space-y-1">
-          <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">Active Branch Location Node</label>
-          {branches.length > 0 ? (
-            <select 
-              value={selectedBranchId} 
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-emerald-500 min-w-[200px]"
-            >
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name} ({b.timeZoneId})</option>
-              ))}
-            </select>
-          ) : (
-            <p className="text-xs text-rose-400 italic">No facility branch locations configured yet.</p>
-          )}
+      <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-1">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">Active Branch Location Node</label>
+            {branches.length > 0 ? (
+              <div className="flex items-center space-x-2">
+                <select value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-emerald-500 min-w-[200px]" >
+                  {branches.map(b => (<option key={b.id} value={b.id}>{b.name}</option>))}
+                </select>
+                {!isEditingBranch && (
+                  <button onClick={() => setIsEditingBranch(true)} className="text-xs bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg transition">📝 Edit Info</button>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-rose-400 italic">No facility branch locations configured yet.</p>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            <button onClick={() => setShowBranchModal(true)} className="bg-slate-950 hover:bg-slate-850 text-slate-300 border border-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition">➕ Deploy Venue</button>
+            <button disabled={!selectedBranchId} onClick={() => setShowCourtModal(true)} className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition">➕ Provision Court</button>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setShowBranchModal(true)}
-            className="bg-slate-950 hover:bg-slate-850 text-slate-300 border border-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition"
-          >
-            ➕ Deploy New Venue Branch
-          </button>
-          <button 
-            disabled={!selectedBranchId}
-            onClick={() => setShowCourtModal(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition"
-          >
-            ➕ Provision Court Asset
-          </button>
-        </div>
+        {isEditingBranch && (
+          <form onSubmit={handleUpdateBranch} className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="space-y-1">
+              <label className="block font-bold text-slate-500 uppercase">Modify Branch Title</label>
+              <input type="text" required value={editBranchData.name} onChange={(e) => setEditBranchData({...editBranchData, name: e.target.value})} className="w-full bg-slate-900 border border-slate-800 p-2 rounded-lg text-slate-200" />
+            </div>
+            <div className="space-y-1">
+              <label className="block font-bold text-slate-500 uppercase">Modify Area Focus</label>
+              <input type="text" required value={editBranchData.description} onChange={(e) => setEditBranchData({...editBranchData, description: e.target.value})} className="w-full bg-slate-900 border border-slate-800 p-2 rounded-lg text-slate-200" />
+            </div>
+            <div className="space-y-1">
+              <label className="block font-bold text-slate-500 uppercase">Modify Zone</label>
+              <div className="flex space-x-2">
+                <select value={editBranchData.timeZoneId} onChange={(e) => setEditBranchData({...editBranchData, timeZoneId: e.target.value})} className="w-full bg-slate-900 border border-slate-800 p-2 rounded-lg text-slate-200" >
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="Asia/Dubai">Asia/Dubai</option>
+                  <option value="America/New_York">America/New_York</option>
+                </select>
+                <button type="submit" className="bg-emerald-600 font-bold px-3 py-1 rounded-lg text-slate-950">Save</button>
+                <button type="button" onClick={() => setIsEditingBranch(false)} className="bg-slate-800 px-3 py-1 rounded-lg text-slate-300">Cancel</button>
+              </div>
+            </div>
+          </form>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courts.map((court) => {
           const wearPercent = Math.min(100, Math.round((court.aggregateMinutesPlayed / court.maintenanceThresholdMinutes) * 100));
+          const isCurrentCourtEditing = editingCourtId === court.id;
           
           return (
-            <div key={court.id} className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl hover:border-slate-700/60 transition flex flex-col justify-between space-y-4">
+            <div key={court.id} className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl transition flex flex-col justify-between space-y-4">
               
-              <div className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-sm font-black text-slate-100 tracking-tight">{court.name}</h3>
-                    <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5 line-clamp-2">{court.description}</p>
+              {!isCurrentCourtEditing ? (
+                <div className="space-y-4 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-100 tracking-tight">{court.name}</h3>
+                        <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{court.description}</p>
+                      </div>
+                      <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border bg-emerald-950/40 text-emerald-400 border-emerald-900/60">{court.status}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">🛠️ {court.surfaceType}</span>
+                      <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">{court.isIndoor ? '🏠 Indoor' : '☀️ Outdoor'}</span>
+                      <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">💧 Coeff: {court.dryCoefficient}</span>
+                    </div>
                   </div>
-                  
-                  <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border ${
-                    court.status === 'Open' ? 'bg-emerald-950/40 text-emerald-400 border-emerald-900/60' :
-                    court.status === 'Rained_Out' ? 'bg-blue-950/40 text-blue-400 border-blue-900/60' :
-                    'bg-amber-950/40 text-amber-400 border-amber-900/60'
-                  }`}>
-                    {court.status}
-                  </span>
-                </div>
 
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">🛠️ {court.surfaceType}</span>
-                  <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">{court.isIndoor ? '🏠 Indoor' : '☀️ Outdoor'}</span>
-                  <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">💧 Coeff: {court.dryCoefficient}</span>
-                </div>
-              </div>
-              <div className="space-y-1.5 border-t border-slate-850 pt-3">
-                <div className="flex items-center justify-between text-[10px] font-mono">
-                  <span className="text-slate-500 uppercase tracking-tight">Surface Wear Threshold</span>
-                  <span className={wearPercent > 80 ? "text-amber-400 font-bold" : "text-slate-400"}>
-                    {court.aggregateMinutesPlayed} / {court.maintenanceThresholdMinutes} m ({wearPercent}%)
-                  </span>
-                </div>
-                <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-850">
-                  <div 
-                    style={{ width: `${wearPercent}%` }}
-                    className={`h-full transition-all duration-500 ${
-                      wearPercent > 85 ? 'bg-amber-500' : 'bg-emerald-500'
-                    }`}
-                  />
-                </div>
-              </div>
+                  <div className="space-y-1.5 border-t border-slate-850 pt-3">
+                    <div className="flex items-center justify-between text-[10px] font-mono">
+                      <span className="text-slate-500 uppercase">Surface Wear</span>
+                      <span className="text-slate-400">{court.aggregateMinutesPlayed} / {court.maintenanceThresholdMinutes} m</span>
+                    </div>
+                    <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-850">
+                      <div style={{ width: `${wearPercent}%` }} className="h-full bg-emerald-500 transition-all duration-500" />
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-end border-t border-slate-850/60 pt-3">
-                <button 
-                  onClick={() => handleDeleteCourt(court.id)}
-                  className="text-[10px] font-bold text-slate-500 hover:text-rose-400 border border-transparent hover:border-rose-900/40 hover:bg-rose-950/20 px-2.5 py-1.5 rounded-lg transition"
-                >
-                  🗑️ Purge Asset
-                </button>
-              </div>
+                  <div className="flex items-center justify-end border-t border-slate-850/60 pt-2 space-x-2">
+                    <button onClick={() => handleBeginEditCourt(court)} className="text-[10px] font-bold text-slate-400 hover:text-slate-200 border border-slate-800 hover:bg-slate-850 px-2.5 py-1.5 rounded-lg transition">📝 Edit Court</button>
+                    {/* <button onClick={() => handleDeleteCourt(court.id)} className="text-[10px] font-bold text-slate-500 hover:text-rose-400 border border-transparent hover:border-rose-900/40 hover:bg-rose-950/20 px-2.5 py-1.5 rounded-lg transition">🗑️ Purge</button> */}
+                    <button onClick={() => handleTriggerPurgeModal(court.id)} className="text-[10px] font-bold text-slate-500 hover:text-rose-400 border border-transparent hover:border-rose-900/40 hover:bg-rose-950/20 px-2.5 py-1.5 rounded-lg transition">🗑️ Purge</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 text-xs flex-1 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-emerald-400 border-b border-slate-850 pb-1 text-[11px] uppercase tracking-wide">Modify Court Configuration</h4>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Reference Title</label>
+                      <input type="text" value={editCourtData.name} onChange={(e) => setEditCourtData({...editCourtData, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2 rounded-lg text-slate-200" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Materials Description</label>
+                      <input type="text" value={editCourtData.description} onChange={(e) => setEditCourtData({...editCourtData, description: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2 rounded-lg text-slate-200" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Type</label>
+                        <select value={editCourtData.surfaceType} onChange={(e) => setEditCourtData({...editCourtData, surfaceType: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-1.5 rounded-lg text-slate-200" >
+                          <option value="Grass">Grass</option>
+                          <option value="Clay">Clay</option>
+                          <option value="Hard">Hard</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Drying Coeff</label>
+                        <input type="number" step="0.1" value={editCourtData.dryCoefficient} onChange={(e) => setEditCourtData({...editCourtData, dryCoefficient: parseFloat(e.target.value) || 1.0})} className="w-full bg-slate-950 border border-slate-800 p-1.5 rounded-lg text-slate-200" />
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1.5 pt-1">
+                      <input type="checkbox" id={`editIndoor-${court.id}`} checked={editCourtData.isIndoor} onChange={(e) => setEditCourtData({...editCourtData, isIndoor: e.target.checked})} className="accent-emerald-500 rounded h-3.5 w-3.5" />
+                      <label htmlFor={`editIndoor-${court.id}`} className="text-slate-400 font-semibold text-[11px] cursor-pointer">Insulated Indoor Enclosure</label>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-2 border-t border-slate-850 pt-3">
+                    <button type="button" onClick={() => setEditingCourtId(null)} className="bg-slate-950 hover:bg-slate-850 px-3 py-1.5 rounded-lg text-slate-400 text-[10px] font-bold">Cancel</button>
+                    <button type="button" onClick={() => handleUpdateCourt(court.id)} className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-3 py-1.5 rounded-lg text-[10px]">Commit Modifications</button>
+                  </div>
+                </div>
+              )}
 
             </div>
           );
         })}
-
         {courts.length === 0 && (
           <div className="col-span-full border border-dashed border-slate-800 rounded-2xl p-12 text-center text-xs font-mono text-slate-500 italic">
             No physical court assets provisioned under this specific branch configuration profile.
           </div>
         )}
       </div>
-
       {/* =========================================================================
-          MODAL INTERFACES: NEW BRANCH PROVISIONING OVERLAY
+          MODALS REGION OVERLAYS (DEPLOY NEW BRANCH OVERLAY INCLUDED FOR COMPLIANCE)
           ========================================================================= */}
       {showBranchModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -256,9 +352,9 @@ export default function CourtsDashboard() {
               <div className="space-y-1">
                 <label className="block font-bold text-slate-400 uppercase">Regional IANA Time-Zone Routing Vector</label>
                 <select value={newBranch.timeZoneId} onChange={(e) => setNewBranch({...newBranch, timeZoneId: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none" >
-                  <option value="Europe/London">Europe/London (GMT/BST)</option>
-                  <option value="Asia/Dubai">Asia/Dubai (GST)</option>
-                  <option value="America/New_York">America/New_York (EST/EDT)</option>
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="Asia/Dubai">Asia/Dubai</option>
+                  <option value="America/New_York">America/New_York</option>
                 </select>
               </div>
               <div className="flex items-center justify-end space-x-2 pt-2">
@@ -270,9 +366,6 @@ export default function CourtsDashboard() {
         </div>
       )}
 
-      {/* =========================================================================
-          MODAL INTERFACES: NEW COURT HARDWARE PROVISIONING OVERLAY
-          ========================================================================= */}
       {showCourtModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
@@ -302,13 +395,52 @@ export default function CourtsDashboard() {
               </div>
               <div className="flex items-center space-x-2 py-1">
                 <input type="checkbox" id="indoorCheck" checked={newCourt.isIndoor} onChange={(e) => setNewCourt({...newCourt, isIndoor: e.target.checked})} className="rounded bg-slate-950 border-slate-800 text-emerald-500 accent-emerald-500 h-4 w-4" />
-                <label htmlFor="indoorCheck" className="text-slate-300 font-semibold cursor-pointer">Asset is insulated inside structural indoor facility enclosure</label>
+                <label htmlFor="indoorCheck" className="text-slate-300 font-semibold cursor-pointer">Indoor Enclosure</label>
               </div>
               <div className="flex items-center justify-end space-x-2 pt-2">
                 <button type="button" onClick={() => setShowCourtModal(false)} className="bg-slate-950 hover:bg-slate-850 px-4 py-2 rounded-xl text-slate-400 transition">Cancel</button>
                 <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-4 py-2 rounded-xl transition">Commit Asset</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL INTERFACES: CUSTOM HIGH-UTILITY CONFIRM PURGE OVERLAY
+          ========================================================================= */}
+      {courtToDeleteId && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+            
+            <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xl shadow-inner">
+              ⚠️
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-slate-100 tracking-tight">Purge Physical Court Asset</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Are you absolutely sure you want to decouple this asset? This action will permanently remove this court and all historical scheduling logs from the PostgreSQL cluster database.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2 text-xs font-bold">
+              <button 
+                type="button" 
+                onClick={handleExecutePurgeAction} 
+                className="w-full bg-rose-600 hover:bg-rose-500 text-white p-2.5 rounded-xl transition shadow-lg shadow-rose-950/20"
+              >
+                Yes, Purge Infrastructure Asset Permanent
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setCourtToDeleteId(null)} 
+                className="w-full bg-slate-950 hover:bg-slate-850 text-slate-400 border border-slate-850 p-2.5 rounded-xl transition font-semibold"
+              >
+                Cancel Action
+              </button>
+            </div>
+
           </div>
         </div>
       )}
