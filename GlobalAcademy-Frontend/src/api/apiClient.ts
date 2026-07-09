@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// Environment-aware backend destination configuration anchor
-const API_BASE_URL = 'http://localhost:5162/api'; // Matches your local .NET run port
+// =========================================================================
+// ENVIRONMENT-AWARE DYNAMIC API BASE CONFIGURATION
+// =========================================================================
+// Vite dynamically swaps this out during build compilation modes automatically!
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5162/api';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
