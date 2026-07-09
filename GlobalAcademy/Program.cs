@@ -70,6 +70,23 @@ builder.Services.AddAuthorization(options => {
     options.AddPolicy("RequirePlayer", policy => policy.RequireRole("Player"));
 });
 
+// =========================================================================
+// ENVIRONMENT-AWARE DYNAMIC CORS POLICY CONFIGURATION
+// =========================================================================
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+                     ?? new[] { "http://localhost:5173" }; // Fallback protection default
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactFrontend", policy =>
+    {
+        policy.WithOrigins(allowedOrigins) // Dynamically injects whatever env array is active!
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); 
+    });
+});
+
 var app = builder.Build();
 
 // =========================================================================
@@ -108,8 +125,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); 
-app.UseAuthorization();  
+// Enforce CORS right at the gateway before hitting identity verification tracks
+app.UseCors("AllowReactFrontend");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

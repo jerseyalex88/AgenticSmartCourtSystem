@@ -1,0 +1,5 @@
+@import "tailwindcss"; /* ◄--- REPLACED OLD DIRECTIVES WITH THIS SINGLE v4 LINE */
+
+body {
+  @apply bg-slate-900 text-slate-100 min-h-screen antialiased font-sans;
+}
