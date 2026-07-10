@@ -1,5 +1,27 @@
-@import "tailwindcss"; /* ◄--- REPLACED OLD DIRECTIVES WITH THIS SINGLE v4 LINE */
+@import "tailwindcss";
 
+/* =========================================================================
+    TAILWIND v4 MULTI-THEME ENGINE baseline CONSTRAINTS
+   ========================================================================= */
+
+/* Default root styling layers (Light Theme Configuration) */
+:root {
+  --background: #f8fafc; /* Slate 50 */
+  --text: #0f172a;       /* Slate 900 */
+}
+
+/* Override variables instantly when the document triggers a .dark token signature class */
+:root.dark {
+  --background: #020617; /* Slate 950 */
+  --text: #f8fafc;       /* Slate 100 */
+}
+
+/* Map variables natively onto the system layout canvas with clean transitions */
 body {
-  @apply bg-slate-900 text-slate-100 min-h-screen antialiased font-sans;
+  background-color: var(--background);
+  color: var(--text);
+  min-height: 100vh;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 200ms ease, color 200ms ease;
 }
