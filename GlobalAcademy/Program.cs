@@ -94,9 +94,24 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
     var kernelBuilder = Kernel.CreateBuilder();
     var aiConfig = builder.Configuration.GetSection("AI");
 
+    // =========================================================================
+    // ADDED FOR DEV ENVIRONMENT: NETWORK BYPASS COMPONENT
+    // =========================================================================
+    var handler = new System.Net.Http.SocketsHttpHandler
+    {
+        SslOptions = new System.Net.Security.SslClientAuthenticationOptions
+        {
+            // Bypasses the RevocationStatusUnknown operating system block locally
+            CertificateRevocationCheckMode = System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck
+        }
+    };
+    var customHttpClient = new System.Net.Http.HttpClient(handler);
+    // =========================================================================
+
     kernelBuilder.AddOpenAIChatCompletion(
         modelId: aiConfig["ModelId"] ?? "gpt-5.4-mini", 
-        apiKey: builder.Configuration["AI:ApiKey"] ?? string.Empty
+        apiKey: builder.Configuration["AI:ApiKey"] ?? string.Empty,
+        httpClient: customHttpClient // <-- FIXED: Injecting the client here inside your original method
     );
 
     // Register our fresh scheduling engine plugin
@@ -105,6 +120,9 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
 
     return kernelBuilder.Build();
 });
+
+// Register the AI Match-Saver engine service layer
+builder.Services.AddScoped<MatchSaverService>();
 
 var app = builder.Build();
 

@@ -20,7 +20,7 @@ function ShadowQueueManager() {
     setSeedMessage(null);
     try {
       // Clean, authenticated POST via your centralized client interceptor
-      const response = await apiClient.post<{ message: string }>('/auth/ai/match-saver/seed-test-data');
+      const response = await apiClient.post<{ message: string }>('/aiorchestration/ai/match-saver/seed-test-data');
       setSeedMessage(response.data.message || 'Sandbox rows injected successfully!');
     } catch (err: any) {
       setSeedMessage(`Seeding Error: ${err.response?.data || err.message}`);
@@ -35,7 +35,7 @@ function ShadowQueueManager() {
     setReport(null);
     try {
       // Routing directly through the client pipeline to ensure multi-tenant boundary compliance
-      const response = await apiClient.post<{ report: string }>('/auth/ai/match-saver/run');
+      const response = await apiClient.post<{ report: string }>('/aiorchestration/ai/match-saver/run');
       setReport(response.data.report);
     } catch (err: any) {
       setReport(`Execution Failure: ${err.response?.data || err.message}`);
