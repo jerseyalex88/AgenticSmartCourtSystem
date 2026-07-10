@@ -7,6 +7,8 @@ using Scalar.AspNetCore;
 using GlobalAcademy.Data;
 using GlobalAcademy.Security;
 using GlobalAcademy.Services;
+using Microsoft.SemanticKernel;
+using GlobalAcademy.Plugins;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +87,23 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials(); 
     });
+});
+
+builder.Services.AddScoped<Kernel>(serviceProvider =>
+{
+    var kernelBuilder = Kernel.CreateBuilder();
+    var aiConfig = builder.Configuration.GetSection("AI");
+
+    kernelBuilder.AddOpenAIChatCompletion(
+        modelId: aiConfig["ModelId"] ?? "gpt-5.4-mini", 
+        apiKey: builder.Configuration["AI:ApiKey"] ?? string.Empty
+    );
+
+    // Register our fresh scheduling engine plugin
+    var dbContext = serviceProvider.GetRequiredService<ApplicationDbContext>();
+    kernelBuilder.Plugins.AddFromObject(new CourtSchedulingPlugin(dbContext), "SchedulingEngine");
+
+    return kernelBuilder.Build();
 });
 
 var app = builder.Build();

@@ -114,6 +114,10 @@ namespace GlobalAcademy.Models {
 
         // Navigation property back to the physical court asset
         public Court? Court { get; set; }
+        public string CourtName { get; set; } = string.Empty; // Ensure this is exactly "CourtName"
+        public DateTime SlotTime { get; set; }  
+        public bool IsAvailableSlot { get; set; } = true;
+        public string? BookedPlayerName { get; set; }
     }
     public class ShadowQueue : Security.IMultiTenant
     {
@@ -134,6 +138,9 @@ namespace GlobalAcademy.Models {
         
         public string DisplacementReason { get; set; } = "Executive Clinic Override";
         public DateTime DisplacedAtUtc { get; set; } = DateTime.UtcNow;
+        public string PlayerName { get; set; } = string.Empty;     // Ensure this is exactly "PlayerName"
+        public string PreferredWindow { get; set; } = string.Empty; // Ensure this is exactly "PreferredWindow"
+        public bool IsResolved { get; set; } = false;
     }
     public class MaintenanceTicket : Security.IMultiTenant
     {

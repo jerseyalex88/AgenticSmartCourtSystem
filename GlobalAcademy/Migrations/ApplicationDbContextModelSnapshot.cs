@@ -57,6 +57,9 @@ namespace GlobalAcademy.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("BookedPlayerName")
+                        .HasColumnType("text");
+
                     b.Property<string>("BookingType")
                         .IsRequired()
                         .HasColumnType("text");
@@ -64,11 +67,18 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("CourtId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CourtName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("EndTimeUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsAvailableSlot")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Notes")
                         .IsRequired()
@@ -76,6 +86,9 @@ namespace GlobalAcademy.Migrations
 
                     b.Property<string>("OpponentUserId")
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("SlotTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("StartTimeUtc")
                         .HasColumnType("timestamp with time zone");
@@ -233,6 +246,9 @@ namespace GlobalAcademy.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("OpponentUserId")
                         .HasColumnType("text");
 
@@ -245,7 +261,15 @@ namespace GlobalAcademy.Migrations
                     b.Property<DateTime>("OriginalStartTimeUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("PlayerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("PlayerUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PreferredWindow")
                         .IsRequired()
                         .HasColumnType("text");
 

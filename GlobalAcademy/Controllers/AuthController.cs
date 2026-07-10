@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using GlobalAcademy.Models;
 using GlobalAcademy.Security;
+using GlobalAcademy.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -18,18 +20,22 @@ public class AuthController : ControllerBase
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
     private readonly ITenantProvider _tenantProvider;
+    private readonly Data.ApplicationDbContext _dbContext;
 
+    // 2. UPDATE THE CONSTRUCTOR TO ACCEPT APPLICATIONDBCONTEXT
     public AuthController(
         UserManager<IdentityUser> userManager, 
         RoleManager<IdentityRole> roleManager, 
         IConfiguration configuration,
-        ITenantProvider tenantProvider)
+        ITenantProvider tenantProvider,
+        Data.ApplicationDbContext dbContext) // <-- Injected here
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _configuration = configuration;
         _tenantProvider = tenantProvider;
-    }
+        _dbContext = dbContext; // <-- Assigned here
+    }    
 
     [HttpPost("register-academy")]
     public async Task<IActionResult> RegisterAcademy([FromBody] RegisterAcademyDto model)
@@ -327,6 +333,84 @@ public class AuthController : ControllerBase
 
         return Ok(new { Message = "Account record wiped cleanly." });
     }
+
+    [HttpPost("ai/match-saver/run")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    public async Task<IActionResult> TriggerAiSaver([FromServices] MatchSaverService saverService)
+    {
+        // The underlying DbContext uses _tenantProvider to completely lock this run to the logged-in Academy!
+        var optimizationReport = await saverService.AutopilotOptimizeQueueAsync();
+        return Ok(new { Report = optimizationReport });
+    }
+
+    [HttpPost("ai/match-saver/seed-test-data")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    public async Task<IActionResult> SeedTestData()
+    {
+        var currentAcademyId = _tenantProvider.GetTenantId();
+
+        // 1. Fetch an existing live court belonging to this active tenant academy partition
+        var activeCourt = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .FirstOrDefaultAsync(_dbContext.Courts, c => c.AcademyId == currentAcademyId);
+
+
+        // CRITICAL GUARD RAIL: If no court exists yet for this tenant, spawn an infrastructure row on the fly
+        if (activeCourt == null)
+        {
+            activeCourt = new Court 
+            {
+                Id = Guid.NewGuid(), // Assuming standard Guid primary keys based on your earlier compilation errors
+                AcademyId = currentAcademyId,
+                Name = "Default Center Court A"
+            };
+            _dbContext.Courts.Add(activeCourt);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        // 2. Clear out any unresolved test matches to avoid data noise anomalies
+        var legacyTestQueues = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .ToListAsync(_dbContext.ShadowQueues.Where(sq => sq.AcademyId == currentAcademyId && sq.PlayerName == "Serena Williams (Test)"));
+
+        var legacyTestBookings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .ToListAsync(_dbContext.Bookings.Where(b => b.AcademyId == currentAcademyId && b.BookedPlayerName == "Serena Williams (Test)"));
+
+
+        // 3. Inject a fresh displaced player record
+        var fakeQueue = new Models.ShadowQueue
+        {
+            Id = Guid.NewGuid(),
+            AcademyId = currentAcademyId,
+            PlayerName = "Serena Williams (Test)",
+            PreferredWindow = "Anytime tomorrow morning",
+            IsResolved = false
+        };
+
+        // 4. Inject an open matching time slot, explicitly mapping the foreign key relation
+        var fakeSlot = new Booking
+        {
+            Id = Guid.NewGuid(),
+            AcademyId = currentAcademyId,
+            CourtName = activeCourt.Name,
+            SlotTime = DateTime.UtcNow.AddDays(1).Date.AddHours(9), // Tomorrow at 09:00 AM UTC
+            IsAvailableSlot = true,
+            
+            // FIX: Setting the explicit navigation entity or shadow FK so PostgreSQL constraint check passes perfectly!
+            // If your Booking model has an explicit 'CourtId' property, assign it here:
+            // CourtId = activeCourt.Id
+        };
+
+        // If your model uses an object reference navigation instead of a primitive ID property, 
+        // you can configure it through EF Core entry tracker states if necessary:
+        // _dbContext.Entry(fakeSlot).Property("CourtId").CurrentValue = activeCourt.Id;
+
+        _dbContext.ShadowQueues.Add(fakeQueue);
+        _dbContext.Bookings.Add(fakeSlot);
+        
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { Message = $"Tenant Sandbox data generated successfully using active target '{activeCourt.Name}'!" });
+    }
+
 }
 
 public record RegisterAcademyDto(string Email, string Password, string AcademyName);
