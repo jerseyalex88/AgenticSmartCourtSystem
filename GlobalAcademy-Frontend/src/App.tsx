@@ -4,6 +4,8 @@ import Login from './pages/Login';
 import Layout from './components/Layout';
 import CourtsDashboard from './pages/CourtsDashboard';
 import ChangePassword from './pages/ChangePassword';
+import RosterDashboard from './pages/RosterDashboard';
+import AdminTools from './pages/AdminTools'; 
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -27,6 +29,10 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':
         return <CourtsDashboard />;
+      case 'roster':
+        return <RosterDashboard />;
+      case 'admin':
+        return <AdminTools />; 
       case 'password':
         return <ChangePassword />;
       case 'bookings':

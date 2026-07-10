@@ -31,10 +31,16 @@ function decodeJwtClaims(token: string): UserProfile {
     
     const parsed = JSON.parse(jsonPayload);
 
+    //console.log(`parsed value: "${JSON.stringify(parsed)}"`);
+
     // Modern .NET 10 token claims mapping parameters
     const email = parsed["http://xmlsoap.org"] || parsed.sub || "";
-    const role = parsed["http://xmlsoap.org"] || parsed.role || "Player";
+    const role = parsed["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || parsed.role || "Player";
     const academyId = parsed.AcademyId || parsed.academyId || "";
+
+    // console.log("==================================================");
+    // console.log(`[DECODING JWT] Extracted Role Claim Value: "${role}"`);
+    // console.log("==================================================");
 
     return { email, role, academyId };
   } catch (err) {

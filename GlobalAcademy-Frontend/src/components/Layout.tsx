@@ -17,6 +17,8 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     { id: 'bookings', label: '⏱️ Bookings & Intervals', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
     { id: 'shadow-queue', label: '🔄 Displaced Player Queue', roles: ['AcademyDirector', 'Groundskeeper'] },
     { id: 'maintenance', label: '🔧 Work Order Tickets', roles: ['AcademyDirector', 'Groundskeeper'] },
+    { id: 'roster', label: '👥 Staff Roster Manager', roles: ['AcademyDirector', 'GlobalAdmin'] },
+    { id: 'admin', label: '⚙️ Users Administration', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'password', label: '🔐 Security Passwords', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
   ];
 
