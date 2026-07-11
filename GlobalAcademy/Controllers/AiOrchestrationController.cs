@@ -82,12 +82,14 @@ public class AiOrchestrationController : ControllerBase
         }
 
         // 3. CLEAN UP HOUSES: Clear out legacy test rows to avoid constraint noise anomalies
+        string legacyPlayerName = "Flavio Cobolli Test";
+
         var legacyTestQueues = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .ToListAsync(_dbContext.ShadowQueues.Where(sq => sq.AcademyId == currentAcademyId && sq.PlayerName == "Serena Williams (Test)"));
+            .ToListAsync(_dbContext.ShadowQueues.Where(sq => sq.AcademyId == currentAcademyId && sq.PlayerName == legacyPlayerName));
         _dbContext.ShadowQueues.RemoveRange(legacyTestQueues);
 
         var legacyTestBookings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .ToListAsync(_dbContext.Bookings.Where(b => b.AcademyId == currentAcademyId && b.BookedPlayerName == "Serena Williams (Test)"));
+            .ToListAsync(_dbContext.Bookings.Where(b => b.AcademyId == currentAcademyId && b.BookedPlayerName == legacyPlayerName));
         _dbContext.Bookings.RemoveRange(legacyTestBookings);
         await _dbContext.SaveChangesAsync();
 
@@ -96,8 +98,8 @@ public class AiOrchestrationController : ControllerBase
         {
             Id = Guid.NewGuid(),
             AcademyId = currentAcademyId,
-            PlayerName = "Serena Williams (Test)",
-            PreferredWindow = "Anytime tomorrow morning",
+            PlayerName = legacyPlayerName,
+            PreferredWindow = "Anytime tomorrow evening",
             IsResolved = false
         };
 
@@ -108,19 +110,19 @@ public class AiOrchestrationController : ControllerBase
             AcademyId = currentAcademyId,
             CourtId = activeCourt.Id,    // <-- FIXED: Directly populates the structural target relation
             CourtName = activeCourt.Name,
-            SlotTime = DateTime.UtcNow.AddDays(1).Date.AddHours(9), // Tomorrow at 09:00 AM UTC
+            SlotTime = DateTime.UtcNow.AddDays(1).Date.AddHours(19), // Tomorrow at 07:00 PM UTC
             IsAvailableSlot = true,
             
             // --- Arbitrary Values for Operational Completeness ---
             BookingType = "Standby Recovery Sandbox Match",
-            BookedPlayerName = "Serena Williams (Test)"};
+            BookedPlayerName = legacyPlayerName};
 
         _dbContext.ShadowQueues.Add(fakeQueue);
         _dbContext.Bookings.Add(fakeSlot);
         
         await _dbContext.SaveChangesAsync();
 
-        return Ok(new { Message = $"Tenant Sandbox data seeded successfully under Branch '{activeBranch.Name}' and Court '{activeCourt.Name}'!" });
+        return Ok(new { Message = $"Tenant Sandbox data seeded successfully under Branch '{activeBranch.Name}' and Court '{activeCourt.Name}' for {legacyPlayerName}!" });
     }
 
     [HttpPost("ai/match-saver/run")]
@@ -131,4 +133,27 @@ public class AiOrchestrationController : ControllerBase
         var optimizationReport = await saverService.AutopilotOptimizeQueueAsync();
         return Ok(new { Report = optimizationReport });
     }
+
+    [HttpGet("ai/match-saver/queue-list")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    public async Task<IActionResult> GetShadowQueueList()
+    {
+        var currentAcademyId = _tenantProvider.GetTenantId();
+
+        // Utilizing explicit extensions to safely sidestep namespace type collisions
+        var activeQueue = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .ToListAsync(_dbContext.ShadowQueues.Where(sq => sq.AcademyId == currentAcademyId));
+
+        // Project entries cleanly to align formatting properties with the TypeScript type interfaces
+        var resultList = activeQueue.Select(q => new
+        {
+            id = q.Id.ToString(),
+            playerName = q.PlayerName,
+            preferredWindow = q.PreferredWindow,
+            isResolved = q.IsResolved
+        });
+
+        return Ok(resultList);
+    }
+
 }
