@@ -10,16 +10,30 @@ using Xunit;
 using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using GlobalAcademy.Security;
 
 namespace GlobalAcademy.Tests;
 
 public class MatchSaverApiTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly WebApplicationFactory<Program> _factory;
-
     public MatchSaverApiTests(WebApplicationFactory<Program> factory)
     {
-        _factory = factory;
+        // FIX: Force the integration test server to bind straight to your local settings
+        _factory = factory.WithWebHostBuilder(builder =>
+        {
+            // 1. Calculate the exact physical directory path of your main backend project
+            var projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../GlobalAcademy"));
+
+            builder.ConfigureAppConfiguration((context, config) =>
+            {
+                // 2. Clear any default test configurations and inject your real production json file
+                config.SetBasePath(projectDir);
+                config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
+                config.AddEnvironmentVariables(); // Pulls your exported AI__ApiKey safely!
+            });
+        });
     }
 
     [Fact]
@@ -125,53 +139,66 @@ public class MatchSaverApiTests : IClassFixture<WebApplicationFactory<Program>>
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             // Clean house to prevent unique constraint or primary tracking collision blocks
-            var existingQueues = await db.ShadowQueues.Where(q => q.PlayerPhoneNumber == uniqueFromNumber).ToListAsync();
+            var existingQueues = await db.ShadowQueues.IgnoreQueryFilters().Where(q => q.PlayerPhoneNumber == uniqueFromNumber).ToListAsync();
             db.ShadowQueues.RemoveRange(existingQueues);
             await db.SaveChangesAsync();
 
             // STEP A: Fetch the first active available Court row currently stored in your system
-            var liveCourt = await db.Courts.FirstOrDefaultAsync();
+            var liveCourt = await db.Courts.IgnoreQueryFilters().FirstOrDefaultAsync();
             if (liveCourt == null)
             {
                 Assert.Fail("Database Context Prerequisite Failure: Your local PostgreSQL 'Courts' table is empty. Please run your seeder or create a court first.");
             }
 
-            // STEP B: Bind variables straight onto the existing records extracted from your tables
-            Guid targetAcademyId = liveCourt.AcademyId;
-            Guid targetBranchId = liveCourt.BranchId;
-            Guid targetCourtId = liveCourt.Id;
-
-            // 2. INJECT SANBOX WORKFLOW MATRIX ITEMS BOUND TO REAL INFRASTRUCTURE IDs
-            var mockQueueItem = new Models.ShadowQueue
+            using (var transaction = await db.Database.BeginTransactionAsync())
             {
-                Id = Guid.NewGuid(),
-                AcademyId = targetAcademyId,
-                PlayerName = "Serena Williams (Live Test)",
-                PreferredWindow = "Morning Slots",
-                IsResolved = false,
-                PlayerPhoneNumber = uniqueFromNumber, // Target webhook connector
-                ProposedSlotId = proposedSlotId,      // Target solution destination
-                DispatchStatus = "AwaitingReply"
-            };
+                try
+                {
+                    // STEP B: Bind variables straight onto the existing records extracted from your tables
+                    Guid targetAcademyId = liveCourt.AcademyId;
+                    Guid targetBranchId = liveCourt.BranchId;
+                    Guid targetCourtId = liveCourt.Id;
 
-            var mockBookingSlot = new Models.Booking
-            {
-                Id = proposedSlotId,
-                AcademyId = targetAcademyId,
-                BranchId = targetBranchId,   // FIXED: Pointing straight to your existing branch row
-                CourtId = targetCourtId,     // FIXED: Pointing straight to your existing court row
-                CourtName = liveCourt.Name,  // Inheriting actual layout naming
-                SlotTime = DateTime.UtcNow.AddDays(1).Date.AddHours(9),
-                IsAvailableSlot = true,
-                BookingType = "Live Integration Test Row",
-                DurationInMinutes = 60,
-                PricePaid = 0.00m
-            };
+                    // 2. INJECT SANBOX WORKFLOW MATRIX ITEMS BOUND TO REAL INFRASTRUCTURE IDs
+                    var mockQueueItem = new Models.ShadowQueue
+                    {
+                        Id = Guid.NewGuid(),
+                        AcademyId = targetAcademyId,
+                        PlayerName = "Serena Williams (Live Test)",
+                        PreferredWindow = "Morning Slots",
+                        IsResolved = false,
+                        PlayerPhoneNumber = uniqueFromNumber, // Target webhook connector
+                        ProposedSlotId = proposedSlotId,      // Target solution destination
+                        DispatchStatus = "AwaitingReply"
+                    };
 
-            db.ShadowQueues.Add(mockQueueItem);
-            db.Bookings.Add(mockBookingSlot);
-            
-            await db.SaveChangesAsync();
+                    var mockBookingSlot = new Models.Booking
+                    {
+                        Id = proposedSlotId,
+                        AcademyId = targetAcademyId,
+                        BranchId = targetBranchId,   // FIXED: Pointing straight to your existing branch row
+                        CourtId = targetCourtId,     // FIXED: Pointing straight to your existing court row
+                        CourtName = liveCourt.Name,  // Inheriting actual layout naming
+                        SlotTime = DateTime.UtcNow.AddDays(1).Date.AddHours(9),
+                        IsAvailableSlot = true,
+                        BookingType = "Live Integration Test Row",
+                        DurationInMinutes = 60,
+                        PricePaid = 0.00m
+                    };
+
+                    db.ShadowQueues.Add(mockQueueItem);
+                    db.Bookings.Add(mockBookingSlot);
+                    
+                    await db.SaveChangesAsync();
+                    // CRITICAL STEP: Hard commit straight to your physical database storage engine
+                    await transaction.CommitAsync();
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
         }
 
         // 3. ACT: Shoot the simulated incoming SMS payload text message packet into your controller
@@ -193,7 +220,7 @@ public class MatchSaverApiTests : IClassFixture<WebApplicationFactory<Program>>
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var verifiedQueueItem = await db.ShadowQueues.FirstOrDefaultAsync(q => q.PlayerPhoneNumber == uniqueFromNumber);
+            var verifiedQueueItem = await db.ShadowQueues.IgnoreQueryFilters().FirstOrDefaultAsync(q => q.PlayerPhoneNumber == uniqueFromNumber);
             
             Assert.NotNull(verifiedQueueItem);
             // This guarantees your C# database code committed updates live to your tables

@@ -7,6 +7,7 @@ using GlobalAcademy.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
@@ -82,7 +83,7 @@ public class AiOrchestrationController : ControllerBase
         }
 
         // 3. CLEAN UP HOUSES: Clear out legacy test rows to avoid constraint noise anomalies
-        string legacyPlayerName = "Flavio Cobolli Test";
+        string legacyPlayerName = "Paula Tsitsipas Test";
 
         var legacyTestQueues = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
             .ToListAsync(_dbContext.ShadowQueues.Where(sq => sq.AcademyId == currentAcademyId && sq.PlayerName == legacyPlayerName));
@@ -162,7 +163,7 @@ public class AiOrchestrationController : ControllerBase
     {
         // 1. Locate the player's active standby row by checking their registered phone digits
         var activeStandby = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .FirstOrDefaultAsync(_dbContext.ShadowQueues, q => !q.IsResolved && q.PlayerPhoneNumber == model.FromNumber);
+            .FirstOrDefaultAsync(_dbContext.ShadowQueues.IgnoreQueryFilters(), q => !q.IsResolved && q.PlayerPhoneNumber == model.FromNumber);
 
         if (activeStandby == null) 
             return Ok(new { Reply = "No active displaced match records found for this line." });
@@ -176,7 +177,7 @@ public class AiOrchestrationController : ControllerBase
             var targetSlotGuid = activeStandby.ProposedSlotId;
             if (targetSlotGuid == null) return BadRequest("No pending reallocations map detected.");
 
-            var openSlot = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(_dbContext.Bookings, b => b.Id == targetSlotGuid);
+            var openSlot = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(_dbContext.Bookings.IgnoreQueryFilters(), b => b.Id == targetSlotGuid);
             if (openSlot != null && openSlot.IsAvailableSlot)
             {
                 openSlot.IsAvailableSlot = false;
@@ -201,6 +202,104 @@ public class AiOrchestrationController : ControllerBase
         return Ok(new { Reply = "Command unrecognized. Please reply with 'YES' to confirm the new court slot, or 'REFUND' to cancel entirely." });
     }
 
+    [HttpGet("ai/match-saver/active-dispatches")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    public async Task<IActionResult> GetActiveDispatches()
+    {
+        var currentAcademyId = _tenantProvider.GetTenantId();
+
+        // Pull shadow queue entries belonging to this tenant partition
+        var activeDispatches = await _dbContext.ShadowQueues
+            .Where(sq => sq.AcademyId == currentAcademyId && !string.IsNullOrEmpty(sq.PlayerPhoneNumber))
+            .OrderByDescending(sq => sq.Id)
+            .ToListAsync();
+
+        // Project data mappings into clean models matching the frontend's TypeScript structure
+        var telemetryList = activeDispatches.Select(q => {
+            // Find the matching booking details if a proposal has been stamped by the AI
+            var matchingBooking = q.ProposedSlotId.HasValue 
+                ? _dbContext.Bookings.IgnoreQueryFilters().FirstOrDefault(b => b.Id == q.ProposedSlotId.Value)
+                : null;
+
+            return new
+            {
+                queueId = q.Id.ToString(),
+                playerName = q.PlayerName,
+                originalCourtName = "Outdoor Clay Court 2 (Rained Out)",
+                proposedCourtName = matchingBooking?.CourtName ?? "Scanning for Open Courts...",
+                proposedBranchName = matchingBooking != null ? "North Arena Branch" : "Calculating Spatial Radius...",
+                proposedTime = matchingBooking != null ? matchingBooking.SlotTime.ToString("HH:mm") + " UTC" : "Pending...",
+                phoneNumber = q.PlayerPhoneNumber,
+                status = q.DispatchStatus // "AwaitingReply", "Confirmed", "Refunded"
+            };
+        });
+
+        return Ok(telemetryList);
+    }
+    // =========================================================================
+    // POST: SIMULATE A SUDDEN RAIN-OUT CANCELLATION EVENT
+    // =========================================================================
+    [HttpPost("ai/match-saver/simulate-rain-out")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    public async Task<IActionResult> SimulateRainOutEvent()
+    {
+        var currentAcademyId = _tenantProvider.GetTenantId();
+
+        // Find a valid physical court infrastructure link inside this tenant to anchor the test rows
+        var existingCourt = await _dbContext.Courts.FirstOrDefaultAsync(c => c.AcademyId == currentAcademyId);
+        if (existingCourt == null)
+        {
+            return BadRequest("Prerequisite Failure: Please ensure at least one physical Court is configured in your tenant.");
+        }
+
+        // Build a unique scenario record
+        var randomSuffix = new Random().Next(100, 999);
+        var simulatedProposedSlotId = Guid.NewGuid();
+
+        var displacedPlayer = new ShadowQueue
+        {
+            Id = Guid.NewGuid(),
+            AcademyId = currentAcademyId,
+            PlayerName = $"Roger Federer (Sim-{randomSuffix})",
+            PreferredWindow = "Immediate Emergency Reroute",
+            IsResolved = false,
+            PlayerPhoneNumber = $"+1555019{randomSuffix}",
+            ProposedSlotId = simulatedProposedSlotId,
+            DispatchStatus = "AwaitingReply"
+        };
+
+        var openAlternativeSlot = new Booking
+        {
+            Id = simulatedProposedSlotId,
+            AcademyId = currentAcademyId,
+            BranchId = existingCourt.BranchId,
+            CourtId = existingCourt.Id,
+            CourtName = "Indoor Center Show Court 3",
+            SlotTime = DateTime.UtcNow.AddMinutes(45), // Rerouted match start time
+            IsAvailableSlot = true,
+            BookingType = "AI Emergency Recovery Slot",
+            DurationInMinutes = 90,
+            PricePaid = 0.00m
+        };
+
+        using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+        {
+            try
+            {
+                _dbContext.ShadowQueues.Add(displacedPlayer);
+                _dbContext.Bookings.Add(openAlternativeSlot);
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, $"Transaction abort exception: {ex.Message}");
+            }
+        }
+
+        return Ok(new { Message = "Emergency climate displacement event broadcasted. Agent dispatched." });
+    }
     public record SmsReplyPayload(string FromNumber, string Body);
 
 }

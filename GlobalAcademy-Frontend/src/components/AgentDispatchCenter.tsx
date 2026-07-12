@@ -22,7 +22,7 @@ export default function AgentDispatchCenter() {
   const fetchActiveDispatches = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get<DispatchOffer[]>('/auth/ai/match-saver/active-dispatches');
+      const res = await apiClient.get<DispatchOffer[]>('/aiorchestration/ai/match-saver/active-dispatches');
       setOffers(res.data);
     } catch (err) {
       console.error('Failed to resolve active dispatch stream.', err);
@@ -39,7 +39,7 @@ export default function AgentDispatchCenter() {
   const triggerRainCancellationSimulator = async () => {
     setSimulating(true);
     try {
-      await apiClient.post('/auth/ai/match-saver/simulate-rain-out');
+      await apiClient.post('/aiorchestration/ai/match-saver/simulate-rain-out');
       await fetchActiveDispatches();
     } catch (err) {
       alert('Simulation event failed to broadcast.');
@@ -51,7 +51,7 @@ export default function AgentDispatchCenter() {
   // WEBHOOK WORKFLOW ROUTER: Emulate a natural language SMS reply from a player's phone
   const submitSmsReplyBypass = async (phoneNumber: string, textCommand: string) => {
     try {
-      const res = await apiClient.post('/auth/ai/match-saver/sms-webhook', {
+      const res = await apiClient.post('/aiorchestration/ai/match-saver/sms-webhook', {
         fromNumber: phoneNumber,
         body: textCommand
       });
