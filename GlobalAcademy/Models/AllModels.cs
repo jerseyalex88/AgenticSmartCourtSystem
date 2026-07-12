@@ -94,6 +94,7 @@ namespace GlobalAcademy.Models {
     {
         public Guid Id { get; set; }
         public Guid AcademyId { get; set; } // Enforces our global query filter firewall
+        public Guid BranchId { get; set; } 
         public Guid CourtId { get; set; }   // The targeted tennis asset
 
         // Human Context Tracking parameters
@@ -118,6 +119,8 @@ namespace GlobalAcademy.Models {
         public DateTime SlotTime { get; set; }  
         public bool IsAvailableSlot { get; set; } = true;
         public string? BookedPlayerName { get; set; }
+        public int DurationInMinutes { get; set; } = 60;
+        public decimal PricePaid { get; set; } = 0.00m;
     }
     public class ShadowQueue : Security.IMultiTenant
     {
@@ -141,6 +144,9 @@ namespace GlobalAcademy.Models {
         public string PlayerName { get; set; } = string.Empty;     // Ensure this is exactly "PlayerName"
         public string PreferredWindow { get; set; } = string.Empty; // Ensure this is exactly "PreferredWindow"
         public bool IsResolved { get; set; } = false;
+        public string PlayerPhoneNumber { get; set; } = string.Empty;
+        public Guid? ProposedSlotId { get; set; }
+        public string DispatchStatus { get; set; } = "AwaitingReply";
     }
     public class MaintenanceTicket : Security.IMultiTenant
     {

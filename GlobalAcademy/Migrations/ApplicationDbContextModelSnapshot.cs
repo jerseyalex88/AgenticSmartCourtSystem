@@ -64,6 +64,9 @@ namespace GlobalAcademy.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("CourtId")
                         .HasColumnType("uuid");
 
@@ -73,6 +76,9 @@ namespace GlobalAcademy.Migrations
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DurationInMinutes")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("EndTimeUtc")
                         .HasColumnType("timestamp with time zone");
@@ -86,6 +92,9 @@ namespace GlobalAcademy.Migrations
 
                     b.Property<string>("OpponentUserId")
                         .HasColumnType("text");
+
+                    b.Property<decimal>("PricePaid")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime>("SlotTime")
                         .HasColumnType("timestamp with time zone");
@@ -239,6 +248,10 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("AcademyId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("DispatchStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("DisplacedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -265,6 +278,10 @@ namespace GlobalAcademy.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PlayerPhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("PlayerUserId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -272,6 +289,9 @@ namespace GlobalAcademy.Migrations
                     b.Property<string>("PreferredWindow")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("ProposedSlotId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("QueueStatus")
                         .IsRequired()

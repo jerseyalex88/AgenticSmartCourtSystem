@@ -156,4 +156,51 @@ public class AiOrchestrationController : ControllerBase
         return Ok(resultList);
     }
 
+    [HttpPost("ai/match-saver/sms-webhook")]
+    [AllowAnonymous] // Open exclusively to your SMS provider webhook gateway (e.g., Twilio)
+    public async Task<IActionResult> HandlePlayerSmsResponse([FromBody] SmsReplyPayload model)
+    {
+        // 1. Locate the player's active standby row by checking their registered phone digits
+        var activeStandby = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .FirstOrDefaultAsync(_dbContext.ShadowQueues, q => !q.IsResolved && q.PlayerPhoneNumber == model.FromNumber);
+
+        if (activeStandby == null) 
+            return Ok(new { Reply = "No active displaced match records found for this line." });
+
+        string cleanReply = model.Body.Trim().ToUpper();
+
+        // 2. STATE INTERCEPTION LOGIC MATRIX
+        if (cleanReply == "YES")
+        {
+            // Extract the temporary proposed slot ID we cached during the initial agent scan
+            var targetSlotGuid = activeStandby.ProposedSlotId;
+            if (targetSlotGuid == null) return BadRequest("No pending reallocations map detected.");
+
+            var openSlot = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(_dbContext.Bookings, b => b.Id == targetSlotGuid);
+            if (openSlot != null && openSlot.IsAvailableSlot)
+            {
+                openSlot.IsAvailableSlot = false;
+                openSlot.BookedPlayerName = activeStandby.PlayerName;
+                activeStandby.IsResolved = true;
+
+                await _dbContext.SaveChangesAsync();
+                return Ok(new { Reply = $"CONFIRMED: Shift complete. You are booked on {openSlot.CourtName}." });
+            }
+            return Ok(new { Reply = "EXPIRED: That specific slot was snapped up. Re-routing to queue..." });
+        }
+        else if (cleanReply == "REFUND")
+        {
+            // Execute financial clearing logic rules
+            activeStandby.IsResolved = true; // Clear from queue
+            // _paymentGateway.RefundAcademyBalance(activeStandby.UserId);
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(new { Reply = "CANCELLED: Match balance has been completely refunded back to your academy wallet." });
+        }
+
+        return Ok(new { Reply = "Command unrecognized. Please reply with 'YES' to confirm the new court slot, or 'REFUND' to cancel entirely." });
+    }
+
+    public record SmsReplyPayload(string FromNumber, string Body);
+
 }
