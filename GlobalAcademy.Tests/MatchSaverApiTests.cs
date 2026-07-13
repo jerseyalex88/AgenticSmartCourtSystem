@@ -130,7 +130,7 @@ public class MatchSaverApiTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task PlayerSmsWebhook_NaturalLanguageConfirm_UpdatesDatabaseStates()
     {
         var client = _factory.CreateClient();
-        var uniqueFromNumber = "+15550199234";
+        var uniqueFromNumber = "+15550123456";
         Guid proposedSlotId = Guid.NewGuid();
 
         // 1. ARRANGE: Query your active, live local database entities
@@ -164,8 +164,8 @@ public class MatchSaverApiTests : IClassFixture<WebApplicationFactory<Program>>
                     {
                         Id = Guid.NewGuid(),
                         AcademyId = targetAcademyId,
-                        PlayerName = "Serena Williams (Live Test)",
-                        PreferredWindow = "Morning Slots",
+                        PlayerName = "Venus Williams (Live Test)",
+                        PreferredWindow = "Evening Slots",
                         IsResolved = false,
                         PlayerPhoneNumber = uniqueFromNumber, // Target webhook connector
                         ProposedSlotId = proposedSlotId,      // Target solution destination
@@ -227,6 +227,46 @@ public class MatchSaverApiTests : IClassFixture<WebApplicationFactory<Program>>
             Assert.True(verifiedQueueItem.IsResolved, "Database Error: IsResolved data byte did not flip to true inside your physical PostgreSQL table columns.");
         }
     }    
+    [Fact]
+    public async Task PublicPlayerRegistration_ValidAcademyUrlId_SafelyProvisionsMultiTenantPlayer()
+    {
+        var client = _factory.CreateClient();
+        var playerEmail = $"self_registered_player_{Guid.NewGuid()}@wimbledon.com";
+        Guid liveAcademyGuid;
+
+        // 1. ARRANGE: Extract a valid live Academy ID from your existing PostgreSQL database rows
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var liveAcademy = await db.Academies.IgnoreQueryFilters().FirstOrDefaultAsync();
+            
+            if (liveAcademy == null)
+            {
+                // Fallback: Spawn an academy row if the test environment table is temporarily empty
+                liveAcademy = new Models.Academy { Id = Guid.NewGuid(), Name = "Baseline Integration Academy Arena" };
+                db.Academies.Add(liveAcademy);
+                await db.SaveChangesAsync();
+            }
+            liveAcademyGuid = liveAcademy.Id;
+        }
+
+        // 2. ACT: Call the public endpoint, passing the live target AcademyId parameter token
+        var payload = new
+        {
+            Email = playerEmail,
+            Password = "SuperSecurePassword123!",
+            PhoneNumber = "+15550998877",
+            AcademyId = liveAcademyGuid.ToString()
+        };
+
+        var response = await client.PostAsJsonAsync("/api/auth/register-player-public", payload);
+        
+        // 3. ASSERT: Confirm identity tables accepted data layout rows cleanly
+        Assert.True(response.IsSuccessStatusCode, "The public player registration tracking gateway endpoint rejected data payload maps.");
+        
+        var responseData = await response.Content.ReadAsStringAsync();
+        Assert.Contains("initialized cleanly", responseData);
+    }
 
     private async Task<string> GetTestJwtTokenAsync(HttpClient client)
     {

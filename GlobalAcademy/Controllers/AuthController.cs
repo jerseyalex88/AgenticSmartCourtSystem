@@ -166,7 +166,6 @@ public class AuthController : ControllerBase
 
         return Unauthorized("Cryptographic handshake failed: Invalid email or password credentials.");
     }
-
     [HttpPost("update-user-role")]
     [Authorize(Roles = "AcademyDirector,GlobalAdmin")] // Lock down strictly to executives
     public async Task<IActionResult> UpdateUserRole([FromBody] UpdateUserRoleDto model)
@@ -196,7 +195,6 @@ public class AuthController : ControllerBase
 
         return Ok(new { Message = $"Account authorization elevated successfully. {model.Email} is now assigned as {model.NewRole}." });
     }
-
     // =========================================================================
     // FETCH ALL USERS BELONGING TO THE ACTIVE MULTI-TENANT PARTITION
     // =========================================================================
@@ -231,7 +229,6 @@ public class AuthController : ControllerBase
 
         return Ok(tenantFilteredUsers);
     }
-
     // =========================================================================
     // PROVISION A FRESH MULTI-TENANT CONSCIOUS USER ACCOUNT LIFE-CYCLE
     // =========================================================================
@@ -269,7 +266,6 @@ public class AuthController : ControllerBase
             phoneNumber = model.PhoneNumber
         });
     }
-
     // =========================================================================
     // UPDATE EXISTING IDENTITY USER PROFILE METADATA & ROLES (PUT)
     // =========================================================================
@@ -310,7 +306,6 @@ public class AuthController : ControllerBase
 
         return Ok(new { Message = "User profile row modified successfully." });
     }
-
     // =========================================================================
     // PERMANENTLY PURGE USER IDENTITY FROM THE TENANT DATABASE MIGRATION (DELETE)
     // =========================================================================
@@ -333,6 +328,55 @@ public class AuthController : ControllerBase
 
         return Ok(new { Message = "Account record wiped cleanly." });
     }
+    [HttpPost("register-player-public")]
+    [AllowAnonymous] // Open publicly to the open internet so new players can reach it!
+    public async Task<IActionResult> RegisterPlayerPublicly([FromBody] PublicPlayerRegisterDto model)
+    {
+        if (!Guid.TryParse(model.AcademyId, out Guid academyGuid))
+        {
+            return BadRequest(new { Message = "Identity Exception: The targeted Academy invitation link format is invalid." });
+        }
+
+        // 1. SECURITY CHECKS: Ensure this target Academy actually exists in our system
+        var academyExists = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+        .AnyAsync(_dbContext.Academies, a => a.Id == academyGuid);
+
+        if (!academyExists)
+        {
+            return NotFound(new { Message = "Security Obstacle: The referenced tenant academy system branch does not exist." });
+        }
+
+        // 2. CHECK FOR EMAIL COLLISION
+        var existingUser = await _userManager.FindByEmailAsync(model.Email);
+        if (existingUser != null)
+        {
+            return BadRequest(new { Message = "Identity Exception: Account email is already registered to a network tenant." });
+        }
+
+        // 3. PROVISION IDENTITY USER SCHEMAS
+        var freshUser = new IdentityUser
+        {
+            UserName = model.Email,
+            Email = model.Email,
+            PhoneNumber = model.PhoneNumber,
+            EmailConfirmed = true // Automatically clear authorization flags for rapid prototyping entry
+        };
+
+        var createResult = await _userManager.CreateAsync(freshUser, model.Password);
+        if (!createResult.Succeeded)
+        {
+            return BadRequest(new { Message = createResult.Errors.FirstOrDefault()?.Description ?? "Failed to compile password security constraints." });
+        }
+
+        // 4. MULTI-TENANT LOCKDOWN EXTRACTION
+        // We bind the incoming URL AcademyId directly to this player profile passport.
+        // This locks them completely inside that tenant boundary!
+        await _userManager.AddToRoleAsync(freshUser, "Player");
+        await _userManager.AddClaimAsync(freshUser, new Claim("AcademyId", academyGuid.ToString()));
+        await _userManager.AddClaimAsync(freshUser, new Claim(ClaimTypes.Role, "Player"));
+
+        return Ok(new { Message = "Player account initialized cleanly." });
+    }
 }
 
 public record RegisterAcademyDto(string Email, string Password, string AcademyName);
@@ -340,3 +384,5 @@ public record LoginDto(string Email, string Password);
 public record UpdateUserRoleDto(string Email, string NewRole);
 public record ProvisionUserDto(string Email, string Password, string Role, string PhoneNumber);
 public record UpdateUserPayloadDto(string Email, string Role, string PhoneNumber, bool IsActive);
+// Data Transfer Object definition model record
+public record PublicPlayerRegisterDto(string Email, string Password, string PhoneNumber, string AcademyId);

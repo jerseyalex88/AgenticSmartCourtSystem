@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
+import { useAlert } from '../context/AlertContext'; 
 
 interface DispatchOffer {
   queueId: string;
@@ -17,6 +18,8 @@ export default function AgentDispatchCenter() {
   const [loading, setLoading] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const [smsInput, setSmsInput] = useState<{ [key: string]: string }>({});
+
+  const { showAlert } = useAlert();
 
   // SYNC STREAM: Pull live active outbound dispatch contracts from the multi-tenant partition
   const fetchActiveDispatches = async () => {
@@ -41,8 +44,17 @@ export default function AgentDispatchCenter() {
     try {
       await apiClient.post('/aiorchestration/ai/match-saver/simulate-rain-out');
       await fetchActiveDispatches();
+      showAlert({
+        title: 'Emergency Broadcast Active',
+        message: 'A 30-minute climate rain-out cancellation has been successfully broadcast across the network. Rerouting agents activated.',
+        type: 'warning'
+      });
     } catch (err) {
-      alert('Simulation event failed to broadcast.');
+      showAlert({
+        title: 'Simulation Failure',
+        message: 'The execution layer was unable to initialize mock precipitation matrices. Verify pipeline database pools.',
+        type: 'error'
+      });
     } finally {
       setSimulating(false);
     }
@@ -55,7 +67,11 @@ export default function AgentDispatchCenter() {
         fromNumber: phoneNumber,
         body: textCommand
       });
-      alert(`💬 Network Operator Outbound Response:\n\n"${res.data.reply}"`);
+      showAlert({
+        title: 'SMS Operator Intercept Gateway',
+        message: res.data.reply,
+        type: 'sms'
+      });
       await fetchActiveDispatches(); // Sync mutated database fields instantly
     } catch (err) {
       console.error(err);

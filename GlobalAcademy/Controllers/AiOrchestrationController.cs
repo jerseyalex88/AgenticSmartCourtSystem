@@ -162,11 +162,18 @@ public class AiOrchestrationController : ControllerBase
     public async Task<IActionResult> HandlePlayerSmsResponse([FromBody] SmsReplyPayload model)
     {
         // 1. Locate the player's active standby row by checking their registered phone digits
-        var activeStandby = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .FirstOrDefaultAsync(_dbContext.ShadowQueues.IgnoreQueryFilters(), q => !q.IsResolved && q.PlayerPhoneNumber == model.FromNumber);
+        // FIX: Using Contains and stripping out symbols to prevent local database character padding anomalies
+        string cleanInputPhone = model.FromNumber.Replace("+", "").Trim();
+
+        var activeStandby = await _dbContext.ShadowQueues.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(q => !q.IsResolved && 
+                (q.PlayerPhoneNumber.Contains(cleanInputPhone) || cleanInputPhone.Contains(q.PlayerPhoneNumber.Replace("+","").Trim())));
+
+        // var activeStandby = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+        //     .FirstOrDefaultAsync(_dbContext.ShadowQueues.IgnoreQueryFilters(), q => !q.IsResolved && q.PlayerPhoneNumber == model.FromNumber);
 
         if (activeStandby == null) 
-            return Ok(new { Reply = "No active displaced match records found for this line." });
+            return Ok(new { Reply = $"No active displaced match records found for this line '{cleanInputPhone}'." });
 
         string cleanReply = model.Body.Trim().ToUpper();
 
