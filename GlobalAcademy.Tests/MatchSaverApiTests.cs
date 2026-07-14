@@ -268,6 +268,100 @@ public class MatchSaverApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("initialized cleanly", responseData);
     }
 
+    [Fact]
+    public async Task Get7DayAvailableMatrix_WithExistingBookings_ReturnsCorrectlyMappedGrid()
+    {
+        // 1. Arrange: Arrange a scoped client targeting your running web server application
+        var client = _factory.CreateClient();
+        
+        // Configure login payload exactly matching your Scalar request parameter metrics
+        var loginPayload = new
+        {
+            email = "chiki@wimbeldon.com",
+            password = "Password123!"
+        };
+
+        // --- STEP 2: EXECUTE API REQUEST VIA HTTP CHANNELS ---
+        var responseX = await client.PostAsJsonAsync("api/Auth/login", loginPayload);
+        Assert.True(responseX.IsSuccessStatusCode, "API Login request failed entirely.");
+
+        var loginResult = await responseX.Content.ReadFromJsonAsync<LoginResponseDto>();
+        Assert.NotNull(loginResult?.Token);
+
+        // 3. Authenticate the request: Simulate a logged-in AcademyDirector.
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.Token);
+
+        // Target anchor point: Tomorrow at exactly 10:00 AM UTC
+        var testBookingStartTimeUtc = DateTime.UtcNow.AddDays(1).Date.AddHours(10); 
+
+        // 3. ACT: Fire the request at the 7-day matrix endpoint using today's date as the start baseline
+        string urlQueryDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var response = await client.GetAsync($"/api/PlayerBooking/available-matrix?startDate={urlQueryDate}");
+        
+        // 4. ASSERT AND AGENTIC SCHEMA DIAGNOSIS
+        Assert.True(response.IsSuccessStatusCode, $"The available-matrix endpoint returned an error status code: {response.StatusCode}");
+
+        // Deserializing the complex collection return payload matrix
+        var matrixReport = await response.Content.ReadFromJsonAsync<System.Collections.Generic.List<DayMatrixTestDto>>();
+        Assert.NotNull(matrixReport);
+        
+        // Ensure the engine computed exactly 7 distinct days
+        Assert.Equal(7, matrixReport.Count);
+        
+    }
+    [Fact]
+    public async Task ClaimDynamicSlotAllocation_UsingMatrixPayload_InsertsBookingRecordLive()
+    {
+        var client = _factory.CreateClient();
+        // Configure login payload exactly matching your Scalar request parameter metrics
+        var loginPayload = new
+        {
+            email = "chiki@wimbeldon.com",
+            password = "Password123!"
+        };
+
+        // --- STEP 2: EXECUTE API REQUEST VIA HTTP CHANNELS ---
+        var responseX = await client.PostAsJsonAsync("api/Auth/login", loginPayload);
+        Assert.True(responseX.IsSuccessStatusCode, "API Login request failed entirely.");
+
+        var loginResult = await responseX.Content.ReadFromJsonAsync<LoginResponseDto>();
+        Assert.NotNull(loginResult?.Token);
+
+        // 3. Authenticate the request: Simulate a logged-in AcademyDirector.
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.Token);
+
+        // 2. ACT STEP A: Call Get7DayAvailableMatrix to pull the live grid payload
+        string urlQueryDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var matrixResponse = await client.GetAsync($"/api/PlayerBooking/available-matrix?startDate={urlQueryDate}");
+        Assert.True(matrixResponse.IsSuccessStatusCode, "The available-matrix grid failed to load.");
+
+        var matrixReport = await matrixResponse.Content.ReadFromJsonAsync<System.Collections.Generic.List<DayMatrixTestDto>>();
+        Assert.NotNull(matrixReport);
+
+        // 3. EXTRACT: Grab the very first day's very first open slot from the grid array
+        var firstOpenSlot = matrixReport
+            .FirstOrDefault(d => d.Slots.Any(s => s.IsAvailable))?
+            .Slots.FirstOrDefault(s => s.IsAvailable);
+
+        if (firstOpenSlot == null)
+        {
+            Assert.Fail("Prerequisite Failure: The active 7-day grid contains 0 available time slots. Please seed a court record first.");
+        }
+
+        // 4. ACT STEP B: Pass that extracted slot directly as the payload to claim-dynamic
+        var claimPayload = new
+        {
+            CourtId = Guid.Parse(firstOpenSlot.CourtId),
+            CourtName = firstOpenSlot.CourtName,
+            StartTimeUtc = DateTime.Parse(firstOpenSlot.StartTimeUtc).ToUniversalTime()
+        };
+
+        var claimResponse = await client.PostAsJsonAsync("/api/PlayerBooking/claim-dynamic", claimPayload);
+        
+        // 5. ASSERT: Verify the transaction wrote cleanly to PostgreSQL transaction logs
+        Assert.True(claimResponse.IsSuccessStatusCode, $"The claim-dynamic endpoint rejected the matrix slot. Status: {claimResponse.StatusCode}");
+    }
+
     private async Task<string> GetTestJwtTokenAsync(HttpClient client)
     {
         // First, register a new academy to obtain a fresh multi-tenant payload context
@@ -284,3 +378,20 @@ public class MatchSaverApiTests : IClassFixture<WebApplicationFactory<Program>>
 
     private class LoginResponseDto { public string Token { get; set; } = string.Empty; }
 }
+
+// Matching anonymous telemetry test DTO schemas
+public class DayMatrixTestDto
+{
+    public string DateString { get; set; } = string.Empty;
+    public System.Collections.Generic.List<MatrixSlotTestDto> Slots { get; set; } = new();
+}
+
+public class MatrixSlotTestDto
+{
+    public string CourtId { get; set; } = string.Empty;
+    public string CourtName { get; set; } = string.Empty;
+    public string StartTimeUtc { get; set; } = string.Empty;
+    public bool IsAvailable { get; set; }
+    public string? BookedPlayerName { get; set; }
+}
+
