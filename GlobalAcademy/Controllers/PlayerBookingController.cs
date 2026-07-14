@@ -12,7 +12,7 @@ using GlobalAcademy.Security;
 namespace GlobalAcademy.Controllers;
 
 [ApiController]
-[Route("api/player/bookings")]
+[Route("api/[controller]")]
 [Authorize(Roles = "Player,AcademyDirector,GlobalAdmin")] // Open to core authenticated users
 public class PlayerBookingController : ControllerBase
 {

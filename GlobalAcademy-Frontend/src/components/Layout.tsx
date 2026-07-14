@@ -93,6 +93,35 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
             <span className="h-2 w-2 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-pulse" />
             <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Multi-Tenant Firewall Active</span>
           </div>
+          {user && (
+            <div className="flex items-center gap-4 bg-slate-950/60 border border-slate-800/80 pl-3 pr-2 py-1.5 rounded-xl transition hover:border-slate-700">
+              
+              {/* Account details wrapper */}
+              <div className="text-right hidden sm:block">
+                <div className="font-black text-slate-300 tracking-wide max-w-[275px] truncate">
+                  {user.email || user.userName}
+                </div>
+                <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5 flex items-center justify-end gap-1">
+                  <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
+                  {user.role || 'Player'}
+                </div>
+              </div>
+
+              {/* Explicit Separator vertical divider */}
+              <div className="w-px h-6 bg-slate-800 hidden sm:block"></div>
+
+              {/* HIGH UTILITY DESTRUCTIVE DISCONNECT ACTION BUTTON */}
+              <button
+                onClick={clearSession}
+                className="bg-slate-900 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-900 text-slate-400 hover:text-rose-400 font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider text-[9px] transition-all duration-200 flex items-center gap-1"
+                title="Terminate Session"
+              >
+                <span>🔒</span>
+                <span className="hidden xs:inline">Sign Out</span>
+              </button>
+
+            </div>
+          )}
         </header>
 
         <main className="flex-1 p-8 overflow-y-auto">

@@ -5,6 +5,7 @@ interface UserProfile {
   email: string;
   role: string;
   academyId: string;
+  userName: string;
 }
 
 interface AuthContextType {
@@ -37,15 +38,16 @@ function decodeJwtClaims(token: string): UserProfile {
     const email = parsed["http://xmlsoap.org"] || parsed.sub || "";
     const role = parsed["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || parsed.role || "Player";
     const academyId = parsed.AcademyId || parsed.academyId || "";
+    const userName = parsed["http://xmlsoap.org"] || parsed.unique_name || "";
 
     // console.log("==================================================");
     // console.log(`[DECODING JWT] Extracted Role Claim Value: "${role}"`);
     // console.log("==================================================");
 
-    return { email, role, academyId };
+    return { email, role, academyId, userName };
   } catch (err) {
     console.error("Failed to parse cryptographic JWT token structure claims:", err);
-    return { email: "", role: "Player", academyId: "" };
+    return { email: "", role: "Player", academyId: "", userName: "" };
   }
 }
 

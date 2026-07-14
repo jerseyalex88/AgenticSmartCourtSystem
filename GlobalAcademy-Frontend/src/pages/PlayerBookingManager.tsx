@@ -27,8 +27,8 @@ export function PlayerBookingManager() {
     setLoading(true);
     try {
       // Backend routes look up identity context implicitly using encrypted JWT claims tokens
-      const bookingsRes = await apiClient.get<ActiveBooking[]>('/player/bookings/my-reservations');
-      const standbyRes = await apiClient.get<PendingStandby[]>('/player/bookings/my-standby');
+      const bookingsRes = await apiClient.get<ActiveBooking[]>('/PlayerBooking/my-reservations');
+      const standbyRes = await apiClient.get<PendingStandby[]>('/PlayerBooking/my-standby');
       
       setMyBookings(bookingsRes.data);
       setMyStandby(standbyRes.data);
