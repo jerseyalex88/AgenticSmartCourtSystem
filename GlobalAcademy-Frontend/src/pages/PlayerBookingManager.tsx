@@ -6,7 +6,8 @@ interface ActiveBooking {
   id: string;
   courtName: string;
   branchName: string;
-  slotTime: string;
+  //slotTime: string;
+  slotTimeDisplay: string; // <-- ADD THIS LINE MATCHING THE C# PAYLOAD
   durationMinutes: number;
 }
 
@@ -21,6 +22,9 @@ interface MatrixSlot {
   courtName: string;
   startTimeUtc: string;
   endTimeUtc: string;
+// ADD THESE TWO PROPERTIES
+  branchLocalTimeDisplay: string; // Stamped as "02:00 PM" format strings
+  branchLocalDateDisplay: string; // Stamped as "Jul 16" format strings
   isAvailable: boolean;
   bookedPlayerName: string | null;
 }
@@ -138,7 +142,7 @@ export function PlayerBookingManager() {
                     <div key={b.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition">
                       <div>
                         <div className="text-xs font-black text-slate-100 uppercase tracking-wide">{b.courtName}</div>
-                        <div className="text-slate-500 mt-1 text-[11px]">⏱️ Schedule: {new Date(b.slotTime).toLocaleString()}</div>
+                        <div className="text-slate-500 mt-1 text-[11px]">⏱️ Schedule: {b.slotTimeDisplay}</div>
                       </div>
                       <button onClick={() => handleReleaseSlotClick(b.id, b.courtName)} className="mt-4 w-full bg-slate-900 border border-slate-800 hover:bg-rose-950/30 text-rose-400 font-bold py-1.5 rounded-lg uppercase text-[10px] transition">❌ Cancel Slot</button>
                     </div>
@@ -225,14 +229,15 @@ export function PlayerBookingManager() {
                       <div className={`font-black tracking-wide ${slot.isAvailable ? 'text-slate-200 group-hover:text-emerald-400' : 'text-slate-600'}`}>
                         {slot.courtName}
                       </div>
+                      {/* Change from your previous new Date() local clock lookup row */}
                       <div className="text-[11px] mt-1 text-slate-400 flex items-center gap-1">
                         <span>🕒</span>
                         <span className="font-bold text-slate-300">
-                          {new Date(slot.startTimeUtc).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          {slot.branchLocalDateDisplay}
                         </span>
                         <span className="text-slate-500">@</span>
                         <span>
-                          {new Date(slot.startTimeUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {slot.branchLocalTimeDisplay}
                         </span>
                       </div>
                     </div>

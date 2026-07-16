@@ -65,21 +65,34 @@ public class PlayerBookingController : ControllerBase
             return Unauthorized(new { Message = "Security Obstacle: User identity claim string (id) was not detected inside the active session token." });
         }
         
-        // Pull active occupant rows matching this specific player username signature string
+        // Pull active bookings alongside their physical parent court and branch relationship tracking paths
         var userBookings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .ToListAsync(_dbContext.Bookings.Where(b => 
-                b.AcademyId == currentAcademyId && 
-                b.BookedByUserId == bookedByUserIdGuid.ToString() &&
-                b.BookedPlayerName == currentUserName && 
-                !b.IsAvailableSlot));
+            .ToListAsync(_dbContext.Bookings
+                .Include(b => b.Court)
+                .ThenInclude(c => c.Branch) // Deep relationship loading chain
+                .Where(b => b.AcademyId == currentAcademyId && b.BookedPlayerName == currentUserName && !b.IsAvailableSlot));
 
-        var payload = userBookings.Select(b => new
-        {
-            id = b.Id.ToString(),
-            courtName = b.CourtName,
-            branchName = "Main Central Arena Complex", 
-            slotTime = b.StartTimeUtc, // Anchored to our precise timestamps
-            durationMinutes = b.DurationInMinutes
+        var payload = userBookings.Select(b => {
+            // Dynamically resolve timezone parameters by traversing the booking entity relation links
+            string targetTimeZoneId = b.Court?.Branch?.TimeZoneId ?? "UTC";
+            
+            TimeZoneInfo branchTimeZone;
+            try {
+                branchTimeZone = TimeZoneInfo.FindSystemTimeZoneById(targetTimeZoneId);
+            } catch {
+                branchTimeZone = TimeZoneInfo.Utc;
+            }
+
+            DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(b.StartTimeUtc, branchTimeZone);
+            
+            return new
+            {
+                id = b.Id.ToString(),
+                courtName = b.CourtName,
+                branchName = b.Court?.Branch?.Name ?? "Main Campus Area Hub", 
+                slotTimeDisplay = localTime.ToString("MMM dd, yyyy 'at' hh:mm tt"), 
+                durationMinutes = b.DurationInMinutes
+            };
         });
 
         return Ok(payload);
@@ -125,9 +138,13 @@ public class PlayerBookingController : ControllerBase
         var rangeStartUtc = DateTime.SpecifyKind(parsedStart.Date, DateTimeKind.Utc);
         var rangeEndUtc = DateTime.SpecifyKind(rangeStartUtc.AddDays(7), DateTimeKind.Utc);
 
-        // A. Fetch all active courts belonging strictly to this tenant partition
+        // A. RELATIONAL FIX: Eager-load the court's exact parent branch configuration!
+        // This guarantees Court A maps to Branch A's timezone rules, and Court B maps to Branch B's.
         var courts = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .ToListAsync(_dbContext.Courts.Where(c => c.AcademyId == currentAcademyId));
+            .ToListAsync(_dbContext.Courts
+                .Include(c => c.Branch) // Assuming your Court model has a public virtual Branch navigation property
+                .Where(c => c.AcademyId == currentAcademyId)
+                .OrderBy(c => c.Name));
 
         // B. Fetch all live booked event rows committed for the 7-day timeframe segment
         var overlappingBookings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
@@ -142,21 +159,47 @@ public class PlayerBookingController : ControllerBase
 
         var matrixReport = new System.Collections.Generic.List<object>();
 
-        // Core 3-tier looping system generating: Day -> Hour -> Court metrics mappings
+        // Core 3-tier looping system: Day -> Hour -> Court
         for (int dayOffset = 0; dayOffset < 7; dayOffset++)
         {
             var targetDay = rangeStartUtc.AddDays(dayOffset);
             var slotsInDay = new System.Collections.Generic.List<object>();
 
+            // If courts span multiple timezones, we establish a stable neutral UTC anchor for the header date
+            // or default to the first court's localized calendar string for the tab layout
+            var localHeaderDayString = targetDay.ToString("yyyy-MM-dd");
+            bool headerSet = false;
+
             for (int hour = startHour; hour < endHour; hour++)
             {
-                // FIX: Ensure the loop tokens match the exact Utc Kind constraint expected by Npgsql
                 var slotStartUtc = DateTime.SpecifyKind(targetDay.AddHours(hour), DateTimeKind.Utc);
-                var slotEndUtc = DateTime.SpecifyKind(slotStartUtc.AddHours(1), DateTimeKind.Utc);
+                var slotEndUtc = slotStartUtc.AddHours(1);
 
                 foreach (var court in courts)
                 {
-                    // Check if an event row matches this exact spatial-temporal tracking cell
+                    // DYNAMIC TIMEZONE RESOLUTION: Extract the specific zone code for THIS court's parent branch [1]
+                    string courtTimeZoneId = court.Branch?.TimeZoneId ?? "UTC";
+                    
+                    TimeZoneInfo branchTimeZone;
+                    try
+                    {
+                        branchTimeZone = TimeZoneInfo.FindSystemTimeZoneById(courtTimeZoneId);
+                    }
+                    catch
+                    {
+                        branchTimeZone = TimeZoneInfo.Utc; // Safe cross-platform fallback barrier
+                    }
+
+                    // TRANSLATION LAYER: Convert the UTC window to this specific court campus' local time
+                    DateTime branchLocalStart = TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, branchTimeZone);
+
+                    // Dynamically align the horizontal tab date text to reflect the primary court's location
+                    if (!headerSet)
+                    {
+                        localHeaderDayString = branchLocalStart.ToString("yyyy-MM-dd");
+                        headerSet = true;
+                    }
+
                     var match = overlappingBookings.FirstOrDefault(b => 
                         b.CourtId == court.Id && b.StartTimeUtc == slotStartUtc);
 
@@ -164,9 +207,14 @@ public class PlayerBookingController : ControllerBase
                     {
                         courtId = court.Id.ToString(),
                         courtName = court.Name,
-                        startTimeUtc = slotStartUtc,
+                        startTimeUtc = slotStartUtc, 
                         endTimeUtc = slotEndUtc,
-                        isAvailable = (match == null), // If no row exists, it is VACANT!
+                        
+                        // INDEPENDENT MAPPING DISPLAY TEXT
+                        branchLocalTimeDisplay = branchLocalStart.ToString("hh:mm tt"), // e.g., "02:00 PM"
+                        branchLocalDateDisplay = branchLocalStart.ToString("MMM dd"),    // e.g., "Jul 16"
+                        
+                        isAvailable = (match == null),
                         bookedPlayerName = match?.BookedPlayerName
                     });
                 }
@@ -174,7 +222,7 @@ public class PlayerBookingController : ControllerBase
 
             matrixReport.Add(new
             {
-                dateString = targetDay.ToString("yyyy-MM-dd"),
+                dateString = localHeaderDayString,
                 slots = slotsInDay
             });
         }
