@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/apiClient';
+import ConversationalLogin from '../components/ConversationalLogin'; 
 
 export default function Login() {
   const { saveSession } = useAuth();
@@ -10,6 +11,13 @@ export default function Login() {
   // const [password, setPassword] = useState('LondonPass123!');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  // ADD MODE TRACKING STATE HOOK
+  const [isConversationalMode, setIsConversationalMode] = useState(false)
+  
+  // INTERCEPT VIEW SWITCH ROUTER CORES
+  if (isConversationalMode) {
+    return <ConversationalLogin onToggleMode={() => setIsConversationalMode(false)} />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +65,14 @@ export default function Login() {
             <span className="flex-1 leading-normal">{errorMessage}</span>
           </div>
         )}
+
+        <button 
+          type="button" 
+          onClick={() => setIsConversationalMode(true)}
+          className="text-emerald-400 font-bold underline decoration-dotted text-[10px]"
+        >
+          🤖 Try Agentic Conversational Interface
+        </button>
 
         {/* Secure Credential Input Form Container */}
         <form onSubmit={handleSubmit} className="space-y-4">

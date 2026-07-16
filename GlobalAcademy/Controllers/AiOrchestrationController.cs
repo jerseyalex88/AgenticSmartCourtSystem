@@ -19,6 +19,7 @@ public class AiOrchestrationController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly SignInManager<IdentityUser> _signInManager;
     private readonly IConfiguration _configuration;
     private readonly ITenantProvider _tenantProvider;
     private readonly Data.ApplicationDbContext _dbContext;
@@ -27,13 +28,15 @@ public class AiOrchestrationController : ControllerBase
         RoleManager<IdentityRole> roleManager, 
         IConfiguration configuration,
         ITenantProvider tenantProvider,
-        Data.ApplicationDbContext dbContext)
+        Data.ApplicationDbContext dbContext,
+        SignInManager<IdentityUser> signInManager)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _configuration = configuration;
         _tenantProvider = tenantProvider;
         _dbContext = dbContext;
+        _signInManager = signInManager;
     }
 
     [HttpPost("ai/match-saver/seed-test-data")]
@@ -307,6 +310,143 @@ public class AiOrchestrationController : ControllerBase
 
         return Ok(new { Message = "Emergency climate displacement event broadcasted. Agent dispatched." });
     }
+    // =========================================================================
+    // POST: CONVERSATIONAL NATURAL LANGUAGE AUTHENTICATION GATEWAY
+    // =========================================================================
+    [HttpPost("ai/conversational-auth")]
+    [AllowAnonymous] // Open publicly so unauthenticated users can chat to log in!
+    public async Task<IActionResult> ConversationalAuth([FromBody] ConversationalAuthDto payload)
+    {
+        string userInput = payload.UserInput.Trim();
+        string currentStage = payload.CurrentStage; // 'AwaitingIntent', 'AwaitingEmail', 'AwaitingPassword'
+        string cachedEmail = payload.CachedEmail ?? "";
+
+        // Fallback responses using universal, accessible language
+        if (currentStage == "AwaitingIntent")
+        {
+            bool wantsToLogin = userInput.Contains("log", StringComparison.OrdinalIgnoreCase) || 
+                                userInput.Contains("sign", StringComparison.OrdinalIgnoreCase) ||
+                                userInput.Contains("in", StringComparison.OrdinalIgnoreCase);
+
+            if (wantsToLogin)
+            {
+                return Ok(new ConversationalResponseDto(
+                    NextStage: "AwaitingEmail",
+                    CachedEmail: "",
+                    AgentResponse: "🔵 System Access Initiated. Affirmative. Please provide your registered account email address:",
+                    Token: null
+                ));
+            }
+
+            return Ok(new ConversationalResponseDto(
+                NextStage: "AwaitingIntent",
+                CachedEmail: "",
+                AgentResponse: "❓ Intent unverified. Try typing 'I want to log in' or 'Sign me in' to activate the access lifecycle protocol.",
+                Token: null
+            ));
+        }
+
+        if (currentStage == "AwaitingEmail")
+        {
+            // Basic structural check for email formatting validation
+            if (!userInput.Contains("@") || !userInput.Contains("."))
+            {
+                return Ok(new ConversationalResponseDto(
+                    NextStage: "AwaitingEmail",
+                    CachedEmail: "",
+                    AgentResponse: "⚠️ Format Exception: That string does not appear to follow standard email structures. Please re-enter a valid email address:",
+                    Token: null
+                ));
+            }
+
+            // Email validated, advance the state machine to password mode
+            return Ok(new ConversationalResponseDto(
+                NextStage: "AwaitingPassword",
+                CachedEmail: userInput, // Cache the email safely in the payload context wrapper
+                AgentResponse: "🔒 Email captured safely. Now, provide your secure account password. (Note: Input field characters are fully masked for security):",
+                Token: null
+            ));
+        }
+
+        if (currentStage == "AwaitingPassword")
+        {
+            try
+            {
+                // 1. DATABASE RESOLUTION: Look up the real account credentials inside your identity tables
+                var user = await _userManager.FindByEmailAsync(cachedEmail);
+                if (user == null)
+                {
+                    return BadRequest(new { Message = "Authentication Denied: Account coordinates do not match our system files." });
+                }
+
+                // 2. PASSWORD VALIDATION GATE: Verify the secure string inputs match PostgreSQL hashes
+                var result = await _signInManager.CheckPasswordSignInAsync(user, userInput, false);
+                if (!result.Succeeded)
+                {
+                    return BadRequest(new { Message = "Authentication Denied: Secure password record verification failed." });
+                }
+
+                // 3. CLAIMS PACKAGING PERIMETER ASSEMBLY: Replicate the exact claims dictionary from AuthController.cs
+                var userRoles = await _userManager.GetRolesAsync(user);
+                var userClaims = await _userManager.GetClaimsAsync(user);
+
+                var authClaims = new System.Collections.Generic.List<System.Security.Claims.Claim>
+                {
+                    new System.Security.Claims.Claim("http://xmlsoap.org", user.UserName!),
+                    new System.Security.Claims.Claim("jti", Guid.NewGuid().ToString()),
+                    new System.Security.Claims.Claim("nameidentifier", user.Id)
+                };
+
+                // Add role-based access attributes dynamically
+                foreach (var role in userRoles)
+                {
+                    authClaims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role));
+                }
+
+                // Add tenant isolation shields
+                foreach (var claim in userClaims)
+            {
+                if (claim.Type != ClaimTypes.Role && claim.Type != "role")
+                {
+                    authClaims.Add(claim);
+                }
+            }
+
+                // 4. GENERATE CRYO-SECURE JWT TOKEN SIGNATURE: Use your live application configuration keys
+                var jwtSettings = _configuration.GetSection("JwtSettings");
+                var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]!));
+
+                var token = new JwtSecurityToken(
+                    issuer: jwtSettings["Issuer"],
+                    audience: jwtSettings["Audience"],
+                    expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryInMinutes"]!)),
+                    claims: authClaims,
+                    signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                );
+
+                // Determine user's core system security role string to feed frontend router toggles
+                string primaryRole = userRoles.FirstOrDefault() ?? "Player";
+
+                // Return the true, cryptographically valid token envelope contract directly to React!
+                return Ok(new ConversationalResponseDto(
+                    NextStage: "Completed",
+                    CachedEmail: cachedEmail,
+                    AgentResponse: "Core authorization protocols confirmed. Opening full workspace layout matrices...",
+                    Token: new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token)
+                ));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = $"Gateway Handshake Disconnection: {ex.Message}" });
+            }
+        }
+
+        return Unauthorized("Cryptographic handshake failed: Invalid email or password credentials.");
+    }
+
+    // Explicit data transfer records for conversational identity handling
+    public record ConversationalAuthDto(string UserInput, string CurrentStage, string? CachedEmail);
+    public record ConversationalResponseDto(string NextStage, string CachedEmail, string AgentResponse, string? Token);
     public record SmsReplyPayload(string FromNumber, string Body);
 
 }

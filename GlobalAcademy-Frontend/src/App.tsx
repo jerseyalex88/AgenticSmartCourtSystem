@@ -20,15 +20,20 @@ export default function App() {
   const isPlayerEntrancePath = window.location.pathname === '/player-gateway';
 
   // DYNAMIC INITIALIZATION HOOK: Automatically direct players to their booking hub!
+  // Inside App.tsx - ensure this hook waits until the Auth state is completely stabilized
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // Assuming your user profile object exposes their database system role string
+    if (!loading && isAuthenticated && user) {
+      console.log("User authenticated:", user);
       const userRole = user.role || 'Player'; 
       if (userRole === 'Player') {
-        setActiveTab('bookings'); // Initialize athletes straight onto their booking passport page view
+        console.log("Redirecting player to booking manager...");
+        setActiveTab('bookings'); // Smoothly switch tab view state rather than forcing a page reload!
       }
     }
-  }, [isAuthenticated, user]);
+    else {
+      console.log("User not authenticated or still loading. Current state:", { isAuthenticated, user, loading });
+    }
+  }, [loading, isAuthenticated, user]);
 
   if (loading) {
     return (

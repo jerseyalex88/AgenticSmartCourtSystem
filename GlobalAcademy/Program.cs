@@ -46,6 +46,7 @@ builder.Services.AddIdentityCore<IdentityUser>(options => {
     options.Password.RequiredLength = 8;         
 })
 .AddRoles<IdentityRole>()
+.AddSignInManager()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddAuthentication(options => {
