@@ -23,7 +23,7 @@ export default function App() {
   // Inside App.tsx - ensure this hook waits until the Auth state is completely stabilized
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
-      console.log("User authenticated:", user);
+      //console.log("User authenticated:", user);
       const userRole = user.role || 'Player'; 
       if (userRole === 'Player') {
         console.log("Redirecting player to booking manager...");

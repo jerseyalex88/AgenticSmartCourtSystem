@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/apiClient';
 import ConversationalLogin from '../components/ConversationalLogin'; 
+import SemanticLogin from '../components/SemanticLogin';
 
 export default function Login() {
   const { saveSession } = useAuth();
@@ -12,11 +13,16 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   // ADD MODE TRACKING STATE HOOK
-  const [isConversationalMode, setIsConversationalMode] = useState(false)
+  const [isConversationalMode, setIsConversationalMode] = useState(false);
+  const [isSemanticMode, setIsSemanticMode] = useState(false);
   
   // INTERCEPT VIEW SWITCH ROUTER CORES
   if (isConversationalMode) {
     return <ConversationalLogin onToggleMode={() => setIsConversationalMode(false)} />;
+  }
+
+  if (isSemanticMode) {
+    return <SemanticLogin onSwitchBack={() => setIsSemanticMode(false)} />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,12 +72,11 @@ export default function Login() {
           </div>
         )}
 
-        <button 
-          type="button" 
-          onClick={() => setIsConversationalMode(true)}
-          className="text-emerald-400 font-bold underline decoration-dotted text-[10px]"
-        >
-          🤖 Try Agentic Conversational Interface
+        <button type="button" onClick={() => setIsConversationalMode(true)} className="text-emerald-400 font-bold underline decoration-dotted text-[10px]">
+          🤖 Open State-Machine Conversational Terminal
+        </button>
+        <button type="button" onClick={() => setIsSemanticMode(true)} className="text-indigo-400 font-bold underline decoration-dotted text-[10px]">
+          🧠 Open Agentic Conversational Interface
         </button>
 
         {/* Secure Credential Input Form Container */}

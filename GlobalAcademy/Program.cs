@@ -119,9 +119,6 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
     var dbContext = serviceProvider.GetRequiredService<ApplicationDbContext>();
     kernelBuilder.Plugins.AddFromObject(new CourtSchedulingPlugin(dbContext), "SchedulingEngine");
 
-    // Register your existing plugin...
-    kernelBuilder.Plugins.AddFromObject(new CourtSchedulingPlugin(dbContext), "SchedulingEngine");
-
     // ADD THIS LINE: Register the new multi-location spatial awareness tool
     kernelBuilder.Plugins.AddFromObject(new SisterAcademyPlugin(dbContext), "LocationEngine");
 

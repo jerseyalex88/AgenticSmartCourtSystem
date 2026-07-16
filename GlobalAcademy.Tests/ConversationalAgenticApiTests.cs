@@ -98,6 +98,47 @@ public class ConversationalAgenticApiTests : IClassFixture<WebApplicationFactory
         // Assert.NotNull(usernameClaim);
         // Assert.Equal(uniqueEmail, usernameClaim);
     }
+
+    [Fact]
+    public async Task ProcessConversationalAuth_NaturalLanguageInput_SemanticKernelExtractsEmail()
+    {
+        var client = _factory.CreateClient();
+
+        // 1. ARRANGE: Build a realistic natural language payload containing an inline email identity
+        var semanticPayload = new
+        {
+            UserInput = "Good morning! I want to log in as chiki@wimbeldon.com please.",
+            CurrentStage = "AwaitingEmail", // Boot step stage indicator
+            CachedEmail = ""
+        };
+
+        // 2. ACT: Hit your updated custom endpoint route configuration
+        var response = await client.PostAsJsonAsync("/api/SemanticAuth/ai/conversational-auth", semanticPayload);
+
+        // 3. ASSERT: Confirm communication handshakes resolve safely
+        Assert.True(response.IsSuccessStatusCode, $"The Semantic Kernel gateway rejected the conversation payload. Status: {response.StatusCode}");
+
+        var data = await response.Content.ReadFromJsonAsync<SemanticResponseTestModel>();
+        Assert.NotNull(data);
+
+        // 4. AGENTIC VALIDATION: Confirm Semantic Kernel successfully extracted and cached the email field
+        Assert.Equal("AwaitingPassword", data.NextStage); // The AI should advance the state to password mode!
+        Assert.Equal("chiki@wimbeldon.com", data.CachedEmail); // The AI should have stripped away the surrounding sentences!
+        
+        // Ensure the response contains a secure message asking for the password
+        Assert.Contains("password", data.AgentResponse.ToLower());
+        Assert.Null(data.Token); // Tokens must remain null until the password gate is completely passed
+    }
+
+    // Support test mapping entity class structure matching your PascalCase DTO record responses
+    public class SemanticResponseTestModel
+    {
+        public string NextStage { get; set; } = string.Empty;
+        public string CachedEmail { get; set; } = string.Empty;
+        public string AgentResponse { get; set; } = string.Empty;
+        public string? Token { get; set; }
+    }
+
     public class ConversationalResponseTestDto
     {
         public string NextStage { get; set; } = string.Empty;
