@@ -1,22 +1,33 @@
 import React, { useState } from 'react';
 import { useAlert } from '../context/AlertContext';
 import { apiClient } from '../api/apiClient';
+import { useAuth } from '../context/AuthContext';
+import SemanticLogin from '../components/SemanticLogin';
+import SemanticRegister from '../components/SemanticRegister';
 
 export default function PlayerGateway() {
   // Toggle state: 'login' or 'register'
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   
   // Form input bindings
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('chiki@wimbeldon.com');
+  const [password, setPassword] = useState('Password123!');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const { showAlert } = useAlert();
+  const { saveSession } = useAuth();
+  const [isSemanticMode, setIsSemanticMode] = useState(false);
 
   // Extract the multi-tenant Academy partition key straight out of the active URL string parameters
   const queryParams = new URLSearchParams(window.location.search);
   const academyIdFromUrl = queryParams.get('academyId') || '';
 
+  if (isSemanticMode) {
+    if (authMode === 'register')
+      return <SemanticRegister onSwitchBack={() => setIsSemanticMode(false)} />;
+    else
+      return <SemanticLogin onSwitchBack={() => setIsSemanticMode(false)} />;
+  }
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -42,7 +53,7 @@ export default function PlayerGateway() {
         });
 
         showAlert({
-          title: 'Account Provisioned Cleanly!',
+          title: 'New Account Provisioned Successfully!',
           message: 'Your player profile passport has been securely stamped into this academy partition. You can now toggle to the login screen and sign in!',
           type: 'success',
           onConfirm: () => {
@@ -59,27 +70,32 @@ export default function PlayerGateway() {
         if (!token) throw new Error('Backend authorization payload returned an empty token signature.');
         
         localStorage.setItem('token', token); 
+        
+        if (typeof saveSession === 'function') {
+            saveSession(token);
+            window.location.href = '/';
+        }
 
-        console.log('Role claim extracted from backend response:', response.data);
+        // console.log('Role claim extracted from backend response:', response.data);
 
-        const userRole = 'Player'; 
+        // const userRole = 'Player'; 
 
-        showAlert({
-          title: 'Handshake Validated',
-          message: `Security flags confirmed. Authenticated as a ${userRole}. Syncing platform core layout grids...`,
-          type: 'success',
-          onConfirm: () => {
-            // EXECUTE REDIRECTION OR FORCED LAYOUT RELOAD
-            // If the user is a player, we force the active tab configuration state or refresh 
-            // the boot-tree so the top-level App hook routes them directly onto 'bookings'! [2]
-            if (userRole === 'Player') {
-              // Reloading the page clears memory caches and lets App.tsx catch the fresh player state
-              window.location.href = '/'; 
-            } else {
-              window.location.href = '/'; // Directors go straight to main executive matrix
-            }
-          }
-        });
+        // showAlert({
+        //   title: 'Handshake Validated',
+        //   message: `Security flags confirmed. Authenticated as a ${userRole}. Syncing platform core layout grids...`,
+        //   type: 'success',
+        //   onConfirm: () => {
+        //     // EXECUTE REDIRECTION OR FORCED LAYOUT RELOAD
+        //     // If the user is a player, we force the active tab configuration state or refresh 
+        //     // the boot-tree so the top-level App hook routes them directly onto 'bookings'! [2]
+        //     if (userRole === 'Player') {
+        //       // Reloading the page clears memory caches and lets App.tsx catch the fresh player state
+        //       window.location.href = '/'; 
+        //     } else {
+        //       window.location.href = '/'; // Directors go straight to main executive matrix
+        //     }
+        //   }
+        // });
       }
     } catch (err: any) {
       showAlert({
@@ -157,9 +173,17 @@ export default function PlayerGateway() {
               loading ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
             }`}
           >
-            {loading ? 'Processing Protocol...' : authMode === 'login' ? '🔐 Authorize Sign-In' : '🚀 Compile Profile'}
+            {loading ? 'Processing Protocol...' : authMode === 'login' ? '🔐 Authorize Sign-In' : '🚀 Submit Profile'}
           </button>
         </form>
+
+        <div className="mt-6 text-center">
+          <button type="button" onClick={() => setIsSemanticMode(true)} 
+            className="mt-2 text-purple-400 hover:text-purple-300 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
+          >
+            🧠 OR, Open Agentic Conversational Interface
+          </button>
+        </div>
 
         {/* DUAL MODE SELECTION TOGGLE SLIDER ANCHOR */}
         <div className="mt-6 border-t border-slate-800 pt-4 text-center">

@@ -72,13 +72,6 @@ export default function Login() {
           </div>
         )}
 
-        <button type="button" onClick={() => setIsConversationalMode(true)} className="text-emerald-400 font-bold underline decoration-dotted text-[10px]">
-          🤖 Open State-Machine Conversational Terminal
-        </button>
-        <button type="button" onClick={() => setIsSemanticMode(true)} className="text-indigo-400 font-bold underline decoration-dotted text-[10px]">
-          🧠 Open Agentic Conversational Interface
-        </button>
-
         {/* Secure Credential Input Form Container */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
@@ -125,6 +118,17 @@ export default function Login() {
             </button>
           </div>
         </form>
+
+        <div className="text-center">
+          {/* <button type="button" onClick={() => setIsConversationalMode(true)} className="text-emerald-400 font-bold underline decoration-dotted text-[10px]">
+            🤖 Open State-Machine Conversational Terminal
+          </button> */}
+          <button type="button" onClick={() => setIsSemanticMode(true)} 
+            className="mt-2 text-purple-400 hover:text-purple-300 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
+          >
+            🧠 OR, Open Agentic Conversational Interface
+          </button>
+        </div>
 
         <div className="text-center pt-2 border-t border-slate-800/60">
           <p className="text-[10px] font-mono text-slate-500 tracking-normal uppercase">

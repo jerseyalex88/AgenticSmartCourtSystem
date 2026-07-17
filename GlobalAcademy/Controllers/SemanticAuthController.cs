@@ -26,6 +26,7 @@ public class SemanticAuthController : ControllerBase
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly IConfiguration _configuration;
     private readonly Kernel _kernel; // Underneath architecture property tracking anchor
+    private readonly Data.ApplicationDbContext _dbContext;
 
     // FIXED: Request 'Kernel' directly via Dependency Injection! 
     // This cleanly inherits your pre-configured customHttpClient and gpt-5.4-mini models!
@@ -33,12 +34,14 @@ public class SemanticAuthController : ControllerBase
         UserManager<IdentityUser> userManager,
         SignInManager<IdentityUser> signInManager,
         IConfiguration configuration,
-        Kernel kernel) // <-- INJECT THE PRE-CONFIGURED KERNEL ENGINE RIGHT HERE
+        Kernel kernel,
+        Data.ApplicationDbContext dbContext) // <-- INJECT THE PRE-CONFIGURED KERNEL ENGINE AND DB CONTEXT RIGHT HERE
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _configuration = configuration;
         _kernel = kernel; // Lock it straight to your central program configurations
+        _dbContext = dbContext; // Inject the database context for multi-tenant isolation
     }
 
     [HttpPost("ai/conversational-auth")]
@@ -146,7 +149,128 @@ public class SemanticAuthController : ControllerBase
             Token: null
         ));
     }
+    // =========================================================================
+    // POST: CONVERSATIONAL SEMANTIC KERNEL REGISTRATION GATEWAY
+    // =========================================================================
+    [HttpPost("ai/conversational-register")]
+    [AllowAnonymous] // Open publicly so new players can execute onboarding queries
+    public async Task<IActionResult> ProcessConversationalRegister([FromBody] SemanticRegisterRequestDto model)
+    {
+        try
+        {
+            string userInput = model.userInput.Trim();
+            string chatStage = model.currentStage; // "ExtractingDetails", "AwaitingPassword", "Completed"
+            string cachedEmail = model.cachedEmail ?? "";
+            string cachedPhone = model.cachedPhone ?? "";
+            string cachedAcademyId = model.cachedAcademyId ?? "";
+
+            // 1. SECURE DESTRUCTIVE IDENTITY GATE INTERCEPT: Process password and commit to PostgreSQL
+            if (chatStage == "AwaitingPassword")
+            {
+                if (!Guid.TryParse(cachedAcademyId, out Guid academyGuid))
+                    return BadRequest(new { message = "Registration Exception: Academy identification token is invalid." });
+
+                var academyExists = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+                    .AnyAsync(_dbContext.Academies, a => a.Id == academyGuid);
+                if (!academyExists)
+                    return NotFound(new { message = "Registration Exception: Target academy partition does not exist." });
+
+                var userExists = await _userManager.FindByEmailAsync(cachedEmail);
+                if (userExists != null)
+                    return BadRequest(new { message = "Registration Exception: Email is already tied to a tenant passport." });
+
+                var freshUser = new IdentityUser
+                {
+                    UserName = cachedEmail,
+                    Email = cachedEmail,
+                    PhoneNumber = cachedPhone,
+                    EmailConfirmed = true
+                };
+
+                var createResult = await _userManager.CreateAsync(freshUser, userInput); // userInput here is the plain text password string
+                if (!createResult.Succeeded)
+                    return BadRequest(new { message = createResult.Errors.FirstOrDefault()?.Description ?? "Password constraints failed." });
+
+                // Multi-tenant isolation claims assignment
+                await _userManager.AddToRoleAsync(freshUser, "Player");
+                await _userManager.AddClaimAsync(freshUser, new Claim("AcademyId", academyGuid.ToString()));
+                await _userManager.AddClaimAsync(freshUser, new Claim(ClaimTypes.Role, "Player"));
+
+                return Ok(new SemanticRegisterResponseDto(
+                    nextStage: "Completed",
+                    cachedEmail: cachedEmail,
+                    cachedPhone: cachedPhone,
+                    cachedAcademyId: cachedAcademyId,
+                    agentResponse: "🚀 [IDENTITY PROVISIONED]: Your secure player passport has been stamped cleanly into this academy partition database. You can now log into the platform!"
+                ));
+            }
+
+            // 2. CORE MICROSOFT SEMANTIC KERNEL ENTITY CAPTURE
+            var chatCompletionService = _kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>();
+            var chatHistory = new Microsoft.SemanticKernel.ChatCompletion.ChatHistory();
+
+            chatHistory.AddSystemMessage(
+                "You are an AI registration onboarding assistant. Your job is to extract 3 structural variables from user input: " +
+                "an Email address, a Phone number, and an AcademyId GUID string. " +
+                "If the user input contains any of these variables, respond EXACTLY with this format, skipping fields you don't find: \n" +
+                "EMAIL:[value]\nPHONE:[value]\nACADEMY:[guid]\n" +
+                "If any fields are missing, respond with a polite conversational prompt asking for the remaining pieces. " +
+                "Do not include quotes, ticks, or markdown code block formatting symbols.");
+
+            chatHistory.AddUserMessage(userInput);
+
+            var responseContent = await chatCompletionService.GetChatMessageContentAsync(chatHistory);
+            string agentOutput = responseContent.Content?.Trim() ?? string.Empty;
+
+            // Analyze if Semantic Kernel isolated profile variables out of the user text stream
+            string email = cachedEmail;
+            string phone = cachedPhone;
+            string academyId = cachedAcademyId;
+
+            if (agentOutput.Contains("EMAIL:", StringComparison.OrdinalIgnoreCase) || 
+                agentOutput.Contains("PHONE:", StringComparison.OrdinalIgnoreCase) || 
+                agentOutput.Contains("ACADEMY:", StringComparison.OrdinalIgnoreCase))
+            {
+                var lines = agentOutput.Split('\n');
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("EMAIL:", StringComparison.OrdinalIgnoreCase)) email = line.Split(':')[1].Trim();
+                    if (line.StartsWith("PHONE:", StringComparison.OrdinalIgnoreCase)) phone = line.Split(':')[1].Trim();
+                    if (line.StartsWith("ACADEMY:", StringComparison.OrdinalIgnoreCase)) academyId = line.Split(':')[1].Trim();
+                }
+
+                // Evaluate slot-filling completion parameter bounds
+                if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(phone) && !string.IsNullOrEmpty(academyId))
+                {
+                    return Ok(new SemanticRegisterResponseDto(
+                        nextStage: "AwaitingPassword", // Move securely to masked password collection step
+                        cachedEmail: email,
+                        cachedPhone: phone,
+                        cachedAcademyId: academyId,
+                        agentResponse: $"🔒 Profile details captured via Semantic Kernel!\n• Email: {email}\n• Phone: {phone}\n• Academy ID: {academyId.Substring(0,8)}...\n\nPlease provide a secure account password to finalize your profile setup:"
+                    ));
+                }
+            }
+
+            // Slot-Filling fallback loop: return the natural prompt requesting remaining fields
+            return Ok(new SemanticRegisterResponseDto(
+                nextStage: "ExtractingDetails",
+                cachedEmail: email,
+                cachedPhone: phone,
+                cachedAcademyId: academyId,
+                agentResponse: agentOutput
+            ));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Internal Semantic Registration Error: {ex.Message}" });
+        }
+    }
+
 }
 
 public record SemanticAuthRequestDto(string UserInput, string CurrentStage, string? CachedEmail);
 public record SemanticAuthResponseDto(string NextStage, string CachedEmail, string AgentResponse, string? Token);
+// Data Transfer Records enforcing camelCase property serialization natively
+public record SemanticRegisterRequestDto(string userInput, string currentStage, string? cachedEmail, string? cachedPhone, string? cachedAcademyId);
+public record SemanticRegisterResponseDto(string nextStage, string cachedEmail, string cachedPhone, string cachedAcademyId, string agentResponse);

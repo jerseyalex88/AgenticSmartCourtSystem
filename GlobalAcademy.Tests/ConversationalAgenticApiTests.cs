@@ -130,6 +130,49 @@ public class ConversationalAgenticApiTests : IClassFixture<WebApplicationFactory
         Assert.Null(data.Token); // Tokens must remain null until the password gate is completely passed
     }
 
+    [Fact]
+    public async Task ProcessConversationalRegister_NaturalLanguageInput_ExtractsProfileDetails()
+    {
+        var client = _factory.CreateClient();
+        var mockAcademyGuid = Guid.Parse("60186569-a432-4375-9bee-485c69f086d5");
+
+        // 1. ARRANGE: Simulate user providing email and phone with academyId already cached from URL context
+        var registerPayload = new
+        {
+            userInput = "My contact email is sam@tennis.com and my telephone line digits are +15559998888.",
+            currentStage = "ExtractingDetails",
+            cachedEmail = "",
+            cachedPhone = "",
+            cachedAcademyId = mockAcademyGuid // Pre-populated from the URL query parameter context wrapper
+        };
+
+        // 2. ACT: Shoot the payload to the consolidated SemanticAuth controller endpoint
+        var response = await client.PostAsJsonAsync("/api/SemanticAuth/ai/conversational-register", registerPayload);
+
+        // 3. ASSERT: Confirm HTTP transport layers resolve with success status identifiers
+        Assert.True(response.IsSuccessStatusCode, $"The Semantic Kernel registration endpoint rejected the payload. Status: {response.StatusCode}");
+
+        var data = await response.Content.ReadFromJsonAsync<SemanticRegisterResponseTestModel>();
+        Assert.NotNull(data);
+
+        // 4. AGENTIC VALIDATION: Verify Slot-Filling rules extracted entities and shifted to password mask
+        Assert.Equal("AwaitingPassword", data.NextStage);
+        Assert.Equal("sam@tennis.com", data.CachedEmail);
+        Assert.Equal("+15559998888", data.CachedPhone);
+        Assert.Equal(mockAcademyGuid.ToString(), data.CachedAcademyId);
+        Assert.Contains("password", data.AgentResponse.ToLower());
+    }
+
+    // Matching lower camelCase test response DTO contract
+    public class SemanticRegisterResponseTestModel
+    {
+        public string NextStage { get; set; } = string.Empty;
+        public string CachedEmail { get; set; } = string.Empty;
+        public string CachedPhone { get; set; } = string.Empty;
+        public string CachedAcademyId { get; set; } = string.Empty;
+        public string AgentResponse { get; set; } = string.Empty;
+    }
+
     // Support test mapping entity class structure matching your PascalCase DTO record responses
     public class SemanticResponseTestModel
     {

@@ -105,7 +105,7 @@ export default function SemanticLogin({ onSwitchBack }: { onSwitchBack: () => vo
         {/* HEADER BRAND DECK */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-indigo-950/20 rounded-t-3xl">
           <div>
-            <h2 className="text-sm font-black text-indigo-400 uppercase tracking-widest animate-pulse">🌌 Semantic Kernel Gate</h2>
+            <h2 className="text-sm font-black text-indigo-400 uppercase tracking-widest animate-pulse">🌌 AI LOGIN GATE</h2>
             <p className="text-slate-500 mt-0.5 text-[10px]">LLM Powered Access Framework</p>
           </div>
           <button
@@ -113,7 +113,7 @@ export default function SemanticLogin({ onSwitchBack }: { onSwitchBack: () => vo
             onClick={onSwitchBack}
             className="bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 px-3 py-1.5 rounded-xl uppercase text-[10px] transition"
           >
-            ↩️ standard gateway
+            ↩️ switch back
           </button>
         </div>
 

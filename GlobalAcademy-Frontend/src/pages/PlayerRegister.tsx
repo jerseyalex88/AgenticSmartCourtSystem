@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAlert } from '../context/AlertContext';
 import { apiClient } from '../api/apiClient';
+import SemanticRegister from '../components/SemanticRegister';
 
 export default function PlayerRegister() {
   const [email, setEmail] = useState('');

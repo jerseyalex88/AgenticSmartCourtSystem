@@ -26,13 +26,13 @@ export default function App() {
       //console.log("User authenticated:", user);
       const userRole = user.role || 'Player'; 
       if (userRole === 'Player') {
-        console.log("Redirecting player to booking manager...");
+        //console.log("Redirecting player to booking manager...");
         setActiveTab('bookings'); // Smoothly switch tab view state rather than forcing a page reload!
       }
     }
-    else {
-      console.log("User not authenticated or still loading. Current state:", { isAuthenticated, user, loading });
-    }
+    // else {
+    //   console.log("User not authenticated or still loading. Current state:", { isAuthenticated, user, loading });
+    // }
   }, [loading, isAuthenticated, user]);
 
   if (loading) {
