@@ -6,8 +6,7 @@ interface ActiveBooking {
   id: string;
   courtName: string;
   branchName: string;
-  //slotTime: string;
-  slotTimeDisplay: string; // <-- ADD THIS LINE MATCHING THE C# PAYLOAD
+  slotTimeDisplay: string; 
   durationMinutes: number;
 }
 
@@ -22,15 +21,14 @@ interface MatrixSlot {
   courtName: string;
   startTimeUtc: string;
   endTimeUtc: string;
-// ADD THESE TWO PROPERTIES
-  branchLocalTimeDisplay: string; // Stamped as "02:00 PM" format strings
-  branchLocalDateDisplay: string; // Stamped as "Jul 16" format strings
+  branchLocalTimeDisplay: string; 
+  branchLocalDateDisplay: string; 
   isAvailable: boolean;
   bookedPlayerName: string | null;
 }
 
 interface DayMatrix {
-  dateString: string; // Formatting standard: YYYY-MM-DD
+  dateString: string; 
   slots: MatrixSlot[];
 }
 
@@ -39,17 +37,14 @@ export function PlayerBookingManager() {
   const [myStandby, setMyStandby] = useState<PendingStandby[]>([]);
   const [matrixData, setMatrixData] = useState<DayMatrix[]>([]);
   
-  // Set default starting calendar hook to today's date
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { showAlert } = useAlert();
-
-  // CORE DATA SYNC TIMELINE PIPELINE
   const fetchPlayerDashboardTelemetry = async () => {
     setLoading(true);
     try {
-      // Queries the automated 7-day range matrix from your Model B C# engine
       const matrixRes = await apiClient.get<DayMatrix[]>(`/playerbooking/available-matrix?startDate=${startDate}`);
       setMatrixData(matrixRes.data);
 
@@ -67,9 +62,8 @@ export function PlayerBookingManager() {
 
   useEffect(() => {
     fetchPlayerDashboardTelemetry();
-  }, [startDate]);
+  }, [startDate, refreshTrigger]);
 
-  // Inside PlayerBookingManager.tsx
   useEffect(() => {
     (window as any).setDashboardGlobalDate = (newDateString: string) => {
       console.log("📥 [PlayerBookingManager] Global hook caught payload:", newDateString);
@@ -78,6 +72,7 @@ export function PlayerBookingManager() {
         console.log("🔄 [PlayerBookingManager] Mutating state variable 'startDate' to:", newDateString);
         setStartDate(newDateString);
         setSelectedDayIndex(0); 
+        setRefreshTrigger(prev => prev + 1);
       }, 0);
     };
 
@@ -86,12 +81,10 @@ export function PlayerBookingManager() {
       (window as any).setDashboardGlobalDate = undefined;
     };
   }, []);
-
-  // ACTION 1: TRANSACTION COMMITTING FOR MODEL B INSERTIONS
   const handleClaimDynamicSlotClick = (slot: MatrixSlot) => {
     showAlert({
       title: 'Lock In Court Booking?',
-      message: `Would you like to reserve ${slot.courtName} for a standard 60-minute interval starting at ${new Date(slot.startTimeUtc).toLocaleTimeString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}?`,
+      message: `Would you like to reserve ${slot.courtName} for a standard 60-minute interval starting at ${slot.branchLocalTimeDisplay}?`,
       type: 'success',
       onConfirm: async () => {
         try {
@@ -115,7 +108,6 @@ export function PlayerBookingManager() {
     });
   };
 
-  // ACTION 2: CANCELLATION DELETION PIPELINE
   const handleReleaseSlotClick = (bookingId: string, courtName: string) => {
     showAlert({
       title: 'Release Booking Slot?',
@@ -134,10 +126,9 @@ export function PlayerBookingManager() {
   };
 
   const activeDayMatrix = matrixData[selectedDayIndex];
+
   return (
     <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl font-mono text-xs text-slate-300">
-      
-      {/* HEADER META DESCRIPTIONS */}
       <div className="border-b border-slate-800 pb-4 mb-6">
         <h2 className="text-sm font-black text-slate-100 uppercase tracking-wider">⏱️ Player Booking Lifecycle Center</h2>
         <p className="text-slate-400 mt-1">Manage your active court allocations, verify standby queue states, and explore live availability grids.</p>
@@ -147,8 +138,6 @@ export function PlayerBookingManager() {
         <div className="p-12 text-center text-slate-600 animate-pulse">Syncing personal booking matrices...</div>
       ) : (
         <div className="space-y-8">
-          
-          {/* CONFIRMED RESERVATIONS AND OVERFLOW STANDBY ROWS */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <div className="lg:col-span-2 space-y-4">
               <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-400">📅 Confirmed Court Allocations</h3>
@@ -185,8 +174,6 @@ export function PlayerBookingManager() {
               )}
             </div>
           </div>
-
-          {/* LOWER GRID: THE 7-DAY DYNAMIC GRID SCHEDULER */}
           <div className="border-t border-slate-800 pt-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
               <div>
@@ -194,23 +181,20 @@ export function PlayerBookingManager() {
                 <p className="text-slate-400 mt-0.5 text-[11px]">Select a day tab to view available intervals. Unavailable or booked slots appear greyed out.</p>
               </div>
               
-              {/* PRIMARY CALENDAR PICKER LINK */}
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => {
                   setStartDate(e.target.value);
-                  setSelectedDayIndex(0); // Reset tab back to Day 1 on change
+                  setSelectedDayIndex(0); 
                 }}
                 className="bg-slate-950 border border-slate-800 text-slate-200 font-bold p-2 rounded-xl focus:outline-none focus:border-slate-700 transition self-start md:self-auto"
               />
             </div>
 
-            {/* HORIZONTAL 7-DAY TAB SELECTION STRIP */}
             {matrixData.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-4 bg-slate-950 p-1.5 rounded-xl border border-slate-800 overflow-x-auto">
                 {matrixData.map((day, idx) => {
-                  // Standardizing dates across locales using ISO standard fallback strings
                   const weekday = new Date(day.dateString + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
                   return (
                     <button
@@ -229,7 +213,6 @@ export function PlayerBookingManager() {
               </div>
             )}
 
-            {/* HOURLY TIME BLOCK TILES CANVASES */}
             {activeDayMatrix && activeDayMatrix.slots.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {activeDayMatrix.slots.map((slot, index) => (
@@ -244,23 +227,17 @@ export function PlayerBookingManager() {
                     }`}
                   >
                     <div>
-                      <div className={`font-black tracking-wide ${slot.isAvailable ? 'text-slate-200 group-hover:text-emerald-400' : 'text-slate-600'}`}>
+                      <div className={`font-black tracking-wide transition-colors ${slot.isAvailable ? 'text-slate-200 group-hover:text-emerald-400' : 'text-slate-600'}`}>
                         {slot.courtName}
                       </div>
-                      {/* Change from your previous new Date() local clock lookup row */}
                       <div className="text-[11px] mt-1 text-slate-400 flex items-center gap-1">
                         <span>🕒</span>
-                        <span className="font-bold text-slate-300">
-                          {slot.branchLocalDateDisplay}
-                        </span>
+                        <span className="font-bold text-slate-300">{slot.branchLocalDateDisplay}</span>
                         <span className="text-slate-500">@</span>
-                        <span>
-                          {slot.branchLocalTimeDisplay}
-                        </span>
+                        <span>{slot.branchLocalTimeDisplay}</span>
                       </div>
                     </div>
 
-                    {/* DYNAMIC FILL FOOTER ELEMENT MARKUPS */}
                     <div className={`mt-2 w-full text-center font-bold py-1 rounded-lg uppercase text-[9px] tracking-wider border transition ${
                       slot.isAvailable
                         ? 'bg-slate-900 border-slate-800 group-hover:border-emerald-600 text-slate-400 group-hover:text-emerald-400'
@@ -276,7 +253,6 @@ export function PlayerBookingManager() {
                 Awaiting matrix stream data layout...
               </div>
             )}
-
           </div>
         </div>
       )}
