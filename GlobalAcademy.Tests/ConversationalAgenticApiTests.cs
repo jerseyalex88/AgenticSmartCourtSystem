@@ -231,6 +231,46 @@ public class ConversationalAgenticApiTests : IClassFixture<WebApplicationFactory
         // Assert.Contains("FRONTEND_ACTION:SET_DATE", result.AgentResponse);
     }
 
+    [Fact]
+    public async Task UniversalChat_ClaimCourtReservation_ExecutesDatabaseTransaction()
+    {
+        var client = _factory.CreateClient();
+        var loginPayload = new
+        {
+            email = "director@londonvanguard.com",
+            password = "LondonPass123!"
+        };
+
+        // --- STEP 2: EXECUTE API REQUEST VIA HTTP CHANNELS ---
+        var responseX = await client.PostAsJsonAsync("api/Auth/login", loginPayload);
+        Assert.True(responseX.IsSuccessStatusCode, "API Login request failed entirely.");
+
+        var loginResult = await responseX.Content.ReadFromJsonAsync<LoginResponseDto>();
+        Assert.NotNull(loginResult?.Token);
+
+        // 3. Authenticate the request: Simulate a logged-in AcademyDirector.
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.Token);
+
+        // --- STEP 3: ACT - DISPATCH NATURAL LANGUAGE TRANSACTION PAYLOAD ---
+        // Provide the target data elements in natural text, passing along the primary key GUID explicitly
+        var chatPayload = new 
+        { 
+            UserInput = $"Please reserve court Stadium Center Clay for me on July 21 at 10:00 AM." 
+        };
+        
+        var chatResponse = await client.PostAsJsonAsync("/api/AiOrchestration/universal-chat", chatPayload);
+        
+        // --- STEP 4: ASSERT - VERIFY DOWNSTREAM PERSISTENCE RESULTS ---
+        Assert.True(chatResponse.IsSuccessStatusCode, "The universal chat pipeline threw a server-side error.");
+        
+        var result = await chatResponse.Content.ReadFromJsonAsync<UniversalChatResponseTestModel>();
+        Assert.NotNull(result);
+        
+        // Confirm the response includes success confirmations and your frontend layout hooks
+        Assert.Contains("Success!", result.AgentResponse);
+        Assert.Contains("[FRONTEND_ACTION:SET_DATE:2026-07-21]", result.AgentResponse);
+    }
+
     // Matching lower camelCase test response container DTO records
     public class UniversalChatResponseTestModel
     {

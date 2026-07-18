@@ -52,31 +52,45 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     setLoading(true);
 
     try {
-      // 2. DISPATCH TRANS-ORCHESTRATION PAYLOAD VIA API CLIENT HANDSHAKE
       const response = await apiClient.post('/AiOrchestration/universal-chat', {
         userInput: cleanText
       });
 
-      // Extract the synchronized lower camelCase property parameter key
-      const { agentResponse } = response.data;
+      // Extract the raw text stream coming back from the C# controller
+      const rawAgentResponse = response.data.agentResponse;
+
+      console.log("📡 [Layout] Received raw agent response:", rawAgentResponse);
 
       // =========================================================================
-      // DYNAMIC APP-STATE DATA RE-SYNCHRONIZATION INJECTOR HOOK (NO REFRESH)
+      // STEP 1: INTERCEPT AND FORCE DAY CHANGES BEFORE TEXT CLEANING
       // =========================================================================
-      if (agentResponse.includes('[FRONTEND_ACTION:SET_DATE:')) {
-        // Strip out the timestamp date string token using matching splits
-        const extractedDate = agentResponse.split('[FRONTEND_ACTION:SET_DATE:')[1].replace(']', '').trim();
+      // Inside Layout.tsx
+      if (rawAgentResponse && rawAgentResponse.includes('[FRONTEND_ACTION:SET_DATE:')) {
+        //console.log("🔍 [Layout] Found token in raw response:", rawAgentResponse);
+
+        // Use regex to isolate exactly the 10-character date sequence inside brackets
+        const tokenRegex = /\[FRONTEND_ACTION:SET_DATE:(\d{4}-\d{2}-\d{2})\]/;
+        const match = rawAgentResponse.match(tokenRegex);
         
-        // INTERCEPT TRIGGER: Call your existing main page calendar date setter hook!
-        // If your active dashboard page passes its date setter up to layout props, 
-        // triggering it here updates the horizontal tabs instantly with no reload!
-        if (typeof (window as any).setDashboardGlobalDate === 'function') {
-           (window as any).setDashboardGlobalDate(extractedDate);
+        if (match && match[1]) {
+          const extractedDate = match[1];
+          //console.log("🎯 [Layout] Successfully extracted date string:", extractedDate);
+          
+          if (typeof (window as any).setDashboardGlobalDate === 'function') {
+            //console.log("⚡ [Layout] Dispatching date to PlayerBookingManager window hook...");
+            (window as any).setDashboardGlobalDate(extractedDate);
+          } else {
+            console.error("❌ [Layout] Error: window.setDashboardGlobalDate hook is not mounted by the page component!");
+          }
+        } else {
+          console.error("❌ [Layout] Failed to extract clean YYYY-MM-DD from token.");
         }
       }
 
-      // Clean out the hidden command bracket block text parameters before displaying chat bubble to player
-      const cleanDisplayMsg = agentResponse.split('\n[FRONTEND_ACTION')[0];
+      // =========================================================================
+      // STEP 2: CLEAN DETACHED BRACKET TEXT BEFORE RENDERING CHAT BUBBLES
+      // =========================================================================
+      const cleanDisplayMsg = rawAgentResponse.split('[FRONTEND_ACTION')[0].trim();
 
       setChatHistory(prev => [...prev, {
         id: Math.random().toString(),

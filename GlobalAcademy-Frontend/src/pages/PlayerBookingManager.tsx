@@ -69,6 +69,24 @@ export function PlayerBookingManager() {
     fetchPlayerDashboardTelemetry();
   }, [startDate]);
 
+  // Inside PlayerBookingManager.tsx
+  useEffect(() => {
+    (window as any).setDashboardGlobalDate = (newDateString: string) => {
+      console.log("📥 [PlayerBookingManager] Global hook caught payload:", newDateString);
+      
+      setTimeout(() => {
+        console.log("🔄 [PlayerBookingManager] Mutating state variable 'startDate' to:", newDateString);
+        setStartDate(newDateString);
+        setSelectedDayIndex(0); 
+      }, 0);
+    };
+
+    return () => {
+      console.log("🗑️ [PlayerBookingManager] Cleaning up global window handler hook.");
+      (window as any).setDashboardGlobalDate = undefined;
+    };
+  }, []);
+
   // ACTION 1: TRANSACTION COMMITTING FOR MODEL B INSERTIONS
   const handleClaimDynamicSlotClick = (slot: MatrixSlot) => {
     showAlert({

@@ -69,8 +69,35 @@ public class UniversalChatController : ControllerBase
             chatHistory.AddSystemMessage(
                 $"You are the Smart Court OS Ambient Assistant. You are currently talking to {currentUserName}, user Id is {userId} who is a {userRole}. " +
                 $"Your tenant partition boundary is hardlocked to AcademyId: {academyGuid}. " +
+                "\n\nINTENT CLASSIFICATION RULES:" +
+                "\n1. EXPLORATORY (Checking Availability): If the user asks to see open slots, check availability, or scan what is free (e.g., 'find me slots on july 21...'), you MUST use 'CheckCourtAvailabilityAsync'. This function does NOT require a court name or court ID. Call it immediately with the extracted target date." +
+                "\n2. TRANSACTIONAL (Booking/Reserving): Only enforce mandatory parameter slot-filling rules (courtId, courtName, targetDate, startHour) if the user explicitly states they want to book, secure, reserve, or claim a specific slot." +
+                "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" +
+                "\nWhenever a plugin returns a response containing a structural action token like '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]', you MUST preserve and append that exact token string at the absolute end of your final markdown text response to the user."
+            );
+
+            // chatHistory.AddSystemMessage(
+            //     $"You are the Smart Court OS Ambient Assistant. You are currently talking to {currentUserName}, user Id is {userId} who is a {userRole}. " +
+            //     $"Your tenant partition boundary is hardlocked to AcademyId: {academyGuid}. " +
+            //     "You have access to native booking and cancellation plugins. If a user asks to reserve or clear a court, " +
+            //     "use your functions tool belt to fulfill the transaction. Keep responses succinct, universal, and scannable." +
+            //     "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:\nWhenever a plugin returns a response containing a structural action token like '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]', you MUST preserve and append that exact token string at the absolute end of your final markdown text response to the user. Do not omit, truncate, or rewrite the bracketed token."
+            // );
+
+            chatHistory.AddSystemMessage(
+                $"You are the Smart Court OS Ambient Assistant. You are currently talking to {currentUserName}, user Id is {userId} who is a {userRole}. " +
+                $"Your tenant partition boundary is hardlocked to AcademyId: {academyGuid}. " +
                 "You have access to native booking and cancellation plugins. If a user asks to reserve or clear a court, " +
-                "use your functions tool belt to fulfill the transaction. Keep responses succinct, universal, and scannable.");
+                "use your functions tool belt to fulfill the transaction. Keep responses succinct, universal, and scannable." +
+                "\n\nCRITICAL SLOT-FILLING LAWS:" +
+                "\nBefore executing 'ClaimCourtReservationAsync', you MUST explicitly gather all three mandatory parameters:" +
+                "\n1. courtName (The descriptive string name of the court asset, e.g., 'Indoor Clay Court 2')" +
+                "\n2. targetDate (ISO format string 'YYYY-MM-DD')" +
+                "\n3. startHour (Military hour text, e.g., '14:00')" +
+                "\nIf the player leaves any parameter out (e.g., 'Book a court for tomorrow' without specifying a time or a court), DO NOT call the function. Respond politely asking for the missing variables." +
+                "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" +
+                "\nWhenever a plugin returns a response containing a structural action token like '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]', you MUST preserve and append that exact token string at the absolute end of your final markdown text response to the user. Do not omit, truncate, or rewrite the bracketed token."
+            );
 
             chatHistory.AddUserMessage(userInput);
 
