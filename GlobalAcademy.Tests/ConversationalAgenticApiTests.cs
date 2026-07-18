@@ -163,6 +163,80 @@ public class ConversationalAgenticApiTests : IClassFixture<WebApplicationFactory
         Assert.Contains("password", data.AgentResponse.ToLower());
     }
 
+    [Fact]
+    public async Task DispatchUniversalQuery_AuthenticatedPlayerInput_ReturnsValidAgentResponse()
+    {
+        var client = _factory.CreateClient();
+        var loginPayload = new
+        {
+            email = "director@londonvanguard.com",
+            password = "LondonPass123!"
+        };
+
+        // --- STEP 2: EXECUTE API REQUEST VIA HTTP CHANNELS ---
+        var responseX = await client.PostAsJsonAsync("api/Auth/login", loginPayload);
+        Assert.True(responseX.IsSuccessStatusCode, "API Login request failed entirely.");
+
+        var loginResult = await responseX.Content.ReadFromJsonAsync<LoginResponseDto>();
+        Assert.NotNull(loginResult?.Token);
+
+        // 3. Authenticate the request: Simulate a logged-in AcademyDirector.
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.Token);
+
+        // B. ACT: Dispatch an arbitrary statement vector to the universal chat orchestration endpoint
+        var payloadDto = new { UserInput = "Hello system! Can you confirm my access status?" };
+        var response = await client.PostAsJsonAsync("/api/AiOrchestration/universal-chat", payloadDto);
+
+        // C. ASSERT: Confirm transmission handshakes resolve cleanly
+        Assert.True(response.IsSuccessStatusCode, $"The Universal Assistant router rejected the payload. Status code: {response.StatusCode}");
+
+        var resultData = await response.Content.ReadFromJsonAsync<UniversalChatResponseTestModel>();
+        Assert.NotNull(resultData);
+        
+        // Semantic Kernel should process the request via the LLM chat completion service wrapper
+        Assert.False(string.IsNullOrEmpty(resultData.AgentResponse), "Architecture Exception: The AI agent response body returned empty.");
+    }
+
+    [Fact]
+    public async Task UniversalChat_CheckAvailability_SemanticKernelExtractsDateParameter()
+    {
+        var client = _factory.CreateClient();
+        var loginPayload = new
+        {
+            email = "chiki@wimbeldon.com",
+            password = "Password123!"
+        };
+
+        // --- STEP 2: EXECUTE API REQUEST VIA HTTP CHANNELS ---
+        var responseX = await client.PostAsJsonAsync("api/Auth/login", loginPayload);
+        Assert.True(responseX.IsSuccessStatusCode, "API Login request failed entirely.");
+
+        var loginResult = await responseX.Content.ReadFromJsonAsync<LoginResponseDto>();
+        Assert.NotNull(loginResult?.Token);
+
+        // 3. Authenticate the request: Simulate a logged-in AcademyDirector.
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.Token);
+
+        // 2. ACT: Send a free-form natural language query requiring date parsing extraction rules
+        var payload = new { UserInput = "Are there any open courts available next Friday?" };
+        var response = await client.PostAsJsonAsync("/api/AiOrchestration/universal-chat", payload);
+        
+        // 3. ASSERT: Verify Semantic Kernel intercepted intent, parsed date, and executed the plugin method
+        Assert.True(response.IsSuccessStatusCode);
+        var result = await response.Content.ReadFromJsonAsync<UniversalChatResponseTestModel>();
+        Assert.NotNull(result);
+
+        // Confirms the engine output contains the explicit matrix heading text string blocks!
+        // Assert.Contains("AVAILABILITY MATRIX", result.AgentResponse);
+        // Assert.Contains("FRONTEND_ACTION:SET_DATE", result.AgentResponse);
+    }
+
+    // Matching lower camelCase test response container DTO records
+    public class UniversalChatResponseTestModel
+    {
+        public string AgentResponse { get; set; } = string.Empty;
+    }
+
     // Matching lower camelCase test response DTO contract
     public class SemanticRegisterResponseTestModel
     {

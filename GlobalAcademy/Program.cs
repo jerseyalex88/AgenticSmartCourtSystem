@@ -9,6 +9,7 @@ using GlobalAcademy.Security;
 using GlobalAcademy.Services;
 using Microsoft.SemanticKernel;
 using GlobalAcademy.Plugins;
+using GlobalAcademy.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -90,6 +91,8 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddScoped<PlayerBookingContext>();
+
 builder.Services.AddScoped<Kernel>(serviceProvider =>
 {
     var kernelBuilder = Kernel.CreateBuilder();
@@ -122,11 +125,20 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
     // ADD THIS LINE: Register the new multi-location spatial awareness tool
     kernelBuilder.Plugins.AddFromObject(new SisterAcademyPlugin(dbContext), "LocationEngine");
 
+    // Inside your main Program.cs file where services are wired up:
+    var playerBookingPlugin =
+        serviceProvider.GetRequiredService<PlayerBookingPlugin>();
+
+    kernelBuilder.Plugins.AddFromObject(
+        playerBookingPlugin,
+        "PlayerBookingPlugin");
+
     return kernelBuilder.Build();
 });
 
 // Register the AI Match-Saver engine service layer
 builder.Services.AddScoped<MatchSaverService>();
+builder.Services.AddScoped<PlayerBookingPlugin>();
 
 var app = builder.Build();
 
