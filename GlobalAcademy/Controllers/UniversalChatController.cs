@@ -49,17 +49,10 @@ public class UniversalChatController : ControllerBase
                 return Unauthorized("Security Exception: Security perimeter claims unreadable.");
             }
 
-            // 2. CONTEXT INJECTION: Inject the user's secure tokens straight into Semantic Kernel variables
-            // var kernelArguments = new KernelArguments();
-            // kernelArguments["currentUserName"] = currentUserName;
-            // kernelArguments["academyId"] = academyGuid;
-            // kernelArguments["userRole"] = userRole;
-            // kernelArguments["userId"] = userId;
-
-            playerBookingContext.UserId = userId ?? "";
-            playerBookingContext.UserName = currentUserName ?? "";
-            playerBookingContext.AcademyId = academyGuid;
-            playerBookingContext.UserRole = userRole ?? "Player";
+            // playerBookingContext.UserId = userId ?? "";
+            // playerBookingContext.UserName = currentUserName ?? "";
+            // playerBookingContext.AcademyId = academyGuid;
+            // playerBookingContext.UserRole = userRole ?? "Player";
 
             // 3. EXECUTE INTEGRATION LOOP
             var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
@@ -76,14 +69,6 @@ public class UniversalChatController : ControllerBase
                 "\nWhenever a plugin returns a response containing a structural action token like '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]', you MUST preserve and append that exact token string at the absolute end of your final markdown text response to the user."
             );
 
-            // chatHistory.AddSystemMessage(
-            //     $"You are the Smart Court OS Ambient Assistant. You are currently talking to {currentUserName}, user Id is {userId} who is a {userRole}. " +
-            //     $"Your tenant partition boundary is hardlocked to AcademyId: {academyGuid}. " +
-            //     "You have access to native booking and cancellation plugins. If a user asks to reserve or clear a court, " +
-            //     "use your functions tool belt to fulfill the transaction. Keep responses succinct, universal, and scannable." +
-            //     "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:\nWhenever a plugin returns a response containing a structural action token like '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]', you MUST preserve and append that exact token string at the absolute end of your final markdown text response to the user. Do not omit, truncate, or rewrite the bracketed token."
-            // );
-
             chatHistory.AddSystemMessage(
                 $"You are the Smart Court OS Ambient Assistant. You are currently talking to {currentUserName}, user Id is {userId} who is a {userRole}. " +
                 $"Your tenant partition boundary is hardlocked to AcademyId: {academyGuid}. " +
@@ -95,8 +80,30 @@ public class UniversalChatController : ControllerBase
                 "\n2. targetDate (ISO format string 'YYYY-MM-DD')" +
                 "\n3. startHour (Military hour text, e.g., '14:00')" +
                 "\nIf the player leaves any parameter out (e.g., 'Book a court for tomorrow' without specifying a time or a court), DO NOT call the function. Respond politely asking for the missing variables." +
+                "\n\n3. CANCELLATION ACTIONS:" +
+                "\nIf the user wants to cancel, remove, drop, or clear a booking, you MUST gather three mandatory parameters:" +
+                "\n- courtName (The string name of the court asset, e.g., 'Cancellation Court 1')" +
+                "\n- targetDate (ISO format string 'YYYY-MM-DD')" +
+                "\n- startHour (Military hour text, e.g., '10:00')" +
+                "\nDo not look for a GUID reference. Pass these natural parameters directly into 'CancelActiveBookingAsync'." +
                 "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" +
                 "\nWhenever a plugin returns a response containing a structural action token like '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]', you MUST preserve and append that exact token string at the absolute end of your final markdown text response to the user. Do not omit, truncate, or rewrite the bracketed token."
+            );
+
+            chatHistory.AddSystemMessage(
+                $"You are the Smart Court OS Ambient Assistant. You are currently talking to {currentUserName}, user Id is {userId} who is a {userRole}. " +
+                $"Your tenant partition boundary is hardlocked to AcademyId: {academyGuid}. " +
+                "You have access to native booking, availability, and cancellation plugins." +                
+                "\n\nMULTIPLE SLOTS CAPABILITY RULES:" +
+                "\n- If a user requests multiple times (e.g., 'Book court 1 from 9am to 11am' or 'Book 9:00 and 10:00'), extract the hours into an array format and invoke 'ClaimCourtReservationAsync' for each hour." +                
+                "\n\nINTELLIGENT MULTI-CANCELLATION CHAINING RULES:" +
+                "\n- If a user inquires about multiple slots using relative terms (e.g., 'all my bookings' or 'all my matches next week'), you MUST invoke 'GetPlayerLedgerAsync' first to retrieve their active verified allocation history." +
+                "\n- If a user asks to cancel, remove, or drop multiple slots using relative terms (e.g., 'Cancel all my bookings tomorrow' or 'Clear my matches on Tuesday'), you MUST invoke 'GetPlayerLedgerAsync' first to retrieve their active verified allocation history." +
+                "\n- Read the output summary from 'GetPlayerLedgerAsync' to cross-reference dates and isolate the target court names, dates, and start hours that match the user's request." +
+                "\n- Loop through and invoke 'CancelActiveBookingAsync' for each matched slot individually using those natural parameters." +
+                "\n- Keep responses succinct, universal, and scannable." +                
+                "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" +
+                "\nWhenever a cancellation or booking completes successfully, ensure the exact '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]' token returned by the final tool execution is appended to your response text stream."
             );
 
             chatHistory.AddUserMessage(userInput);
@@ -108,7 +115,7 @@ public class UniversalChatController : ControllerBase
             };
 
             // =========================================================================
-            // FIX: INJECT VARIABLES INTO THE KERNEL'S STATE DATA DICTIONARY
+            // INJECT VARIABLES INTO THE KERNEL'S STATE DATA DICTIONARY
             // This makes properties universally available to all background plugins!
             // =========================================================================
             _kernel.Data["currentUserName"] = currentUserName;

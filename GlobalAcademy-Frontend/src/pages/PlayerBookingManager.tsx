@@ -50,7 +50,6 @@ export function PlayerBookingManager() {
 
       const bookingsRes = await apiClient.get<ActiveBooking[]>('/playerbooking/my-reservations');
       const standbyRes = await apiClient.get<PendingStandby[]>('/playerbooking/my-standby');
-            
       setMyBookings(bookingsRes.data);
       setMyStandby(standbyRes.data);
     } catch (err) {

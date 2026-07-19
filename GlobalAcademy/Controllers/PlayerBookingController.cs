@@ -70,7 +70,9 @@ public class PlayerBookingController : ControllerBase
             .ToListAsync(_dbContext.Bookings
                 .Include(b => b.Court)
                 .ThenInclude(c => c.Branch) // Deep relationship loading chain
-                .Where(b => b.AcademyId == currentAcademyId && b.BookedPlayerName == currentUserName && !b.IsAvailableSlot));
+                .Where(b => b.AcademyId == currentAcademyId && b.BookedPlayerName == currentUserName && !b.IsAvailableSlot)
+                .OrderByDescending(b => b.StartTimeUtc) // 1st Priority: Latest booking slots first
+                .ThenBy(b => b.CourtName));
 
         var payload = userBookings.Select(b => {
             // Dynamically resolve timezone parameters by traversing the booking entity relation links

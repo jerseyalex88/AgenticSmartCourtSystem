@@ -24,14 +24,28 @@ public class PlayerBookingPlugin
     // =========================================================================
     // 1. KERNEL FUNCTION: FETCH CONFIRMED MATCH LEDGER FOR CURRENT USER
     // =========================================================================
-    [KernelFunction, Description("Queries the database to fetch a list of all upcoming confirmed court bookings and match schedules for the currently logged-in player.")]
-    public async Task<string> GetPlayerLedgerAsync(KernelArguments arguments)
+    [KernelFunction, Description("Queries the database to fetch a list of all past and upcoming confirmed court bookings and match schedules for the currently logged-in player.")]
+    public async Task<string> GetPlayerLedgerAsync(Kernel kernel)
     {
-        // Extract the secure token attributes injected by your UniversalChatController
-        if (!arguments.TryGetValue("currentUserName", out var userObj) || userObj is not string currentUserName ||
-            !arguments.TryGetValue("academyId", out var academyObj) || academyObj is not Guid academyGuid)
+        // 1. Unpack security claims mapped dynamically via universal controller context data dictionary
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyGuid)
         {
-            return "❌ [SECURITY ERROR]: Unable to verify your multi-tenant session parameters inside the execution context.";
+            return "Transaction rejected: Missing or invalid security academy perimeter claim scope.";
+        }
+
+        if (!kernel.Data.TryGetValue("currentUserName", out var playerObj) || playerObj is not string userName)
+        {
+            return "Transaction rejected: User context mapping verification fault (playerName).";
+        }
+
+        if (!kernel.Data.TryGetValue("userId", out var userIdObj) || userIdObj is not string userId)
+        {
+            return "Transaction rejected: User context mapping verification fault (userId).";
+        }
+
+        if (!kernel.Data.TryGetValue("userRole", out var userRoleObj) || userRoleObj is not string userRole)
+        {
+            return "Transaction rejected: User context mapping verification fault (userRole).";
         }
 
         try
@@ -41,19 +55,19 @@ public class PlayerBookingPlugin
                 .Include(b => b.Court)
                 .ThenInclude(c => c!.Branch) // Eager-load physical location models
                 .Where(b => b.AcademyId == academyGuid 
-                         && b.BookedPlayerName == currentUserName 
-                         && b.StartTimeUtc >= DateTime.UtcNow // Future schedules only
+                         && b.BookedByUserId == userId 
+                         //&& b.StartTimeUtc >= DateTime.UtcNow // Future schedules only
                          && !b.IsAvailableSlot)
                 .OrderBy(b => b.StartTimeUtc)
                 .ToListAsync();
 
             if (!upcomingBookings.Any())
             {
-                return $"📅 Hello {currentUserName}, you currently have no upcoming court bookings scheduled across this academy partition.";
+                return $"📅 Hello {userName}, you currently have no past and upcoming court bookings scheduled across this academy partition.";
             }
 
             // Build a clean, human-readable text matrix dashboard layout response
-            var reportSummary = $"📋 [UPCOMING COURT RESERVATIONS FOR {currentUserName.ToUpper()}]:\n";
+            var reportSummary = $"📋 [PAST AND UPCOMING COURT RESERVATIONS FOR {userName.ToUpper()}]:\n";
             
             foreach (var booking in upcomingBookings)
             {
@@ -87,23 +101,29 @@ public class PlayerBookingPlugin
     // =========================================================================
     [KernelFunction, Description("Queries the availability matrix for a given target calendar date. Extracts a specific Date string from user inputs.")]
     public async Task<string> CheckCourtAvailabilityAsync(
-        [Description("The targeted date string formatted as YYYY-MM-DD. For example, if user says 'tomorrow', pass tomorrow's date string standard.")] string targetDateString,
-        KernelArguments arguments)
+        Kernel kernel,
+        [Description("The targeted date string formatted as YYYY-MM-DD. For example, if user says 'tomorrow', pass tomorrow's date string standard.")] string targetDateString)
     {
-        var academyGuid = _playerBookingContext.AcademyId;
-        var userId = _playerBookingContext.UserId;
-        var userName = _playerBookingContext.UserName;
-        var userRole = _playerBookingContext.UserRole;
-
-        if (academyGuid == Guid.Empty || string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
+        // 1. Unpack security claims mapped dynamically via universal controller context data dictionary
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyGuid)
         {
-            return "❌ [SECURITY ERROR]: Multi-tenant session parameters missing from context.";
+            return "Transaction rejected: Missing or invalid security academy perimeter claim scope.";
         }
 
-        // if (!arguments.TryGetValue("academyId", out var academyObj) || academyObj is not Guid academyGuid)
-        // {
-        //     return "❌ [SECURITY ERROR]: Multi-tenant session parameter missing from context.";
-        // }
+        if (!kernel.Data.TryGetValue("currentUserName", out var playerObj) || playerObj is not string userName)
+        {
+            return "Transaction rejected: User context mapping verification fault (playerName).";
+        }
+
+        if (!kernel.Data.TryGetValue("userId", out var userIdObj) || userIdObj is not string userId)
+        {
+            return "Transaction rejected: User context mapping verification fault (userId).";
+        }
+
+        if (!kernel.Data.TryGetValue("userRole", out var userRoleObj) || userRoleObj is not string userRole)
+        {
+            return "Transaction rejected: User context mapping verification fault (userRole).";
+        }
 
         if (!DateTime.TryParse(targetDateString, out DateTime parsedStart))
             return "⚠️ Exception: Unable to parse the specified date formatting standard. Please provide a clear calendar date.";
@@ -279,11 +299,93 @@ public class PlayerBookingPlugin
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return $"Failed: Database collision abort: {ex.Message}";
+                return $"Failed: Database collision abort: {ex.InnerException?.ToString() ?? ex.Message}";
             }
         }
 
         // 9. Dispatch success string along with the unified token boundary to trigger frontend grid synchronization
         return $"Success! I have successfully secured your reservation for {court.Name} on {targetDate} starting at {startHour}. [FRONTEND_ACTION:SET_DATE:{targetDate}]";
     }
+
+    [KernelFunction, Description("Safely cancels and releases an active court reservation slot using natural parameters like court name, date, and start hour.")]
+    public async Task<string> CancelActiveBookingAsync(
+        Kernel kernel,
+        [Description("The exact matching string name of the tennis or padel court")] string courtName,
+        [Description("Target booking date in ISO string sequence format (YYYY-MM-DD)")] string targetDate,
+        [Description("The localized military start hour format string (e.g., '10:00', '14:30')")] string startHour)
+    {
+        // 1. Unpack security claims mapped dynamically via universal controller context data dictionary
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Missing or invalid security academy perimeter claim scope.";
+        }
+
+        if (!kernel.Data.TryGetValue("currentUserName", out var playerObj) || playerObj is not string playerName)
+        {
+            return "Transaction rejected: User context mapping verification fault.";
+        }
+
+        if (!kernel.Data.TryGetValue("userId", out var userIdObj) || userIdObj is not string userId)
+        {
+            return "Transaction rejected: User context mapping verification fault (userId).";
+        }
+
+        // 2. Parse target timestamps relative to the specific branch configuration timezone requirements
+        if (!DateOnly.TryParse(targetDate, out var date) || !TimeOnly.TryParse(startHour, out var startTime))
+        {
+            return "Conversational mapping fault: Could not extract explicit date or start hour from input variables.";
+        }
+
+        // 3. Query court schema mapping to figure out timezone contexts and branch connections
+        var court = await _dbContext.Courts
+            .Include(c => c.Branch)
+            .FirstOrDefaultAsync(c => c.AcademyId == academyId && c.Name.ToLower() == courtName.ToLower());
+
+        if (court == null)
+        {
+            return $"Validation error: Court matching the name '{courtName}' does not exist inside your academy ecosystem.";
+        }
+
+        // 4. Timezone Evaluation: Reconstruct the exact localized booking slot time into its original absolute UTC equivalent
+        string timeZoneString = court.Branch?.TimeZoneId ?? "UTC";
+        var branchTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneString);
+        var targetDateTimeLocal = date.ToDateTime(startTime);
+        var calculatedUtc = TimeZoneInfo.ConvertTimeToUtc(targetDateTimeLocal, branchTimeZone);
+        var targetDateTimeUtc = DateTime.SpecifyKind(calculatedUtc, DateTimeKind.Utc);
+
+        // 5. Query booking row via key natural property parameters AND multi-tenant user perimeters
+        var booking = await _dbContext.Bookings
+            .FirstOrDefaultAsync(b => b.CourtId == court.Id 
+                                && b.AcademyId == academyId 
+                                && b.StartTimeUtc == targetDateTimeUtc
+                                && (b.BookedByUserId == userId));
+
+        if (booking == null)
+        {
+            return $"Validation error: No active reservation found for {courtName} on {targetDate} at {startHour} belonging to your profile.";
+        }
+
+        // 6. Credit back play minutes to the court surface wear metrics tracking system before removing row
+        court.AggregateMinutesPlayed = Math.Max(0, court.AggregateMinutesPlayed - booking.DurationInMinutes);
+
+        // 7. Delete record from PostgreSQL database state tables
+        using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+        {
+            try
+            {
+                _dbContext.Bookings.Remove(booking);
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return $"FAILED: Deletion execution layer exception: {ex.InnerException?.ToString() ?? ex.Message}";
+            }
+        }
+
+        // 8. Return success response with frontend layout token to refresh the grid instantly
+        return $"Success! I have cancelled your reservation for {court.Name} on {targetDate} at {startHour}. [FRONTEND_ACTION:SET_DATE:{targetDate}]";
+    }
+
 }
