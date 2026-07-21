@@ -199,7 +199,7 @@ public class AuthController : ControllerBase
 
         var freshUser = new Microsoft.AspNetCore.Identity.IdentityUser
         {
-            UserName = model.Email,
+            UserName = model.UserName.Trim(),
             Email = model.Email,
             PhoneNumber = model.PhoneNumber,
             EmailConfirmed = true // Instantly unlock authentication flags
@@ -262,7 +262,15 @@ public class AuthController : ControllerBase
             await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, model.Role));
         }
 
-        return Ok(new { Message = "User profile row modified successfully." });
+        return Ok(new
+        {
+            id = user.Id,
+            email = user.Email,
+            userName = user.UserName,
+            role = model.Role,
+            isActive = user.EmailConfirmed,
+            phoneNumber = user.PhoneNumber
+        });
     }
     // =========================================================================
     // PERMANENTLY PURGE USER IDENTITY FROM THE TENANT DATABASE MIGRATION (DELETE)
@@ -340,7 +348,7 @@ public class AuthController : ControllerBase
 public record RegisterAcademyDto(string Email, string Password, string AcademyName);
 public record LoginDto(string Email, string Password);
 public record UpdateUserRoleDto(string Email, string NewRole);
-public record ProvisionUserDto(string Email, string Password, string Role, string PhoneNumber);
-public record UpdateUserPayloadDto(string Email, string Role, string PhoneNumber, bool IsActive);
+public record ProvisionUserDto(string Email, string UserName, string Password, string Role, string PhoneNumber);
+public record UpdateUserPayloadDto(string Email, string UserName, string Role, string PhoneNumber, bool IsActive);
 // Data Transfer Object definition model record
 public record PublicPlayerRegisterDto(string Email, string Password, string PhoneNumber, string AcademyId);

@@ -25,14 +25,21 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState<ChatBubbleLog[]>([
-    {
-      id: 'univ-init',
-      sender: 'agent',
-      text: '🤖 [Universal Copilot Node Synchronized]: Hello! I am your ambient workspace subagent. I can book courts, clear schedules, or fetch operations metrics. State your intent below:'
-    }
-  ]);
-
+  
+  const [chatHistory, setChatHistory] = useState<ChatBubbleLog[]>(() => {
+    const isAdmin = user?.role === 'AcademyDirector' || user?.role === 'GlobalAdmin';
+    
+    return [
+      {
+        id: 'univ-init',
+        sender: 'agent',
+        text: isAdmin
+          ? '🤖 [Executive Workspace Node Synchronized]: Hello Director! I am your ambient operations administrator subagent. I hold high-clearance tokens to provision courts, configure branch metadata, modify staff rosters, or override schedules. State your command:'
+          : '🤖 [Universal Copilot Node Synchronized]: Hello! I am your ambient workspace subagent. I can book courts, clear schedules, or fetch operations metrics. State your intent below:'
+      }
+    ];
+  });
+  
   // EXPANDABLE WIDTH PANEL HIERARCHY STATES
   const [chatWidth, setChatWidth] = useState(400);
   const [isDragging, setIsDragging] = useState(false);
@@ -88,7 +95,12 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/AiOrchestration/universal-chat', {
+      const targetRoute = user?.role === 'AcademyDirector' || user?.role === 'GlobalAdmin'
+        ? '/AiOrchestration/director-chat'
+        : '/AiOrchestration/universal-chat';
+
+      // 2. Dispatch request to the dynamically selected role-based backend engine
+      const response = await apiClient.post(targetRoute, {
         userInput: cleanText
       });
 
@@ -185,7 +197,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
           <div className="flex items-center justify-between px-2">
             <div className="space-y-0.5 max-w-[140px]">
               <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{user?.email}</p>
-              <span className="inline-block bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-1.5 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider">{user?.role}</span>
+              <span className="inline-block bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-1.5 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider">{user?.role ? user.role.replace(/([A-Z])/g, ' $1').trim() : 'Player'}</span>
             </div>
             <button 
               onClick={toggleTheme} 
@@ -223,7 +235,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
                   <div className="font-black text-slate-300 tracking-wide max-w-[275px] truncate">{user.email || user.userName}</div>
                   <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5 flex items-center justify-end gap-1">
                     <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
-                    {user.role || 'Player'}
+                    {user?.role ? user.role.replace(/([A-Z])/g, ' $1').trim() : 'Player'}
                   </div>
                 </div>
                 <div className="w-px h-6 bg-slate-800 hidden sm:block"></div>
@@ -270,7 +282,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
                 <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-indigo-950/10 flex items-center justify-between shrink-0 pl-6">
                   <div>
                     <h3 className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <span>🧠 Context Assistant</span>
+                      <span>🐰 Academy Assistant</span>
                       <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 normal-case bg-slate-200 dark:bg-slate-850 px-1 py-0.5 rounded font-mono">
                         {chatWidth}px
                       </span>
@@ -315,8 +327,8 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
                         handleSendUniversalQuery(e as any);
                       }
                     }}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 dark:focus:border-indigo-900 text-slate-800 dark:text-slate-200 rounded-lg p-2 text-[11px] focus:outline-none resize-none font-sans"
-                    placeholder="Ask copilot..."
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 dark:focus:border-indigo-900 text-slate-800 dark:text-slate-200 rounded-lg p-2 text-[11px] focus:outline-none min-h-[52px] max-h-[156px] resize-y font-sans"
+                    placeholder="Ask academy assistant..."
                   />
                   <button type="submit" disabled={loading || !chatInput.trim()} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg text-[10px] h-fit self-end mb-1">⚡</button>
                 </form>

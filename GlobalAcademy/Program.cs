@@ -128,10 +128,15 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
     // Inside your main Program.cs file where services are wired up:
     var playerBookingPlugin =
         serviceProvider.GetRequiredService<PlayerBookingPlugin>();
-
     kernelBuilder.Plugins.AddFromObject(
         playerBookingPlugin,
         "PlayerBookingPlugin");
+
+    var directorOperationsPlugin = 
+        serviceProvider.GetRequiredService<DirectorOperationsPlugin>();
+    kernelBuilder.Plugins.AddFromObject(
+        directorOperationsPlugin,
+        "DirectorOperationsPlugin");
 
     return kernelBuilder.Build();
 });
@@ -139,6 +144,7 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
 // Register the AI Match-Saver engine service layer
 builder.Services.AddScoped<MatchSaverService>();
 builder.Services.AddScoped<PlayerBookingPlugin>();
+builder.Services.AddScoped<DirectorOperationsPlugin>();
 
 var app = builder.Build();
 

@@ -307,6 +307,37 @@ public class ConversationalAgenticApiTests : IClassFixture<WebApplicationFactory
         Assert.Contains("[FRONTEND_ACTION:SET_DATE", result.AgentResponse);
     }
 
+[Fact]
+    public async Task DirectorChat_CourtLifecycleCRUD_E2ETest()
+    {
+        var client = _factory.CreateClient();
+        var loginPayload = new
+        {
+            email = "director@londonvanguard.com",
+            password = "LondonPass123!"
+        };
+
+        // --- STEP 2: EXECUTE API REQUEST VIA HTTP CHANNELS ---
+        var responseX = await client.PostAsJsonAsync("api/Auth/login", loginPayload);
+        Assert.True(responseX.IsSuccessStatusCode, "API Login request failed entirely.");
+
+        var loginResult = await responseX.Content.ReadFromJsonAsync<LoginResponseDto>();
+        Assert.NotNull(loginResult?.Token);
+
+        // 3. Authenticate the request: Simulate a logged-in AcademyDirector.
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.Token);
+
+        // --- STEP 2: TEST CREATE COURT VIA NATURAL TEXT CONVERSATION LOOP ---
+        //var createPayload = new { UserInput = "Create a brand new indoor Grass court named 'Center Stage Arena' with a dry coefficient of 1.2 and wear limit of 400 under branch 'Director Test Campus'." };
+        
+        var createPayload = new { UserInput = "can you list all active non-decommisioned courts."};
+        var createChatRes = await client.PostAsJsonAsync("/api/AiOrchestration/director-chat", createPayload);
+        Assert.True(createChatRes.IsSuccessStatusCode);
+        var createResult = await createChatRes.Content.ReadFromJsonAsync<UniversalChatResponseTestModel>();
+        Assert.Contains("[FRONTEND_ACTION:SET_DATE:", createResult.AgentResponse);
+
+    }
+
     // Matching lower camelCase test response container DTO records
     public class UniversalChatResponseTestModel
     {

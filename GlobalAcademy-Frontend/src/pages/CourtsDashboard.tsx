@@ -235,6 +235,13 @@ export default function CourtsDashboard() {
                   <option value="Europe/London">Europe/London</option>
                   <option value="Asia/Dubai">Asia/Dubai</option>
                   <option value="America/New_York">America/New_York</option>
+                  <option value="America/Vancouver">America/Vancouver (PST/PDT)</option>
+                  <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+                  <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                  <option value="Europe/Paris">Europe/Paris (CEST/CET)</option>
+                  <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                  <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+                  <option value="UTC">UTC (Universal Coordinated Time)</option>                  
                 </select>
                 <button type="submit" className="bg-emerald-600 font-bold px-3 py-1 rounded-lg text-slate-950">Save</button>
                 <button type="button" onClick={() => setIsEditingBranch(false)} className="bg-slate-800 px-3 py-1 rounded-lg text-slate-300">Cancel</button>

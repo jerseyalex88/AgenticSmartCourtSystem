@@ -24,6 +24,7 @@ export default function AdminTools() {
   // Input states matching your backend C# identity attributes
   const [createUserPayload, setCreateUserPayload] = useState({
     email: '',
+    userName: '',
     password: '',
     role: 'Player',
     phoneNumber: ''
@@ -31,6 +32,7 @@ export default function AdminTools() {
 
   const [editUserPayload, setEditUserPayload] = useState({
     email: '',
+    userName: '',
     role: 'Player',
     phoneNumber: '',
     isActive: true
@@ -62,6 +64,7 @@ export default function AdminTools() {
     setEditingUserId(user.id);
     setEditUserPayload({
       email: user.email,
+      userName: user.userName,
       role: user.role,
       phoneNumber: user.phoneNumber || '',
       isActive: user.isActive
@@ -75,7 +78,7 @@ export default function AdminTools() {
       setUsers([...users, res.data]);
       setShowCreateModal(false);
       setUiSuccessMessage(`🎉 Account ${res.data.email} successfully provisioned to PostgreSQL system registries.`);
-      setCreateUserPayload({ email: '', password: '', role: 'Player', phoneNumber: '' });
+      setCreateUserPayload({ email: '', userName: '', password: '', role: 'Player', phoneNumber: '' });
     } catch (err: any) {
       setActionError(err.response?.data || 'Relational Exception: Could not persist new user identity row.');
     }
@@ -86,8 +89,12 @@ export default function AdminTools() {
     handleClearMessages();
     if (!editingUserId) return;
     try {
-      await apiClient.put(`/Auth/users/${editingUserId}`, editUserPayload);
-      setUsers(users.map(u => u.id === editingUserId ? { ...u, ...editUserPayload } : u));
+      // 1. Capture the updated data object returned by the C# controller
+      const response = await apiClient.put(`/Auth/users/${editingUserId}`, editUserPayload);
+      
+      // 2. Map across your array utilizing the explicit payload returned by PostgreSQL registries
+      setUsers(users.map(u => u.id === editingUserId ? response.data : u));
+      
       setEditingUserId(null);
       setUiSuccessMessage('🎉 Identity modifications committed successfully past multi-tenant barriers.');
     } catch (err: any) {
@@ -108,7 +115,8 @@ export default function AdminTools() {
   };
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchQuery.toLowerCase())
+    user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.userName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) return <div className="text-center py-12 text-xs font-mono text-slate-500">Synchronizing Identity Rosters...</div>;
@@ -145,6 +153,7 @@ export default function AdminTools() {
             {filteredUsers.map((user) => (
               <tr key={user.id} className="hover:bg-slate-850/30 transition">
                 <td className="p-4 font-semibold text-slate-200">
+                  <div className="text-emerald-400 font-mono">@{user.userName}</div>
                   <div>{user.email}</div>
                   <div className="text-[10px] text-slate-500 font-mono mt-0.5">{user.id}</div>
                 </td>
@@ -172,7 +181,20 @@ export default function AdminTools() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <form onSubmit={handleCreateIdentityUser} className="space-y-4">
             <h3 className="text-base font-black text-slate-100">Provision Fresh Account Entry</h3>
-            
+              <div>
+                  <label className="block font-bold text-slate-400 uppercase mb-1">User Handle (Username)</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={showCreateModal ? createUserPayload.userName : editUserPayload.userName} 
+                    onChange={(e) => showCreateModal 
+                      ? setCreateUserPayload({...createUserPayload, userName: e.target.value})
+                      : setEditUserPayload({...editUserPayload, userName: e.target.value})
+                    } 
+                    placeholder="SamSpade" 
+                    className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500" 
+                  />
+                </div>
               <div>
                 <label className="block font-bold text-slate-400 uppercase mb-1">Email Coordinates</label>
                 <input type="email" required value={createUserPayload.email} onChange={(e) => setCreateUserPayload({...createUserPayload, email: e.target.value})} placeholder="staff@domain.com" className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" />
@@ -209,7 +231,20 @@ export default function AdminTools() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <form onSubmit={handleUpdateIdentityUser} className="space-y-4">
             <h3 className="text-base font-black text-slate-100">Modify Account Identity Profile</h3>
-            
+              <div>
+                  <label className="block font-bold text-slate-400 uppercase mb-1">User Handle (Username)</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={showCreateModal ? createUserPayload.userName : editUserPayload.userName} 
+                    onChange={(e) => showCreateModal 
+                      ? setCreateUserPayload({...createUserPayload, userName: e.target.value})
+                      : setEditUserPayload({...editUserPayload, userName: e.target.value})
+                    } 
+                    placeholder="SamSpade" 
+                    className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500" 
+                  />
+                </div>
               <div>
                 <label className="block font-bold text-slate-400 uppercase mb-1">User Email Reference</label>
                 <input type="email" required value={editUserPayload.email} onChange={(e) => setEditUserPayload({...editUserPayload, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" />

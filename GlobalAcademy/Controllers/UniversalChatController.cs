@@ -137,6 +137,117 @@ public class UniversalChatController : ControllerBase
             return StatusCode(500, new { Message = $"Universal Assistant Pipeline Exception: {ex.Message}" });
         }
     }
+
+    // =========================================================================
+    // ACADEMY DIRECTOR ADMIN ORCHESTRATION PIPELINE
+    // =========================================================================
+    [HttpPost("director-chat")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    public async Task<IActionResult> DispatchDirectorQuery([FromBody] UniversalChatRequestDto model)
+    {
+        try
+        {
+            string userInput = model.UserInput.Trim();
+            if (string.IsNullOrEmpty(userInput)) return BadRequest("Input text vector empty.");
+
+            // 1. EXTRACTION: Pull the authenticated user's name and multi-tenant firewall parameters
+            var currentUserName = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("xmlsoap.org"))?.Value ?? HttpContext.User.Identity?.Name;
+            var tenantIdClaim = HttpContext.User.FindFirst("AcademyId")?.Value;
+            var userRole = HttpContext.User.FindFirst(ClaimTypes.Role)?.Value ?? "Unknown";
+            var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(currentUserName) || !Guid.TryParse(tenantIdClaim, out Guid academyGuid))
+            {
+                return Unauthorized("Security Exception: Security perimeter claims unreadable.");
+            }
+
+            // 3. Inject multi-tenant partition parameters into the stateless ambient dictionary
+            _kernel.Data["currentUserName"] = currentUserName;
+            _kernel.Data["academyId"] = academyGuid;
+            _kernel.Data["userRole"] = userRole;
+            _kernel.Data["userId"] = userId;
+
+            // 4. Construct high-clearance executive instruction templates
+            var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+            var chatHistory = new ChatHistory();
+
+            chatHistory.AddSystemMessage(
+                $"You are the Smart Court OS Executive Director Agent. You are talking to {currentUserName}. " +
+                $"Your administrative partition boundary is locked to AcademyId: {academyGuid}. " +
+                "\n\nEXECUTIVE COMPLIANCE MANDATES:" +
+                "\n- You possess high-clearance access to manage facility assets (Branches and Courts) and employee rosters via complete CRUD matrices." +
+                "\n- Lookups must accept natural string matching names or explicit Guid keys." +
+                "\n- Keep engineering message summaries clear, universal, and scannable." +
+                "\n\nBRANCH CRUD Lifecycles Tool Belt Instructions:" +
+                "\n1. To provision or add a venue, use 'AdminCreateBranchAsync'." +
+                "\n2. To list active branches, run 'AdminGetBranchesAsync'. If the director asks for courts generally without specifying a location context (e.g., 'list all active courts'), you MUST query 'AdminGetBranchesAsync' first to discover what branches exist before attempting court lookups. Do not assume or fabricate branch names." +
+                "\n3. To edit details, use 'AdminUpdateBranchAsync'." +
+                "\n4. To soft-delete a venue, use 'AdminDecommissionBranchAsync'. This blocks if any related bookings exist." +
+                "\n\nCOURT CRUD Lifecycles Tool Belt Instructions:" +
+                "\n1. Create: 'AdminCreateCourtAsync' (collect branchIdentifier, courtName, surfaceType, isIndoor, dryCoefficient, maintenanceCeiling)." +
+                "\n2. Retrieve: 'AdminGetBranchCourtsAsync' (requires explicit branchIdentifier context)." +
+                "\n3. Update: 'AdminUpdateCourtAsync'." +
+                "\n4. Delete: 'AdminDecommissionCourtAsync' (soft-deletes after blocking if historical bookings exist)." +
+
+                "\n\nMULTIPLE ADMINISTRATIVE ACTIONS BATCH LAWS:" +
+                "\n- If a director requests multiple identical operations at once (e.g., 'Create 3 new courts named Court A, Court B, Court C for Branch London' or 'Delete Court 1 and Court 2'), you MUST extract the unique individual parameters into separate entities." +
+                "\n- Loop through and invoke the corresponding CRUD tool (e.g., 'AdminCreateCourtAsync' or 'AdminDecommissionCourtAsync') sequentially, once for each targeted item." +
+                "\n- Combine the text results from all looped executions into a single, succinct final response summary for the director." +
+                "\n- Do not skip items mid-loop if one fails; report both successes and failures clearly." +
+
+                "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" +
+                "\nWhenever an operation settles successfully, you MUST preserve and append the trailing grid layout token " +
+                "'[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]' replacing YYYY-MM-DD with today's target tracking date to force immediate client rendering refreshes."
+            );
+
+            chatHistory.AddSystemMessage(
+                $"You are the Smart Court OS Executive Director Agent. You are talking to {currentUserName}. " +
+                $"Your administrative partition boundary is locked to AcademyId: {academyGuid}. " +
+                "\n\nEXECUTIVE COMPLIANCE MANDATES:" +
+                "\n- You possess high-clearance access to manage facility assets (Branches and Courts) and employee identity accounts via complete CRUD matrices." +
+                "\n- Lookups must accept natural string matching names or explicit Guid keys." +
+                "\n- Keep engineering message summaries clear, universal, and scannable." +
+                "\n\nMULTIPLE ADMINISTRATIVE ACTIONS BATCH LAWS:" +
+                "\n- If a director requests multiple identical operations at once (e.g., 'Provision 3 new staff entries' or 'Delete these 2 accounts'), extract the unique individual parameters into separate entities." +
+                "\n- Loop through and invoke the corresponding CRUD tool sequentially, once for each targeted item, and combine results into a single final scannable response summary." +
+                "\n\nIDENTITY ACCOUNT MANAGEMENT CRUD Tool Belt Instructions:" +
+                "\n1. Create Account: 'AdminProvisionUserAsync' (collect email, user name, password, role, phoneNumber)." +
+                "\n1b. Create Account: 'AdminProvisionUserAsync' (Always extract a distinct email coordinate string and a separate user specified name handle or profile nickname parameter)." +
+                "\n2. Retrieve Roster: 'AdminGetTenantUsersAsync' (takes zero arguments, lists all accounts inside your academy)." +
+                "\n3. Update Profile: 'AdminUpdateUserAsync' (requires explicit userId database string identifier along with email, userName handle, role, phoneNumber, and isActive flag)." +
+                "\n4. Delete Account: 'AdminDeleteUserAsync' (wipes account credentials permanently using its string userId)." +
+                "\n\nBRANCH/COURT RECOVERY ENGINES:" +
+                "\n- [Include previous operational branch and court instructions here...]" +
+                "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" +
+                "\nWhenever an operation settles successfully, you MUST preserve and append the trailing grid layout token " +
+                "'[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]' replacing YYYY-MM-DD with today's target tracking date to force immediate client rendering refreshes."
+            );
+
+            // Feed full user statement into history tracking
+            chatHistory.AddUserMessage(model.UserInput);
+
+            // 5. Invoke conversational completion loop with Auto-Invocation tool belt parameters active
+            // Execute the model completion loop using automatic function invocation call routing configurations
+            var openAiPromptExecutionSettings = new Microsoft.SemanticKernel.Connectors.OpenAI.OpenAIPromptExecutionSettings
+            {
+                ToolCallBehavior = Microsoft.SemanticKernel.Connectors.OpenAI.ToolCallBehavior.AutoInvokeKernelFunctions
+            };
+
+            var agentResponseContent = await chatCompletionService.GetChatMessageContentAsync(
+                chatHistory: chatHistory,
+                executionSettings: openAiPromptExecutionSettings,
+                kernel: _kernel);
+
+            return Ok(new UniversalChatResponseDto(
+                AgentResponse: agentResponseContent.Content ?? "Operation processed cleanly with no text feedback output lines."
+            ));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"🚨 [DIRECTOR ENGINE ERROR]: Orchestration pipeline interception fault: {ex.Message}");
+        }
+    }
+
 }
 
 public record UniversalChatRequestDto(string UserInput);
