@@ -6,10 +6,10 @@ import SemanticLogin from '../components/SemanticLogin';
 
 export default function Login() {
   const { saveSession } = useAuth();
-  const [email, setEmail] = useState('chiki@wimbeldon.com');
-  const [password, setPassword] = useState('Password123!');
-  // const [email, setEmail] = useState('director@londonvanguard.com');
-  // const [password, setPassword] = useState('LondonPass123!');
+  // const [email, setEmail] = useState('chiki@wimbeldon.com');
+  // const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('director@londonvanguard.com');
+  const [password, setPassword] = useState('LondonPass123!');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   // ADD MODE TRACKING STATE HOOK

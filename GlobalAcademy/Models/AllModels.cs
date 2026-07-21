@@ -25,6 +25,9 @@ namespace GlobalAcademy.Models {
 
         // THE GOLDEN RULE: Standard auditing markers locked exclusively to UTC
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+        // --- PHASE 3 ADMINISTRATIVE METRICS ---
+        // Soft-delete marker ensuring audit history persistence while unlinking from live queries
+        public bool IsDecommissioned { get; set; } = false; 
 
         // Relational navigation properties
         public Academy? Academy { get; set; }
@@ -46,6 +49,9 @@ namespace GlobalAcademy.Models {
         public string Status { get; set; } = "Open"; // "Open", "Rained_Out", "Maintenance_Locked"
         public double DryCoefficient { get; set; } = 1.0; 
         public DateTime? EstimatedReopenTimeUtc { get; set; }
+        // --- PHASE 3 ADMINISTRATIVE METRICS ---
+        // Soft-delete state protecting downstream relational integrity metrics
+        public bool IsDecommissioned { get; set; } = false;
 
         // =========================================================================
         // SURFACE DEGRADATION & WEAR METRICS
