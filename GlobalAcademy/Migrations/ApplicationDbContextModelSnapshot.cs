@@ -125,6 +125,9 @@ namespace GlobalAcademy.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDecommissioned")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -171,6 +174,9 @@ namespace GlobalAcademy.Migrations
                     b.Property<string>("FloodlightState")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsDecommissioned")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsIndoor")
                         .HasColumnType("boolean");
