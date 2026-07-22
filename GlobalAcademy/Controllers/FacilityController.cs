@@ -2,6 +2,7 @@ using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using GlobalAcademy.Security;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -17,11 +18,13 @@ public class FacilityController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly ILocalTimeEngine _timeEngine;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public FacilityController(ApplicationDbContext context, ILocalTimeEngine timeEngine)
+    public FacilityController(ApplicationDbContext context, ILocalTimeEngine timeEngine, UserManager<IdentityUser> userManager)
     {
         _context = context;
         _timeEngine = timeEngine;
+        _userManager = userManager;
     }
 
     // =========================================================================
@@ -151,19 +154,49 @@ public class FacilityController : ControllerBase
     // =========================================================================
     // USER-ROSTER MAPPINGS MATRIX MANAGEMENT
     // =========================================================================
-
     [HttpGet("branches/{branchId:guid}/roster")]
     public async Task<IActionResult> GetBranchRoster(Guid branchId)
     {
         var branchExists = await _context.Branches.AnyAsync(b => b.Id == branchId);
         if (!branchExists) return NotFound("Target branch location does not exist under your tenant profile.");
 
-        var roster = await _context.UserBranches
-            .Include(ub => ub.AssignedCourts)
+        // 1. Fetch raw roster relation join lines from database context tracking maps
+        var userBranches = await _context.UserBranches
             .Where(ub => ub.BranchId == branchId)
             .ToListAsync();
 
-        return Ok(roster);
+        var rosterPayload = new List<object>();
+
+        // 2. Loop and map across identity tables to inject missing Email and UserName strings
+        foreach (var ub in userBranches)
+        {
+            var identityUser = await _userManager.FindByIdAsync(ub.UserId);
+            
+            // Fetch granular task permissions matrix for this specific branch context alignment
+            var clearances = await _context.UserCourts
+                .Where(uc => uc.BranchId == branchId && uc.UserId == ub.UserId)
+                .Select(uc => new
+                {
+                    userId = uc.UserId,
+                    branchId = uc.BranchId,
+                    courtId = uc.CourtId,
+                    accessType = uc.AccessType
+                })
+                .ToListAsync();
+
+            rosterPayload.Add(new
+            {
+                userId = ub.UserId,
+                email = identityUser?.Email ?? "Unlinked Profile",
+                userName = identityUser?.UserName ?? "NoHandle", // 👈 INJECTS NICKNAME PROFILE STRINGS
+                branchId = ub.BranchId,
+                assignmentRole = ub.AssignmentRole,
+                assignedAtUtc = ub.AssignedAtUtc,
+                courtClearances = clearances // 👈 UNLOCKS THE 8 COURTS PRIMARYGROUNDSKEEPER BADGES
+            });
+        }
+
+        return Ok(rosterPayload);
     }
 
     [HttpPost("branches/assign-user")]

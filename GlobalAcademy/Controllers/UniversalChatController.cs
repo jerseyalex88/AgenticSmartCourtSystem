@@ -216,6 +216,11 @@ public class UniversalChatController : ControllerBase
                 "\n2. Retrieve Roster: 'AdminGetTenantUsersAsync' (takes zero arguments, lists all accounts inside your academy)." +
                 "\n3. Update Profile: 'AdminUpdateUserAsync' (requires explicit userId database string identifier along with email, userName handle, role, phoneNumber, and isActive flag)." +
                 "\n4. Delete Account: 'AdminDeleteUserAsync' (wipes account credentials permanently using its string userId)." +
+                "\n\nUSER FACILITY ROSTER MANAGEMENT CRUD Tool Belt Instructions:" +
+                "\n1. Assign to Branch: 'AdminAssignUserToBranchAsync' (collect userIdentifier, branchIdentifier, and assignmentRole)." +
+                "\n2. Remove from Branch: 'AdminRemoveUserFromBranchAsync' (collect userIdentifier and branchIdentifier. Note that this cascades out downstream court assignments via an atomic transaction block)." +
+                "\n3. Assign task to Court: 'AdminAssignUserToCourtAsync' (collect userIdentifier, branchIdentifier, courtIdentifier, and accessType. This will automatically block if the user is not found on the active branch roster blueprint first)." +
+                "\n4. Unlink from Court task: 'AdminRemoveUserFromCourtAsync' (collect userIdentifier, branchIdentifier, and courtIdentifier)." +   
                 "\n\nBRANCH/COURT RECOVERY ENGINES:" +
                 "\n- [Include previous operational branch and court instructions here...]" +
                 "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" +

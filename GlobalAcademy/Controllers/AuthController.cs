@@ -238,40 +238,65 @@ public class AuthController : ControllerBase
         var currentAcademyId = _tenantProvider.GetTenantId().ToString();
         var claims = await _userManager.GetClaimsAsync(user);
         var academyClaim = claims.FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value;
-        if (academyClaim != currentAcademyId) return Forbid("Security Violation: Unauthorized cross-tenant modification attempt intercepted.");
+        if (academyClaim != currentAcademyId) return Forbid("Security Violation: Unauthorized cross-tenant modification attempt.");
 
-        // Update core mutable properties
-        user.Email = model.Email;
-        user.UserName = model.Email; // Standard identity sync behavior
-        user.PhoneNumber = model.PhoneNumber;
-        user.EmailConfirmed = model.IsActive; // Mapping IsActive state onto EmailConfirmed for testing flag visibility
-
-        var updateResult = await _userManager.UpdateAsync(user);
-        if (!updateResult.Succeeded) return BadRequest("Failed to update identity registration rows.");
-
-        // Synchronize Security Role Assignments
-        var currentRoles = await _userManager.GetRolesAsync(user);
-        if (!currentRoles.Contains(model.Role))
+        // 1. OPEN TRANSACTION BOUNDARY FILTER
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        try
         {
-            await _userManager.RemoveFromRolesAsync(user, currentRoles);
-            await _userManager.AddToRoleAsync(user, model.Role);
+            // Update core mutable properties
+            user.Email = model.Email.Trim();
+            user.UserName = model.UserName.Trim(); 
+            user.PhoneNumber = model.PhoneNumber;
+            user.EmailConfirmed = model.IsActive; 
 
-            // Update the token generation role claim row
-            var oldRoleClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role");
-            if (oldRoleClaim != null) await _userManager.RemoveClaimAsync(user, oldRoleClaim);
-            await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, model.Role));
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+                return BadRequest("Failed to update identity registration rows.");
+            }
+
+            // Synchronize Security Role Assignments
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            if (!currentRoles.Contains(model.Role))
+            {
+                var removeRoleResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                var addRoleResult = await _userManager.AddToRoleAsync(user, model.Role);
+
+                if (!removeRoleResult.Succeeded || !addRoleResult.Succeeded)
+                {
+                    await transaction.RollbackAsync();
+                    return BadRequest("Failed to update security role mappings.");
+                }
+
+                // Update the token generation role claim row
+                var oldRoleClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role");
+                if (oldRoleClaim != null) await _userManager.RemoveClaimAsync(user, oldRoleClaim);
+                await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, model.Role));
+            }
+
+            // 2. COMMIT TRANSACTION LIVE TO POSTGRESQL REGISTRIES
+            await transaction.CommitAsync();
+
+            return Ok(new
+            {
+                id = user.Id,
+                email = user.Email,
+                userName = user.UserName,
+                role = model.Role,
+                isActive = user.EmailConfirmed,
+                phoneNumber = user.PhoneNumber
+            });
         }
-
-        return Ok(new
+        catch (Exception)
         {
-            id = user.Id,
-            email = user.Email,
-            userName = user.UserName,
-            role = model.Role,
-            isActive = user.EmailConfirmed,
-            phoneNumber = user.PhoneNumber
-        });
+            // Safe cascading error rollback safeguard
+            await transaction.RollbackAsync();
+            return StatusCode(500, "Transaction Exception: Identity updates aborted due to an internal system fault.");
+        }
     }
+
     // =========================================================================
     // PERMANENTLY PURGE USER IDENTITY FROM THE TENANT DATABASE MIGRATION (DELETE)
     // =========================================================================

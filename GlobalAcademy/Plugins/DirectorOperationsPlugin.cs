@@ -413,28 +413,37 @@ public class DirectorOperationsPlugin
         var academyClaim = claims.FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value;
         if (academyClaim != academyId.ToString()) return "Security Blocked: Intercepted unauthorized cross-tenant modification hazard.";
 
-        user.UserName = userName;
-        user.Email = email;
-        user.UserName = email; 
-        user.PhoneNumber = phoneNumber;
-        user.EmailConfirmed = isActive; 
-
-        var updateResult = await _userManager.UpdateAsync(user);
-        if (!updateResult.Succeeded) return "Identity Exception: Failed to preserve update modifications to the persistence layer.";
-
-        var currentRoles = await _userManager.GetRolesAsync(user);
-        if (!currentRoles.Contains(role))
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        try
         {
-            await _userManager.RemoveFromRolesAsync(user, currentRoles);
-            await _userManager.AddToRoleAsync(user, role);
+            user.Email = email;
+            user.UserName = userName;
+            user.PhoneNumber = phoneNumber;
+            user.EmailConfirmed = isActive; 
 
-            var oldRoleClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role");
-            if (oldRoleClaim != null) await _userManager.RemoveClaimAsync(user, oldRoleClaim);
-            await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, role));
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded) return "Identity Exception: Failed to preserve update modifications to the persistence layer.";
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            if (!currentRoles.Contains(role))
+            {
+                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                await _userManager.AddToRoleAsync(user, role);
+
+                var oldRoleClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role");
+                if (oldRoleClaim != null) await _userManager.RemoveClaimAsync(user, oldRoleClaim);
+                await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, role));
+            }
+
+            string todayStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            return $"Success! Account profile '{email}' has been cleanly modified past tenant filters. [FRONTEND_ACTION:SET_DATE:{todayStr}]";
         }
-
-        string todayStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
-        return $"Success! Account profile '{email}' has been cleanly modified past tenant filters. [FRONTEND_ACTION:SET_DATE:{todayStr}]";
+        catch (Exception)
+        {
+            // Safe cascading error rollback safeguard
+            await transaction.RollbackAsync();
+            return "FAILED Transaction Exception: Identity updates aborted due to an internal system fault.";
+        }
     }
 
     [KernelFunction, Description("Permanently purges and deletes a user account registration from the active multi-tenant system registries.")]
@@ -459,6 +468,250 @@ public class DirectorOperationsPlugin
 
         string todayStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
         return $"Success! Account record '{user.Email}' has been permanently wiped from identity storage tables. [FRONTEND_ACTION:SET_DATE:{todayStr}]";
+    }
+
+    [KernelFunction, Description("Assigns and maps an existing user profile onto a branch roster matrix line with a specific operational tier role.")]
+    public async Task<string> AdminAssignUserToBranchAsync(
+        Kernel kernel,
+        [Description("The unique identifier database Guid or handle username of the employee profile to route")] string userIdentifier,
+        [Description("The unique identifier database Guid or natural name string of the target facility branch")] string branchIdentifier,
+        [Description("The operational task assignment role tier (e.g., 'Groundskeeper', 'BranchManager', 'Staff')")] string assignmentRole)
+    {
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Missing or invalid security academy perimeter claim scope.";
+        }
+
+        Microsoft.AspNetCore.Identity.IdentityUser? user = null;
+        if (Guid.TryParse(userIdentifier, out var userGuid))
+        {
+            user = await _userManager.FindByIdAsync(userIdentifier);
+        }
+        else
+        {
+            user = await _userManager.FindByNameAsync(userIdentifier) ?? await _userManager.FindByEmailAsync(userIdentifier);
+        }
+        if (user == null) return $"Validation Error: Target account profile matching '{userIdentifier}' not found.";
+
+        Branch? branch = null;
+        if (Guid.TryParse(branchIdentifier, out var branchGuid))
+        {
+            branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Id == branchGuid && b.AcademyId == academyId);
+        }
+        else
+        {
+            branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Name.ToLower() == branchIdentifier.ToLower() && b.AcademyId == academyId);
+        }
+        if (branch == null) return $"Validation Error: Target facility branch venue matching '{branchIdentifier}' not found.";
+        if (branch.IsDecommissioned) return "Operation Aborted: Target destination branch venue is marked decommissioned.";
+
+        var alreadyAssigned = await _dbContext.UserBranches
+            .AnyAsync(ub => ub.UserId == user.Id && ub.BranchId == branch.Id && ub.AcademyId == academyId);
+        if (alreadyAssigned) return $"Notification: User @{user.UserName} already carries an active assignment row on branch '{branch.Name}'.";
+
+        var userBranch = new UserBranch
+        {
+            AcademyId = academyId,
+            UserId = user.Id,
+            BranchId = branch.Id,
+            AssignmentRole = assignmentRole,
+            AssignedAtUtc = DateTime.UtcNow
+        };
+
+        _dbContext.UserBranches.Add(userBranch);
+        await _dbContext.SaveChangesAsync();
+
+        string todayStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        return $"Success! User @{user.UserName} successfully assigned to branch '{branch.Name}' as a '{assignmentRole}'. [FRONTEND_ACTION:SET_DATE:{todayStr}]";
+    }
+
+    [KernelFunction, Description("Purges a user assignment entry from a branch roster and cascades clearances out of downstream court configurations.")]
+    public async Task<string> AdminRemoveUserFromBranchAsync(
+        Kernel kernel,
+        [Description("The unique identifier Guid or handle username of the employee profile to remove")] string userIdentifier,
+        [Description("The unique identifier Guid or natural name string of the branch venue profile")] string branchIdentifier)
+    {
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Session claims parsing validation failure.";
+        }
+
+        Microsoft.AspNetCore.Identity.IdentityUser? user = null;
+        if (Guid.TryParse(userIdentifier, out var userGuid))
+        {
+            user = await _userManager.FindByIdAsync(userIdentifier);
+        }
+        else
+        {
+            user = await _userManager.FindByNameAsync(userIdentifier) ?? await _userManager.FindByEmailAsync(userIdentifier);
+        }
+        if (user == null) return $"Validation Error: Target identity account reference matching '{userIdentifier}' missing.";
+
+        Branch? branch = null;
+        if (Guid.TryParse(branchIdentifier, out var branchGuid))
+        {
+            branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Id == branchGuid && b.AcademyId == academyId);
+        }
+        else
+        {
+            branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Name.ToLower() == branchIdentifier.ToLower() && b.AcademyId == academyId);
+        }
+        if (branch == null) return $"Validation Error: Facility branch matching '{branchIdentifier}' not found.";
+
+        var assignment = await _dbContext.UserBranches
+            .FirstOrDefaultAsync(ub => ub.BranchId == branch.Id && ub.UserId == user.Id && ub.AcademyId == academyId);
+            
+        if (assignment == null) return $"Validation Error: No active roster assignment maps exist linking @{user.UserName} to branch '{branch.Name}'.";
+
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        try
+        {
+            var nestedCourts = await _dbContext.UserCourts
+                .Where(uc => uc.BranchId == branch.Id && uc.UserId == user.Id && uc.AcademyId == academyId)
+                .ToListAsync();
+            _dbContext.UserCourts.RemoveRange(nestedCourts);
+
+            _dbContext.UserBranches.Remove(assignment);
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            string todayStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            return $"Success! User @{user.UserName} dropped cleanly from branch '{branch.Name}' roster. Child court clearances purged. [FRONTEND_ACTION:SET_DATE:{todayStr}]";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return $"Transaction Failure: Unable to complete roster purge: {ex.Message}";
+        }
+    }
+    [KernelFunction, Description("Assigns a specific court maintenance or operational access task routing mapping to a branch-rostered user.")]
+    public async Task<string> AdminAssignUserToCourtAsync(
+        Kernel kernel,
+        [Description("The unique identifier Guid or handle username of the employee profile")] string userIdentifier,
+        [Description("The unique identifier Guid or natural name string of the branch venue profile")] string branchIdentifier,
+        [Description("The unique identifier Guid or natural name string of the specific court asset")] string courtIdentifier,
+        [Description("The duty task tracking clearance type (e.g., 'PrimaryGroundskeeper', 'CoachSlot')")] string accessType)
+    {
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Invalid security token profile context parameters.";
+        }
+
+        Microsoft.AspNetCore.Identity.IdentityUser? user = null;
+        if (Guid.TryParse(userIdentifier, out var userGuid))
+        {
+            user = await _userManager.FindByIdAsync(userIdentifier);
+        }
+        else
+        {
+            user = await _userManager.FindByNameAsync(userIdentifier) ?? await _userManager.FindByEmailAsync(userIdentifier);
+        }
+        if (user == null) return "Validation Error: Selected target user does not exist.";
+
+        Branch? branch = null;
+        if (Guid.TryParse(branchIdentifier, out var branchGuid))
+        {
+            branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Id == branchGuid && b.AcademyId == academyId);
+        }
+        else
+        {
+            branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Name.ToLower() == branchIdentifier.ToLower() && b.AcademyId == academyId);
+        }
+        if (branch == null) return "Validation Error: Target branchvenue configuration location missing.";
+
+        var hasBranchAccess = await _dbContext.UserBranches
+            .AnyAsync(ub => ub.UserId == user.Id && ub.BranchId == branch.Id && ub.AcademyId == academyId);
+        if (!hasBranchAccess) 
+        {
+            return $"Security Exception Blocked: User @{user.UserName} must be explicitly added to the Branch Roster for '{branch.Name}' before receiving specific court tasks.";
+        }
+
+        Court? court = null;
+        if (Guid.TryParse(courtIdentifier, out var courtGuid))
+        {
+            court = await _dbContext.Courts.FirstOrDefaultAsync(c => c.Id == courtGuid && c.BranchId == branch.Id && c.AcademyId == academyId);
+        }
+        else
+        {
+            court = await _dbContext.Courts.FirstOrDefaultAsync(c => c.Name.ToLower() == courtIdentifier.ToLower() && c.BranchId == branch.Id && c.AcademyId == academyId);
+        }
+        if (court == null) return $"Validation Error: Target court asset matching name '{courtIdentifier}' does not exist inside branch venue '{branch.Name}'.";
+
+        var alreadyAssigned = await _dbContext.UserCourts
+            .AnyAsync(uc => uc.UserId == user.Id && uc.BranchId == branch.Id && uc.CourtId == court.Id && uc.AcademyId == academyId);
+        if (alreadyAssigned) return $"Notification: User @{user.UserName} already carries an active operational layout assignment task on court '{court.Name}'.";
+
+        var userCourt = new UserCourt
+        {
+            AcademyId = academyId,
+            UserId = user.Id,
+            BranchId = branch.Id,
+            CourtId = court.Id,
+            AccessType = accessType
+        };
+
+        _dbContext.UserCourts.Add(userCourt);
+        await _dbContext.SaveChangesAsync();
+
+        string todayStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        return $"Success! User @{user.UserName} mapped task routing access '{accessType}' onto court '{court.Name}'. [FRONTEND_ACTION:SET_DATE:{todayStr}]";
+    }
+
+    [KernelFunction, Description("Unlinks a specific user court clearance task or operation assignment node.")]
+    public async Task<string> AdminRemoveUserFromCourtAsync(
+        Kernel kernel,
+        [Description("The unique identifier Guid or handle username of the employee profile")] string userIdentifier,
+        [Description("The unique identifier Guid or natural name string of the branch venue")] string branchIdentifier,
+        [Description("The unique identifier Guid or natural name string of the specific court structure asset")] string courtIdentifier)
+    {
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Invalid security token identity mapping context parameters.";
+        }
+
+        Microsoft.AspNetCore.Identity.IdentityUser? user = null;
+        if (Guid.TryParse(userIdentifier, out var userGuid))
+        {
+            user = await _userManager.FindByIdAsync(userIdentifier);
+        }
+        else
+        {
+            user = await _userManager.FindByNameAsync(userIdentifier) ?? await _userManager.FindByEmailAsync(userIdentifier);
+        }
+        if (user == null) return "Validation Error: Profile reference unreadable.";
+
+        Branch? branch = null;
+        if (Guid.TryParse(branchIdentifier, out var branchGuid))
+        {
+            branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Id == branchGuid && b.AcademyId == academyId);
+        }
+        else
+        {
+            branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Name.ToLower() == branchIdentifier.ToLower() && b.AcademyId == academyId);
+        }
+        if (branch == null) return "Validation Error: Branch reference unreadable.";
+
+        Court? court = null;
+        if (Guid.TryParse(courtIdentifier, out var courtGuid))
+        {
+            court = await _dbContext.Courts.FirstOrDefaultAsync(c => c.Id == courtGuid && c.BranchId == branch.Id && c.AcademyId == academyId);
+        }
+        else
+        {
+            court = await _dbContext.Courts.FirstOrDefaultAsync(c => c.Name.ToLower() == courtIdentifier.ToLower() && c.BranchId == branch.Id && c.AcademyId == academyId);
+        }
+        if (court == null) return "Validation Error: Court structural link reference unreadable.";
+
+        var courtAssignment = await _dbContext.UserCourts
+            .FirstOrDefaultAsync(uc => uc.BranchId == branch.Id && uc.CourtId == court.Id && uc.UserId == user.Id && uc.AcademyId == academyId);
+            
+        if (courtAssignment == null) return $"Validation Error: Specific user-court task route mapping linking @{user.UserName} to court '{court.Name}' does not exist.";
+
+        _dbContext.UserCourts.Remove(courtAssignment);
+        await _dbContext.SaveChangesAsync();
+
+        string todayStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        return $"Success! User @{user.UserName} unlinked cleanly from court task on '{court.Name}'. [FRONTEND_ACTION:SET_DATE:{todayStr}]";
     }
 
 }

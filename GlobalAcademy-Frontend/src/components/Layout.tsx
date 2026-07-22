@@ -316,7 +316,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
                 {/* USER INPUT TERMINAL FORM */}
                 <form onSubmit={handleSendUniversalQuery} className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/40 flex gap-2 shrink-0">
                   <textarea
-                    rows={2}
+                    rows={3}
                     required
                     disabled={loading}
                     value={chatInput}

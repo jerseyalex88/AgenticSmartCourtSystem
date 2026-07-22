@@ -44,7 +44,8 @@ var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JW
 
 builder.Services.AddIdentityCore<IdentityUser>(options => {
     options.Password.RequireDigit = true;         
-    options.Password.RequiredLength = 8;         
+    options.Password.RequiredLength = 8;
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+ ";         
 })
 .AddRoles<IdentityRole>()
 .AddSignInManager()

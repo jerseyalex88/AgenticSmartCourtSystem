@@ -13,10 +13,11 @@ interface Court {
 
 interface RosterMember {
   userId: string;
+  email: string;     // 👈 ADD THIS LINE
+  userName: string;  // 👈 ADD THIS LINE
   branchId: string;
   assignmentRole: string;
   assignedAtUtc: string;
-  // Nested clearances on courts loaded dynamically from database relation joins
   courtClearances?: UserCourtClearance[];
 }
 
@@ -43,7 +44,7 @@ export default function RosterDashboard() {
 
   // Form Field Input States
   const [assignUserPayload, setAssignUserPayload] = useState({ userId: '', assignmentRole: 'Groundskeeper' });
-  const [courtClearancePayload, setCourtClearancePayload] = useState({ courtId: '', accessType: 'Lead_Crew' });
+  const [courtClearancePayload, setCourtClearancePayload] = useState({ courtId: '', accessType: 'Groundskeeper' });
 
   const fetchBranches = async () => {
     try {
@@ -129,7 +130,7 @@ export default function RosterDashboard() {
       }));
       
       setShowCourtClearanceModal(false);
-      setCourtClearancePayload({ courtId: '', accessType: 'Lead_Crew' });
+      setCourtClearancePayload({ courtId: '', accessType: 'PrimaryGroundskeeper' });
     } catch (err: any) {
       setActionError(err.response?.data || 'Failed to establish specific court task clearance.');
     }
@@ -149,7 +150,7 @@ export default function RosterDashboard() {
   const handleOpenClearanceModal = (userId: string) => {
     setSelectedUserIdForClearance(userId);
     if (courts.length > 0) {
-      setCourtClearancePayload({ courtId: courts[0].id, accessType: 'Lead_Crew' });
+      setCourtClearancePayload({ courtId: courts[0].id, accessType: 'PrimaryGroundskeeper' });
     }
     setShowCourtClearanceModal(true);
   };
@@ -192,7 +193,14 @@ export default function RosterDashboard() {
           <div key={member.userId} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
             <div className="flex items-start justify-between border-b border-slate-850 pb-3">
               <div className="space-y-1">
-                <p className="text-sm font-black text-slate-100">{member.userId}</p>
+                {/* Replace <p className="text-sm font-black text-slate-100">{member.userId}</p> with: */}
+                <div className="space-y-0.5">
+                  <div className="text-sm font-black text-slate-100 flex items-center gap-1.5">
+                    <span>👤 {member.email || 'No Email Registered'}</span>
+                    <span className="text-emerald-400 font-mono text-xs">(@{member.userName || 'NoHandle'})</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-mono">Registry ID: {member.userId}</p>
+                </div>
                 <div className="flex items-center space-x-2">
                   <span className="bg-blue-950 text-blue-400 border border-blue-900 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
                     {member.assignmentRole}
@@ -232,8 +240,10 @@ export default function RosterDashboard() {
                       <div key={idx} className="bg-slate-950 border border-slate-850 px-3 py-1.5 rounded-xl flex items-center space-x-2 text-[11px] font-mono">
                         <span className="text-slate-300 font-bold">{courtName}</span>
                         <span className="text-slate-500">//</span>
-                        <span className="text-emerald-400 bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-900/40 font-bold text-[9px] uppercase tracking-wide">
-                          {clearance.accessType}
+                        {/* Locate: <span className="text-emerald-400 bg-emerald-950/30 ... font-bold text-[9px] uppercase tracking-wide"> */}
+                        {/* Replace the hardcoded inner tag value wrapper string {clearance.accessType} block inside to match this: */}
+                        <span className="text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-900/40 font-bold text-[9px] uppercase tracking-wider font-mono">
+                          {clearance.accessType ? clearance.accessType.replace(/_/g, ' ') : 'General Duty'}
                         </span>
                       </div>
                     );
@@ -296,6 +306,7 @@ export default function RosterDashboard() {
               <div className="space-y-1">
                 <label className="block font-bold text-slate-400 uppercase">Clearance Security Type</label>
                 <select value={courtClearancePayload.accessType} onChange={(e) => setCourtClearancePayload({...courtClearancePayload, accessType: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" >
+                  <option value="PrimaryGroundskeeper">Primary Groundskeeper Duty</option>
                   <option value="Lead_Crew">Lead Crew Responsibility</option>
                   <option value="Assistant">Assistant Backup Crew</option>
                   <option value="Maintenance_Only">Scheduled Maintenance Window Only</option>
