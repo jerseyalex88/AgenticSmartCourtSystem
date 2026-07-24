@@ -4,8 +4,9 @@ import { apiClient } from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
 import SemanticLogin from '../components/SemanticLogin';
 import SemanticRegister from '../components/SemanticRegister';
+import PublicHeader from '../components/PublicHeader';
 
-export default function PlayerGateway() {
+export default function PlayerGateway({ onNavigate }: { onNavigate: (route: string) => void }) {
   // Toggle state: 'login' or 'register'
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   
@@ -108,8 +109,15 @@ export default function PlayerGateway() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 font-mono text-xs text-slate-300">
+  return (    
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-teal-500 selection:text-slate-950 overflow-x-hidden">      
+      {/* SHARED PUBLIC LINK HEADER BAR */}
+      <PublicHeader 
+        onNavigate={onNavigate} 
+        activeAuthMode={authMode} 
+        onSetAuthMode={(mode) => setAuthMode(mode)} 
+      />
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 font-mono text-xs text-slate-300">
       <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full">
         
         {/* UPPER VIEW CONSOLE STATUS */}
@@ -198,7 +206,7 @@ export default function PlayerGateway() {
             {authMode === 'login' ? '⚡ Switch to Registration Form' : '🔐 Switch to Secure Login Panel'}
           </button>
         </div>
-
+      </div>
       </div>
     </div>
   );

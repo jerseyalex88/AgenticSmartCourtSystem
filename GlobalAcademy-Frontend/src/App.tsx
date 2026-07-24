@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
+import LandingPage from './pages/LandingPage'; // 👈 IMPORT YOUR NEW LANDING PAGE
 import Login from './pages/Login';
 import Layout from './components/Layout';
 import PlayerGateway from './pages/PlayerGateway';
@@ -15,25 +16,38 @@ import { AlertProvider } from './context/AlertContext';
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // 1. ADD STATE FOR HANDLING PUBLIC LANDING VISIBILITY OVERRIDES
+  const [showPublicLanding, setShowPublicLanding] = useState(true);
+  const [showPlayerGateway, setShowPlayerGateway] = useState(false);
 
   // Check if the current browser window path matches our new player entrance routing rule
   const isPlayerEntrancePath = window.location.pathname === '/player-gateway';
+  const isDirectorLoginPath = window.location.pathname === '/admin';
 
   // DYNAMIC INITIALIZATION HOOK: Automatically direct players to their booking hub!
-  // Inside App.tsx - ensure this hook waits until the Auth state is completely stabilized
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
-      //console.log("User authenticated:", user);
+      // If the session is already authenticated, bypass the landing page entirely
+      setShowPublicLanding(false);
+      
       const userRole = user.role || 'Player'; 
       if (userRole === 'Player') {
-        //console.log("Redirecting player to booking manager...");
-        setActiveTab('bookings'); // Smoothly switch tab view state rather than forcing a page reload!
+        setActiveTab('bookings'); 
       }
     }
-    // else {
-    //   console.log("User not authenticated or still loading. Current state:", { isAuthenticated, user, loading });
-    // }
   }, [loading, isAuthenticated, user]);
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      // 1. Force the layout grids back to the public root landing canvas view
+      setShowPublicLanding(true);
+      setShowPlayerGateway(false);
+      
+      // 2. Reset the administrative container tab back to the default workspace view
+      setActiveTab('dashboard');
+    }
+  }, [loading, isAuthenticated]);
 
   if (loading) {
     return (
@@ -43,20 +57,68 @@ export default function App() {
     );
   }
 
-  // 2. PUBLIC INTERCEPT BYPASS: If they are arriving via an invite link, let them in!
-  if (isPlayerEntrancePath) {
+    if (!isAuthenticated && isDirectorLoginPath) {
     return (
       <AlertProvider>
-        <PlayerGateway />
+        <Login 
+          onNavigate={(route) => {
+            if (route === 'landing') {
+              window.history.replaceState(null, '', '/');
+              setShowPublicLanding(true);
+              setShowPlayerGateway(false);
+            } 
+            else {
+              setShowPublicLanding(true);
+              setShowPlayerGateway(false);
+            }
+          }} 
+        />
       </AlertProvider>
     );
   }
 
-  // FORCE GATEWAY: Intercept unauthenticated users immediately
-  if (!isAuthenticated || !user) {
+  // 3. PUBLIC HOMEPAGE GATEWAY: Render landing screen for unauthenticated users first
+  if (!isAuthenticated && showPublicLanding) {
+    return (
+      <LandingPage 
+        onNavigate={(route) => {
+          if (route === 'landing') {
+            window.history.replaceState(null, '', '/');
+            setShowPublicLanding(true);
+            setShowPlayerGateway(false);
+          }
+          else if (route === 'login' || route === 'register') {
+            const targetAcademyId = import.meta.env.VITE_DEFAULT_ACADEMY_ID
+            window.history.replaceState(null, '', `/player-gateway?academyId=${targetAcademyId}`);
+            // Dismiss landing view to uncover the core login forms panel loop
+            setShowPlayerGateway(true);
+            setShowPublicLanding(false);
+          } else if (route === 'bookings') {
+            // If they click Book Space directly without a session, route them to login first
+            setShowPlayerGateway(true);
+            setShowPublicLanding(false);
+          }
+        }} 
+      />
+    );
+  }
+
+  // FORCE GATEWAY: Intercept unauthenticated users attempting to bypass landing pages
+  if (isPlayerEntrancePath || (!isAuthenticated && showPlayerGateway)) {
     return (
       <AlertProvider>
-        <Login />
+        <PlayerGateway 
+          onNavigate={(route) => {
+            if (route === 'landing') {
+              window.history.replaceState(null, '', '/');
+              setShowPublicLanding(true);
+              setShowPlayerGateway(false);
+            } else if (route === 'login' || route === 'register') {
+              setShowPublicLanding(false);
+              setShowPlayerGateway(true);
+            }
+          }} 
+        />
       </AlertProvider>
     );
   }
@@ -74,15 +136,6 @@ export default function App() {
         return <AdminTools />; 
       case 'password':
         return <ChangePassword />;
-      case 'bookings':
-        return (
-          <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
-            <h2 className="text-sm font-black text-slate-100 uppercase tracking-wider mb-2">⏱️ Fixed Booking Grid Matrices</h2>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-xl">
-              [DEVELOPMENT WORKSPACE BLOCK]: Daily 60- and 90-minute time-slot matrix trackers loading under standard UTC constraints.
-            </p>
-          </div>
-        );
       case 'shadow-queue':
         return <ShadowQueueManager />;
       case 'maintenance':

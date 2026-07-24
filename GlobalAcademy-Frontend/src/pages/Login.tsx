@@ -3,8 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/apiClient';
 import ConversationalLogin from '../components/ConversationalLogin'; 
 import SemanticLogin from '../components/SemanticLogin';
+import PublicHeader from '../components/PublicHeader';
 
-export default function Login() {
+export default function Login({ onNavigate }: { onNavigate: (route: string) => void }) {
+  // Toggle state: 'login' or 'register'
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
   const { saveSession } = useAuth();
   // const [email, setEmail] = useState('chiki@wimbeldon.com');
   // const [password, setPassword] = useState('Password123!');
@@ -48,6 +52,13 @@ export default function Login() {
   };
 
   return (
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-teal-500 selection:text-slate-950 overflow-x-hidden">      
+          {/* SHARED PUBLIC LINK HEADER BAR */}
+          <PublicHeader 
+            onNavigate={onNavigate} 
+            activeAuthMode={authMode} 
+            onSetAuthMode={(mode) => setAuthMode(mode)} 
+          />
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
       <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-md border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-6">
         
@@ -136,6 +147,7 @@ export default function Login() {
           </p>
         </div>
 
+      </div>
       </div>
     </div>
   );
