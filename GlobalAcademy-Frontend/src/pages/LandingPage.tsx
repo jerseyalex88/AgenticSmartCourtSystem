@@ -25,21 +25,21 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       id: 'full-week',
       title: 'Full-Week Tennis Camps',
       description: 'Tennis programs designed for adults of all levels. Immerse yourself in a week of tennis passion and improve your game.',
-      imgSrc: '/assets/images/adult-camp-full.jpg',
+      imgSrc: 'https://res.cloudinary.com/hjzvstjg/image/upload/v1784940170/pexels-holoshuriken-28625142_ljp4nz.jpg',
       tags: ['Tennis Camps For Adults', 'Adults']
     },
     {
       id: 'flexible',
       title: 'Flexible tennis camps for adults',
       description: 'If you need flexibility in schedules, these are the programs for you. Tailored intervals built around your active routine.',
-      imgSrc: '/assets/images/adult-camp-flexible.jpg',
+      imgSrc: 'https://res.cloudinary.com/hjzvstjg/image/upload/v1784940159/pexels-mutecevvil-22931875_c9gqlv.jpg',
       tags: ['Tennis Camps For Adults', 'Adults']
     },
     {
       id: 'holiday',
       title: 'Tennis camps for adults during holiday periods',
       description: 'Tennis programs during Christmas, Easter and summer vacations. Maximize your holiday windows with elite-level coaching tracking loops.',
-      imgSrc: '/assets/images/adult-camp-holiday.jpg',
+      imgSrc: 'https://res.cloudinary.com/hjzvstjg/image/upload/v1784940193/pexels-bossistudio-7339312_rely6n.jpg',
       tags: ['Tennis Camps For Adults', 'Adults']
     }
   ];
@@ -133,7 +133,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           <div className="lg:col-span-2 space-y-4 relative z-10 hidden sm:block">
             <div className="h-64 lg:h-80 bg-slate-900 rounded-2xl overflow-hidden border border-slate-800">
               <img 
-                src="/assets/images/contact-players.jpg" 
+                src="https://res.cloudinary.com/hjzvstjg/image/upload/v1784940180/pexels-rdne-8224677_m2cjv4.jpg" 
                 alt="Academy Players" 
                 className="w-full h-full object-cover opacity-80"
                 onError={(e) => {

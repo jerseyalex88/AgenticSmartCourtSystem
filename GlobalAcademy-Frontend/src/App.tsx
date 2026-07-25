@@ -24,6 +24,7 @@ export default function App() {
   // Check if the current browser window path matches our new player entrance routing rule
   const isPlayerEntrancePath = window.location.pathname === '/player-gateway';
   const isDirectorLoginPath = window.location.pathname === '/admin';
+  const [targetAuthMode, setTargetAuthMode] = useState<'login' | 'register'>('login');
 
   // DYNAMIC INITIALIZATION HOOK: Automatically direct players to their booking hub!
   useEffect(() => {
@@ -88,6 +89,8 @@ export default function App() {
             setShowPlayerGateway(false);
           }
           else if (route === 'login' || route === 'register') {
+            const mode = route === 'register' ? 'register' : 'login';
+            setTargetAuthMode(mode);
             const targetAcademyId = import.meta.env.VITE_DEFAULT_ACADEMY_ID
             window.history.replaceState(null, '', `/player-gateway?academyId=${targetAcademyId}`);
             // Dismiss landing view to uncover the core login forms panel loop
@@ -108,6 +111,7 @@ export default function App() {
     return (
       <AlertProvider>
         <PlayerGateway 
+          initialAuthMode={targetAuthMode}
           onNavigate={(route) => {
             if (route === 'landing') {
               window.history.replaceState(null, '', '/');

@@ -6,13 +6,18 @@ import SemanticLogin from '../components/SemanticLogin';
 import SemanticRegister from '../components/SemanticRegister';
 import PublicHeader from '../components/PublicHeader';
 
-export default function PlayerGateway({ onNavigate }: { onNavigate: (route: string) => void }) {
+interface PlayerGatewayProps {
+  onNavigate: (route: string) => void;
+  initialAuthMode?: 'login' | 'register'; // 👈 ADD THIS OPTIONAL PROP
+}
+
+export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }: PlayerGatewayProps) {
   // Toggle state: 'login' or 'register'
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>(initialAuthMode);
   
   // Form input bindings
-  const [email, setEmail] = useState('chiki@wimbeldon.com');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState(authMode === 'register' ? '' : 'chiki@wimbeldon.com');
+  const [password, setPassword] = useState(authMode === 'register' ? '' : 'Password123!');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const { showAlert } = useAlert();
@@ -43,7 +48,7 @@ export default function PlayerGateway({ onNavigate }: { onNavigate: (route: stri
 
     setLoading(true);
     try {
-      if (authMode === 'register') {
+      if (authMode === 'register' || route === 'register') {
         // OPTION 1. ROUTE PUBLIC REGISTRATION THROUGH THE PIPELINE WRAPPER
         // Match the text capitalization of your working endpoints (e.g. '/Auth/...' or '/auth/...')
         const response = await apiClient.post('/Auth/register-player-public', {
