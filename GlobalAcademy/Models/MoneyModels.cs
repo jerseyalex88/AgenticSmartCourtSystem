@@ -6,6 +6,7 @@ namespace GlobalAcademy.Models
     public enum LineItemType { CourtSlot, RacketRental, ProShopItem }
     public enum InvoiceStatus { Unpaid, Paid, Partially_Refunded, Refunded, Voided }
     public enum PaymentMethod { CreditCard, Cash, Crypto_USDC }
+    public enum PreferredGateway { Braintree, Square }
 
     public class UnifiedCatalogItem : Security.IMultiTenant
     {
@@ -45,14 +46,20 @@ namespace GlobalAcademy.Models
         // Optional contextual linking field for Phase 2 telemetry mapping
         public Guid? AssociatedBookingId { get; set; } 
     }
-
     public class LedgerTransaction : Security.IMultiTenant
     {
         [Key] public Guid TransactionId { get; set; }
-        public Guid AcademyId { get; set; }
+        public Guid AcademyId { get; set; } // Firewall rule boundary
         public Guid InvoiceId { get; set; }
-        public PaymentMethod Method { get; set; }
-        [Required] public string GatewayReferenceId { get; set; } // Fictitious Gateway String
+        
+        // Tracks the payment type choice (CreditCard, Cash, Crypto)
+        public PaymentMethod Method { get; set; } 
+        
+        [Required] public PreferredGateway ProcessedByGateway { get; set; } 
+        
+        // Stores the reference returned from the gateway (e.g., BT-xxxx or SQ-xxxx)
+        [Required] public string GatewayReferenceId { get; set; } 
+        
         [Column(TypeName = "decimal(18,2)")] public decimal Amount { get; set; }
         public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
         public bool IsSuccess { get; set; }

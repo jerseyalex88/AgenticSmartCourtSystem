@@ -48,7 +48,7 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
 
     setLoading(true);
     try {
-      if (authMode === 'register' || route === 'register') {
+      if (authMode === 'register' || initialAuthMode === 'register') {
         // OPTION 1. ROUTE PUBLIC REGISTRATION THROUGH THE PIPELINE WRAPPER
         // Match the text capitalization of your working endpoints (e.g. '/Auth/...' or '/auth/...')
         const response = await apiClient.post('/Auth/register-player-public', {

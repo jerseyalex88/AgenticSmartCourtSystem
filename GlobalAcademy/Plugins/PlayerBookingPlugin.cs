@@ -288,13 +288,43 @@ public class PlayerBookingPlugin
         // 8. Accumulate wear minutes onto the court asset matrix tracking
         court.AggregateMinutesPlayed += durationMinutes;
 
+        // 9. Instantiation mapping for a linked Unified Ledger Invoice
+        var invoiceId = Guid.NewGuid();
+        var invoicePrice = 50.00m; // Default uniform court slot rate rule
+
+        var newInvoice = new Invoice
+        {
+            InvoiceId = invoiceId,
+            AcademyId = academyId,
+            IssuedToUserId = userId,
+            CustomerName = playerName,
+            CreatedAtUtc = DateTime.UtcNow,
+            Status = InvoiceStatus.Unpaid,
+            TotalAmount = invoicePrice
+        };
+
+        var lineItem = new InvoiceLineItem
+        {
+            LineItemId = Guid.NewGuid(),
+            InvoiceId = invoiceId,
+            ItemDescription = $"Court Rental Fee: {courtName} on {targetDate} @ {startHour}",
+            Quantity = 1,
+            UnitPrice = invoicePrice,
+            AssociatedBookingId = newBooking.Id
+        };
+
         using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
             try
             {
                 _dbContext.Bookings.Add(newBooking);
+                _dbContext.Invoices.Add(newInvoice);
+                _dbContext.InvoiceLineItems.Add(lineItem);
                 await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync(); // Physical data flush straight to disk
+                await transaction.CommitAsync();
+
+                return $"Success: Confirmed booking for {courtName} on {targetDate} at {startHour}. " +
+               $"An outstanding balance invoice has been issued. [FRONTEND_ACTION:LAUNCH_CHECKOUT:{invoiceId}:${invoicePrice.ToString("F2")}]";
             }
             catch (Exception ex)
             {
@@ -304,7 +334,41 @@ public class PlayerBookingPlugin
         }
 
         // 9. Dispatch success string along with the unified token boundary to trigger frontend grid synchronization
-        return $"Success! I have successfully secured your reservation for {court.Name} on {targetDate} starting at {startHour}. [FRONTEND_ACTION:SET_DATE:{targetDate}]";
+        //return $"Success! I have successfully secured your reservation for {court.Name} on {targetDate} starting at {startHour}. [FRONTEND_ACTION:SET_DATE:{targetDate}]";
+    }
+
+    [KernelFunction, Description("Queries the database for any active open unpaid invoices belonging strictly to the currently logged in user context.")]
+    public async Task<string> GetUnpaidInvoicesAsync(Kernel kernel)
+    {
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Missing or invalid security academy perimeter claim scope.";
+        }
+
+        if (!kernel.Data.TryGetValue("userId", out var userIdObj) || userIdObj is not string userId)
+        {
+            return "Transaction rejected: User context mapping verification fault (userId).";
+        }
+
+        // Retrieve outstanding entries inside a strict multi-tenant partition firewall loop
+        var unpaidInvoices = await _dbContext.Invoices
+            .Where(i => i.IssuedToUserId == userId && i.AcademyId == academyId && i.Status == InvoiceStatus.Unpaid)
+            .OrderByDescending(i => i.CreatedAtUtc)
+            .ToListAsync();
+
+        if (unpaidInvoices.Count == 0)
+        {
+            return "System Scan Result: You currently have no outstanding or unpaid invoices on your account ledger profile.";
+        }
+
+        var summary = "Outstanding Open Balance Items Located:\n";
+        foreach (var inv in unpaidInvoices)
+        {
+            summary += $"- Invoice ID: {inv.InvoiceId} | Issued: {inv.CreatedAtUtc:yyyy-MM-dd} | Total Due: ${inv.TotalAmount:F2}\n" +
+                    $"  [FRONTEND_ACTION:LAUNCH_CHECKOUT:{inv.InvoiceId}:{inv.TotalAmount:F2}]\n";
+        }
+
+        return summary;
     }
 
     [KernelFunction, Description("Safely cancels and releases an active court reservation slot using natural parameters like court name, date, and start hour.")]
@@ -365,10 +429,54 @@ public class PlayerBookingPlugin
             return $"Validation error: No active reservation found for {courtName} on {targetDate} at {startHour} belonging to your profile.";
         }
 
-        // 6. Credit back play minutes to the court surface wear metrics tracking system before removing row
+        // 6. Enforce the 24-Hour Business Lock Rule
+        // Parse target date and slot hour time allocations back into absolute UTC equivalents
+        if (!DateTime.TryParse($"{targetDate} {startHour}", out var matchStartTime))
+        {
+            return "Cancellation Refused: Malformed date or slot hour format parameter submitted.";
+        }
+
+        var timeUntilMatch = matchStartTime - DateTime.UtcNow;
+
+        // Block execution if match starts in under 24 hours AND the user is NOT an Academy Director
+        if (timeUntilMatch.TotalHours < 24) // && !_isDirector)
+        {
+            return "Cancellation Locked: Reservations starting in less than 24 hours cannot be dropped by players. Please contact an Academy Director for an override.";
+        }
+
+        // 7. Locate the associated invoice using our historical booking tracking ID reference key
+        var associatedLineItem = await _dbContext.InvoiceLineItems
+            .FirstOrDefaultAsync(li => li.AssociatedBookingId == booking.Id);
+
+        string financialStatusUpdateMessage = "No linked financial invoices were altered.";
+
+        if (associatedLineItem != null)
+        {
+            var invoice = await _dbContext.Invoices
+                .FirstOrDefaultAsync(i => i.InvoiceId == associatedLineItem.InvoiceId && i.AcademyId == academyId);
+
+            if (invoice != null)
+            {
+                if (invoice.Status == InvoiceStatus.Unpaid)
+                {
+                    // Scenario A: User hasn't paid yet -> Simply void the outstanding balance sheet row
+                    invoice.Status = InvoiceStatus.Voided;
+                    financialStatusUpdateMessage = $"Linked outstanding Invoice #{invoice.InvoiceId} has been successfully VOIDED.";
+                }
+                else if (invoice.Status == InvoiceStatus.Paid)
+                {
+                    // Scenario B: User already settled -> Mark as Refunded
+                    // In production, this flag triggers an async webhook listener dispatching credit back through Braintree/Square
+                    invoice.Status = InvoiceStatus.Refunded;
+                    financialStatusUpdateMessage = $"Linked paid Invoice #{invoice.InvoiceId} has been marked as REFUNDED. Funds will return to the original gateway account.";
+                }
+            }
+        }
+
+        // 8. Credit back play minutes to the court surface wear metrics tracking system before removing row
         court.AggregateMinutesPlayed = Math.Max(0, court.AggregateMinutesPlayed - booking.DurationInMinutes);
 
-        // 7. Delete record from PostgreSQL database state tables
+        // 9. Delete record from PostgreSQL database state tables
         using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
             try

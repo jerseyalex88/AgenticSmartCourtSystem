@@ -106,6 +106,20 @@ public class UniversalChatController : ControllerBase
                 "\nWhenever a cancellation or booking completes successfully, ensure the exact '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]' token returned by the final tool execution is appended to your response text stream."
             );
 
+            chatHistory.AddSystemMessage(
+                $"You are the Smart Court OS Ambient Assistant. You are talking to {currentUserName}, user Id is {userId} (Role: {userRole}). " +
+                $"Your tenant partition boundary is hardlocked to AcademyId: {academyGuid}. " +
+                "\n\nFINANCIAL LEDGER & CHECKOUT INTENT LAWS:" +
+                "\n1. RECONCILIATION: If the user asks about bills, dues, what they owe, or outstanding payments (e.g., 'Do I owe anything?' or 'Show my unpaid invoices'), you MUST invoke 'GetUnpaidInvoicesAsync' to retrieve their open invoice registry tracking items." +
+                "\n2. COUPLING WITH BOOKINGS: Whenever a user successfully completes a court booking via 'ClaimCourtReservationAsync', remind them that an invoice has been generated for the slot." +
+                "\n3. CHECKOUT ACTION RENDERING RULES:" +
+                "\nWhenever you list an unpaid invoice, or immediately after a new court booking generates an invoice balance, you MUST append a dedicated structural token at the absolute end of your markdown response to trigger the frontend payment portal modal drawer." +
+                "\n- The token layout format MUST be: [FRONTEND_ACTION:LAUNCH_CHECKOUT:INVOICE_ID_GUID:TOTAL_AMOUNT]" +
+                "\n- Example: If 'ClaimCourtReservationAsync' returns an invoice ID 'a1b2c3d4...' with an amount of '50.00', your text response MUST conclude with: [FRONTEND_ACTION:LAUNCH_CHECKOUT:a1b2c3d4-xxxx-xxxx-xxxx-xxxxxxxxxxxx:50.00]" +
+                "\n- Do not alter, modify, truncate, or omit this bracketed tag string under any circumstances."
+            );
+
+
             chatHistory.AddUserMessage(userInput);
 
             // Execute the model completion loop using automatic function invocation call routing configurations

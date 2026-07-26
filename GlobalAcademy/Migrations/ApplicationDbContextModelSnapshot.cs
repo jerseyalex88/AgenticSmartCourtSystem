@@ -203,6 +203,110 @@ namespace GlobalAcademy.Migrations
                     b.ToTable("Courts");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.Invoice", b =>
+                {
+                    b.Property<Guid>("InvoiceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IssuedToUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("InvoiceId");
+
+                    b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.InvoiceLineItem", b =>
+                {
+                    b.Property<Guid>("LineItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AssociatedBookingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CatalogItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ItemDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("LineItemId");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceLineItems");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.LedgerTransaction", b =>
+                {
+                    b.Property<Guid>("TransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("GatewayReferenceId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProcessedByGateway")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("TransactionId");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("LedgerTransactions");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.MaintenanceTicket", b =>
                 {
                     b.Property<Guid>("Id")
@@ -306,6 +410,38 @@ namespace GlobalAcademy.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ShadowQueues");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.UnifiedCatalogItem", b =>
+                {
+                    b.Property<Guid>("CatalogItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ItemType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("CatalogItemId");
+
+                    b.ToTable("UnifiedCatalogItems");
                 });
 
             modelBuilder.Entity("GlobalAcademy.Models.UserBranch", b =>
@@ -583,6 +719,24 @@ namespace GlobalAcademy.Migrations
                     b.Navigation("Branch");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.InvoiceLineItem", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.Invoice", null)
+                        .WithMany("LineItems")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.LedgerTransaction", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.Invoice", null)
+                        .WithMany("Transactions")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.UserCourt", b =>
                 {
                     b.HasOne("GlobalAcademy.Models.UserBranch", null)
@@ -651,6 +805,13 @@ namespace GlobalAcademy.Migrations
             modelBuilder.Entity("GlobalAcademy.Models.Branch", b =>
                 {
                     b.Navigation("Courts");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.Invoice", b =>
+                {
+                    b.Navigation("LineItems");
+
+                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("GlobalAcademy.Models.UserBranch", b =>

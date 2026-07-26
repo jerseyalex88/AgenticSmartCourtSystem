@@ -139,6 +139,12 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
         directorOperationsPlugin,
         "DirectorOperationsPlugin");
 
+    var playerCheckoutPlugin =
+        serviceProvider.GetRequiredService<PlayerCheckoutPlugin>();
+    kernelBuilder.Plugins.AddFromObject(
+        playerCheckoutPlugin,
+        "PlayerCheckoutPlugin");
+
     return kernelBuilder.Build();
 });
 
@@ -146,18 +152,26 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
 builder.Services.AddScoped<MatchSaverService>();
 builder.Services.AddScoped<PlayerBookingPlugin>();
 builder.Services.AddScoped<DirectorOperationsPlugin>();
+builder.Services.AddScoped<GlobalAcademy.Payment.Services.CheckoutService>();
+builder.Services.AddScoped<PlayerCheckoutPlugin>();
 
 // Bind and register the Braintree configuration record
 var braintreeConfig = builder.Configuration
     .GetSection("PaymentGateways:Braintree")
-    .Get<GlobalAcademy.Payment.Services.BraintreeConfig>();
+    .Get<GlobalAcademy.Payment.Services.BraintreeConfig>()
+    ?? throw new InvalidOperationException("Braintree configuration is missing.");
 builder.Services.AddSingleton(braintreeConfig);
-
 // Bind and register the Square configuration record
 var squareConfig = builder.Configuration
     .GetSection("PaymentGateways:Square")
-    .Get<GlobalAcademy.Payment.Services.SquareConfig>();
+    .Get<GlobalAcademy.Payment.Services.SquareConfig>()
+    ?? throw new InvalidOperationException("Square configuration is missing.");
 builder.Services.AddSingleton(squareConfig);
+// Register the individual gateway implementations as singletons or scoped services
+builder.Services.AddSingleton<GlobalAcademy.Payment.Services.BraintreeGatewayService>();
+builder.Services.AddSingleton<GlobalAcademy.Payment.Services.SquareGatewayService>();
+// Register the factory engine to handle dynamic routing lookups at runtime
+builder.Services.AddSingleton<GlobalAcademy.Payment.Services.PaymentGatewayFactory>();
 
 var app = builder.Build();
 

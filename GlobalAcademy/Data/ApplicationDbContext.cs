@@ -29,6 +29,10 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<Booking> Bookings { get; set; }
     public DbSet<ShadowQueue> ShadowQueues { get; set; }
     public DbSet<MaintenanceTicket> MaintenanceTickets { get; set; }
+    public DbSet<UnifiedCatalogItem> UnifiedCatalogItems { get; set; }
+    public DbSet<Invoice> Invoices { get; set; }
+    public DbSet<InvoiceLineItem> InvoiceLineItems { get; set; }
+    public DbSet<LedgerTransaction> LedgerTransactions { get; set; }
 
     // 2. Append this relational configuration inside your existing OnModelCreating method:
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -50,21 +54,28 @@ public class ApplicationDbContext : IdentityDbContext
             .HasForeignKey(uc => new { uc.UserId, uc.BranchId })
             .OnDelete(DeleteBehavior.Cascade); // If a user is removed from a branch, clear their court tasks automatically
 
-        // --- GLOBAL QUERY FILTERS ---
-        // foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        // {
-        //     if (typeof(IMultiTenant).IsAssignableFrom(entityType.ClrType))
-        //     {
-        //         modelBuilder.Entity(entityType.ClrType)
-        //             .HasQueryFilter(ConvertFilterExpression(entityType.ClrType));
-        //     }
-        // }
-
         modelBuilder.Entity<Branch>().HasQueryFilter(b => b.AcademyId == CurrentTenantId);
         modelBuilder.Entity<Court>().HasQueryFilter(c => c.AcademyId == CurrentTenantId);
         modelBuilder.Entity<Booking>().HasQueryFilter(bk => bk.AcademyId == CurrentTenantId);
         modelBuilder.Entity<ShadowQueue>().HasQueryFilter(sq => sq.AcademyId == CurrentTenantId);
         modelBuilder.Entity<MaintenanceTicket>().HasQueryFilter(mt => mt.AcademyId == CurrentTenantId);        
+
+        // Configure precise decimal scales for financial properties
+        modelBuilder.Entity<UnifiedCatalogItem>()
+            .Property(p => p.UnitPrice)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Invoice>()
+            .Property(p => p.TotalAmount)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<InvoiceLineItem>()
+            .Property(p => p.UnitPrice)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<LedgerTransaction>()
+            .Property(p => p.Amount)
+            .HasPrecision(18, 2);
     }
     private System.Linq.Expressions.LambdaExpression ConvertFilterExpression(Type type)
     {
