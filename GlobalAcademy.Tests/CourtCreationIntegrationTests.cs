@@ -11,11 +11,15 @@ using GlobalAcademy.Controllers;
 using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using GlobalAcademy.Security;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Identity;
 
 namespace GlobalAcademy.Tests;
 
 public class CourtCreationIntegrationTests
 {
+    private readonly WebApplicationFactory<Program> _factory;
     private ApplicationDbContext CreateRealPostgresContext(MockTenantProvider tenantProvider)
     {
         var projectPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "GlobalAcademy"));
@@ -82,7 +86,11 @@ public class CourtCreationIntegrationTests
 
         // Instantiate the Facility Controller under our real time matrix engine dependency
         var timeEngine = new LocalTimeEngine();
-        var controller = new FacilityController(context, timeEngine);
+
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+
+        var controller = new FacilityController(context, timeEngine, userManager);
         MockUserSessionContext(controller, mockTenantProvider.ActiveTenantId);
 
         // Configure the DTO payload using the physical existing branch GUID

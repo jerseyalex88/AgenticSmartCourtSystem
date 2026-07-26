@@ -147,6 +147,18 @@ builder.Services.AddScoped<MatchSaverService>();
 builder.Services.AddScoped<PlayerBookingPlugin>();
 builder.Services.AddScoped<DirectorOperationsPlugin>();
 
+// Bind and register the Braintree configuration record
+var braintreeConfig = builder.Configuration
+    .GetSection("PaymentGateways:Braintree")
+    .Get<GlobalAcademy.Payment.Services.BraintreeConfig>();
+builder.Services.AddSingleton(braintreeConfig);
+
+// Bind and register the Square configuration record
+var squareConfig = builder.Configuration
+    .GetSection("PaymentGateways:Square")
+    .Get<GlobalAcademy.Payment.Services.SquareConfig>();
+builder.Services.AddSingleton(squareConfig);
+
 var app = builder.Build();
 
 // =========================================================================

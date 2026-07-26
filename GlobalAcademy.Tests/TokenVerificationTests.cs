@@ -13,6 +13,7 @@ using GlobalAcademy.Security;
 using GlobalAcademy.Data;
 using Microsoft.AspNetCore.Mvc;
 using GlobalAcademy.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace GlobalAcademy.Tests;
 
@@ -76,9 +77,10 @@ public class TokenVerificationTests : IClassFixture<WebApplicationFactory<Progra
 
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var timeEngine = scope.ServiceProvider.GetRequiredService<ILocalTimeEngine>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
         // --- STEP 5: INSTANTIATE THE CONTROLLER AND FETCH DATA SLOTS ---
-        var facilityController = new FacilityController(dbContext, timeEngine);
+        var facilityController = new FacilityController(dbContext, timeEngine, userManager);
         
         // Assign our artificial context directly to the controller pipeline mapping attributes
         facilityController.ControllerContext = new ControllerContext
