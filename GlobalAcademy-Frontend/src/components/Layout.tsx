@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext'; 
 import { apiClient } from '../api/apiClient';
+import { CheckoutPortal } from './CheckoutPortal'; 
 
 interface LayoutProps {
   activeTab: string;
@@ -43,6 +44,11 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
   // EXPANDABLE WIDTH PANEL HIERARCHY STATES
   const [chatWidth, setChatWidth] = useState(400);
   const [isDragging, setIsDragging] = useState(false);
+
+  // NEW HOOKS: Track dynamic visibility state for the discrete checkout drawer modal
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [activeInvoiceId, setActiveInvoiceId] = useState('');
+  const [activeInvoiceAmount, setActiveInvoiceAmount] = useState(0);
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -127,6 +133,27 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       }
 
       // =========================================================================
+      // NEW: INTERCEPT AND LAUNCH DISCRETE PORTAL MODAL FROM AI ACTION TOKENS
+      // =========================================================================
+      if (rawAgentResponse && rawAgentResponse.includes('[FRONTEND_ACTION:LAUNCH_CHECKOUT:')) {
+        // Regex extracts: 1 = Invoice GUID string, 2 = Decimal Amount string
+        const checkoutRegex = /\[FRONTEND_ACTION:LAUNCH_CHECKOUT:([^:]+):([^\]]+)\]/;
+        const checkoutMatch = rawAgentResponse.match(checkoutRegex);
+
+        if (checkoutMatch && checkoutMatch[1] && checkoutMatch[2]) {
+          const invoiceGuid = checkoutMatch[1];
+          const invoiceTotal = parseFloat(checkoutMatch[2]);
+
+          // Hydrate target portal state parameters and slide open the viewport
+          setActiveInvoiceId(invoiceGuid);
+          setActiveInvoiceAmount(isNaN(invoiceTotal) ? 0 : invoiceTotal);
+          setIsCheckoutOpen(true);
+        } else {
+          console.error("❌ [Layout] Failed to extract structural parameters from checkout token.");
+        }
+      }
+
+      // =========================================================================
       // STEP 2: CLEAN DETACHED BRACKET TEXT BEFORE RENDERING CHAT BUBBLES
       // =========================================================================
       const cleanDisplayMsg = rawAgentResponse.split('[FRONTEND_ACTION')[0].trim();
@@ -151,6 +178,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
   const navItems = [
     { id: 'dashboard', label: '🏟️ Core Asset Matrix', roles: ['AcademyDirector', 'Groundskeeper'] },
     { id: 'bookings', label: '⏱️ Bookings & Intervals', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
+    { id: 'financial-ledger', label: '📊 Billing & Statements', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
     { id: 'shadow-queue', label: '🔄 Displaced Player Queue', roles: ['AcademyDirector', 'Groundskeeper'] },
     { id: 'agent-dispatch', label: '⚡ AI Dispatch Center', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'maintenance', label: '🔧 Work Order Tickets', roles: ['AcademyDirector', 'Groundskeeper'] },
@@ -353,6 +381,36 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
         {isAssistantOpen ? '✕' : '🐰'}
       </button>
 
+      {isCheckoutOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-200">
+          <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-150 text-sans">
+            
+            {/* Native Close Button Anchor Node */}
+            <button
+              type="button"
+              onClick={() => setIsCheckoutOpen(false)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors z-10 font-bold text-xs bg-slate-800 hover:bg-slate-700 h-6 w-6 rounded-full flex items-center justify-center"
+            >
+              ✕
+            </button>
+
+            {/* Mount our discrete Checkout Portal Component */}
+            <CheckoutPortal 
+              invoiceId={activeInvoiceId} 
+              totalAmount={activeInvoiceAmount} 
+              onPaymentComplete={() => {
+                // Instantly re-fetch underlying dashboard tables once payment settles
+                if (typeof (window as any).refreshDashboardAllocationGrid === 'function') {
+                  (window as any).refreshDashboardAllocationGrid();
+                }
+                // Automatically dismiss the modal window layout after a brief visibility delay
+                setTimeout(() => setIsCheckoutOpen(false), 2500);
+              }}
+            />
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

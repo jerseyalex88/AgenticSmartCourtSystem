@@ -8,6 +8,7 @@ import { PlayerBookingManager } from './pages/PlayerBookingManager';
 import ShadowQueueManager from './components/ShadowQueueManager';
 import AgentDispatchCenter from './components/AgentDispatchCenter';
 import CourtsDashboard from './pages/CourtsDashboard';
+import BillingDashboard from './pages/BillingDashboard';
 import ChangePassword from './pages/ChangePassword';
 import RosterDashboard from './pages/RosterDashboard';
 import AdminTools from './pages/AdminTools'; 
@@ -142,6 +143,8 @@ export default function App() {
         return <ChangePassword />;
       case 'shadow-queue':
         return <ShadowQueueManager />;
+      case 'financial-ledger':
+        return <BillingDashboard />;
       case 'maintenance':
         return (
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
