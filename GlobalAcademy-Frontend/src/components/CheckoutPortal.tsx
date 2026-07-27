@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import dropIn from 'braintree-web-drop-in';
+import { apiClient } from '../api/apiClient';
 
 interface CheckoutProps {
   invoiceId: string;
@@ -67,22 +68,23 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
         // Fetch safe verification token from your backend endpoint
   
         // TEMPORARY FOR TESTING: Skip the backend API fetch completely
-        const response = await fetch('/api/Checkout/braintree-token');
-        const { clientToken } = await response.json();
+        const response = await apiClient.get('/Checkout/braintree-token');
+        const { clientToken } = response.data;
+        console.log('clientToken', clientToken);
 
         // Use this official, static Braintree Sandbox tokenization key
         //const staticSandboxTestingKey = 'sandbox_tmw9t4pt_vpy68mmvgrttft67';
 
-        dropIn.create({
-          authorization: clientToken, // Pass the static test key here
-          container: braintreeContainerRef.current!,
-          paypal: { flow: 'vault' },
-          card: false // Keep cards routed purely through Square
         // dropIn.create({
-        //   authorization: clientToken,
+        //   authorization: staticSandboxTestingKey, // Pass the static test key here
         //   container: braintreeContainerRef.current!,
         //   paypal: { flow: 'vault' },
-        //   card: false // Disable Braintree cards to route card volume purely through Square
+        //   card: false // Keep cards routed purely through Square
+        dropIn.create({
+          authorization: clientToken,
+          container: braintreeContainerRef.current!,
+          paypal: { flow: 'vault' },
+          card: false // Disable Braintree cards to route card volume purely through Square
         }, (err, instance) => {
           if (err) {
             console.error('Braintree error:', err);
@@ -139,25 +141,29 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
       }
 
       // Submit the unified payload context directly to the backend .NET controller
-      const apiResponse = await fetch('/api/Checkout/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          invoiceId,
-          provider: targetProvider, // PreferredGateway enum representation
-          method: methodEnum,
-          paymentToken: generatedToken,
-          currencyCode: 'USD'
-        })
+      const apiResponse = await apiClient.post('/Checkout/process', {
+        invoiceId,
+        provider: targetProvider, // 0 = Braintree, 1 = Square
+        method: methodEnum,
+        paymentToken: generatedToken,
+        currencyCode: 'CAD'
       });
 
-      const finalResult = await apiResponse.json();
+      const finalResult = apiResponse.data;
 
-      if (finalResult.success) {
+      if (finalResult && finalResult.success) {
         setStatusMsg('🎉 Payment Approved! Your court booking is fully secured.');
-        onPaymentComplete(); // Increment parent refresh state trigger counter
+        
+        // Execute real-time grid refresh states
+        if (typeof (window as any).refreshDashboardAllocationGrid === 'function') {
+          (window as any).refreshDashboardAllocationGrid();
+        }
+        
+        // Invoke parent numeric refresh synchronization callbacks
+        onPaymentComplete(); 
+        
       } else {
-        setStatusMsg(`❌ Processing Error: ${finalResult.message}`);
+        setStatusMsg(`❌ Processing Error: ${finalResult?.message || 'Transaction rejected.'}`);
       }
     } catch (err: any) {
       setStatusMsg(`❌ Error: ${err.message || 'Transaction aborted.'}`);
@@ -184,7 +190,10 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
       <div className="grid grid-cols-2 gap-2 mb-4 bg-slate-950 p-1 rounded border border-slate-800">
         <button
           type="button"
-          onClick={() => setPaymentChoice('CreditCard')}
+          onClick={() => { 
+            setPaymentChoice('CreditCard'); 
+            setStatusMsg(''); // FIX: Wipe previous error/status strings on tab swap
+          }}
           className={`py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${
             paymentChoice === 'CreditCard' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}
@@ -193,7 +202,10 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
         </button>
         <button
           type="button"
-          onClick={() => setPaymentChoice('PayPal')}
+          onClick={() => { 
+            setPaymentChoice('PayPal'); 
+            setStatusMsg(''); // FIX: Wipe previous error/status strings on tab swap
+          }}
           className={`py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${
             paymentChoice === 'PayPal' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
           }`}

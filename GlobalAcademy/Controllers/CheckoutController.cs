@@ -36,8 +36,8 @@ public class CheckoutController : ControllerBase
     public async Task<IActionResult> ProcessCheckout([FromBody] CheckoutRequestPayload payload)
     {
         // Extract the strict Multi-Tenant firewall identity claim
-        var academyIdClaim = User.FindFirst("AcademyId")?.Value;
-        if (string.IsNullOrEmpty(academyIdClaim) || !Guid.TryParse(academyIdClaim, out var academyId))
+        var currentAcademyId = _tenantProvider.GetTenantId();
+        if (!Guid.TryParse(currentAcademyId.ToString(), out var academyId))
         {
             return BadRequest("Access Denied: Missing or malformed tenant boundary claims profile.");
         }
@@ -51,6 +51,7 @@ public class CheckoutController : ControllerBase
 
         return Ok(new { success = true, referenceId = result.ReferenceId });
     }
+    
     [HttpGet("my-statements")]
     public async Task<IActionResult> GetMyBillingStatements()
     {

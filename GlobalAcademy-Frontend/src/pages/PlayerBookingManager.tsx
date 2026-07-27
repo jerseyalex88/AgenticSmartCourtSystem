@@ -65,10 +65,10 @@ export function PlayerBookingManager() {
 
   useEffect(() => {
     (window as any).setDashboardGlobalDate = (newDateString: string) => {
-      console.log("📥 [PlayerBookingManager] Global hook caught payload:", newDateString);
+      //console.log("📥 [PlayerBookingManager] Global hook caught payload:", newDateString);
       
       setTimeout(() => {
-        console.log("🔄 [PlayerBookingManager] Mutating state variable 'startDate' to:", newDateString);
+        //console.log("🔄 [PlayerBookingManager] Mutating state variable 'startDate' to:", newDateString);
         setStartDate(newDateString);
         setSelectedDayIndex(0); 
         setRefreshTrigger(prev => prev + 1);
@@ -76,7 +76,7 @@ export function PlayerBookingManager() {
     };
 
     return () => {
-      console.log("🗑️ [PlayerBookingManager] Cleaning up global window handler hook.");
+      //console.log("🗑️ [PlayerBookingManager] Cleaning up global window handler hook.");
       (window as any).setDashboardGlobalDate = undefined;
     };
   }, []);

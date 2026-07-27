@@ -121,6 +121,7 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
                   <th className="p-4 text-center">Customer</th>
                 </tr>
               </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
               {totalUnpaidBalance > 0 && (
                   <tr className="bg-amber-500/5 border-b border-amber-500/20 text-amber-500 font-bold">
                     <td className="p-4 text-center">📊</td>
@@ -152,7 +153,7 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
                     </td>
                   </tr>
                 )}
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+              
                 {statements.map((inv) => (
                   <React.Fragment key={inv.invoiceId}>
                     <tr className="hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition-colors font-medium">
