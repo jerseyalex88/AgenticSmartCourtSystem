@@ -27,6 +27,11 @@ export default function App() {
   const isDirectorLoginPath = window.location.pathname === '/admin';
   const [targetAuthMode, setTargetAuthMode] = useState<'login' | 'register'>('login');
 
+  // Track dynamic visibility state for the discrete checkout drawer modal
+    const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+    const [activeInvoiceId, setActiveInvoiceId] = useState('');
+    const [activeInvoiceAmount, setActiveInvoiceAmount] = useState(0);
+
   // DYNAMIC INITIALIZATION HOOK: Automatically direct players to their booking hub!
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
@@ -144,7 +149,15 @@ export default function App() {
       case 'shadow-queue':
         return <ShadowQueueManager />;
       case 'financial-ledger':
-        return <BillingDashboard />;
+        return <BillingDashboard
+          onTriggerCheckoutPortal={(id, amt) => {
+                    // This is the active execution function wrapper block!
+                    // It listens for the child page parameters and executes layout updates.
+                    setActiveInvoiceId(id);
+                    setActiveInvoiceAmount(amt);
+                    setIsCheckoutOpen(true);
+                  }} 
+        />;
       case 'maintenance':
         return (
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">

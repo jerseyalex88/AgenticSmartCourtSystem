@@ -67,14 +67,14 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
         // Fetch safe verification token from your backend endpoint
   
         // TEMPORARY FOR TESTING: Skip the backend API fetch completely
-        // const response = await fetch('/api/Checkout/braintree-token');
-        // const { clientToken } = await response.json();
+        const response = await fetch('/api/Checkout/braintree-token');
+        const { clientToken } = await response.json();
 
         // Use this official, static Braintree Sandbox tokenization key
-        const staticSandboxTestingKey = 'sandbox_tmw9t4pt_vpy68mmvgrttft67';
+        //const staticSandboxTestingKey = 'sandbox_tmw9t4pt_vpy68mmvgrttft67';
 
         dropIn.create({
-          authorization: staticSandboxTestingKey, // Pass the static test key here
+          authorization: clientToken, // Pass the static test key here
           container: braintreeContainerRef.current!,
           paypal: { flow: 'vault' },
           card: false // Keep cards routed purely through Square

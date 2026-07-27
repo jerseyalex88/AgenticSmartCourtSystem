@@ -362,11 +362,14 @@ public class PlayerBookingPlugin
         }
 
         var summary = "Outstanding Open Balance Items Located:\n";
+        var invoiceTotalAmount = 0.00m; 
         foreach (var inv in unpaidInvoices)
         {
-            summary += $"- Invoice ID: {inv.InvoiceId} | Issued: {inv.CreatedAtUtc:yyyy-MM-dd} | Total Due: ${inv.TotalAmount:F2}\n" +
-                    $"  [FRONTEND_ACTION:LAUNCH_CHECKOUT:{inv.InvoiceId}:{inv.TotalAmount:F2}]\n";
+            summary += $"- Invoice ID: {inv.InvoiceId} | Issued: {inv.CreatedAtUtc:yyyy-MM-dd} | Total Due: ${inv.TotalAmount:F2}\n";
+            invoiceTotalAmount += inv.TotalAmount;
         }
+
+        summary += $"  [FRONTEND_ACTION:LAUNCH_CHECKOUT:Total Invoices Amount:{invoiceTotalAmount:F2}]";
 
         return summary;
     }

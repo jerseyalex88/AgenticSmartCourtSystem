@@ -40,6 +40,21 @@ namespace GlobalAcademy.Payment.Services
             );
         }
 
+        /// <summary>
+        /// Contacts Braintree Sandbox servers to generate a short-lived authorization token.
+        /// </summary>
+        public async Task<string> GenerateClientTokenAsync()
+        {
+            try
+            {
+                // Generate a fresh, un-vaulted generic gateway client configuration string
+                return await _gateway.ClientToken.GenerateAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Braintree Token Generation Fault: {ex.Message}", ex);
+            }
+        }
         public async Task<GatewayProcessResult> ProcessInvoicePaymentAsync(Guid academyId, decimal amount, string paymentToken, string currencyCode = "USD")
         {
             var request = new TransactionRequest

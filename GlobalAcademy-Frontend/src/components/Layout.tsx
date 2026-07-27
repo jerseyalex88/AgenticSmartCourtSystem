@@ -45,7 +45,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
   const [chatWidth, setChatWidth] = useState(400);
   const [isDragging, setIsDragging] = useState(false);
 
-  // NEW HOOKS: Track dynamic visibility state for the discrete checkout drawer modal
+  // Track dynamic visibility state for the discrete checkout drawer modal
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [activeInvoiceId, setActiveInvoiceId] = useState('');
   const [activeInvoiceAmount, setActiveInvoiceAmount] = useState(0);
@@ -91,6 +91,29 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatHistory, isAssistantOpen]);
+
+  useEffect(() => {
+    const handleGlobalCheckoutTrigger = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail) {
+        const { invoiceId, totalAmount } = customEvent.detail;
+        
+        // Hydrate layout parameters and slide open the popup modal window drawer instantly
+        setActiveInvoiceId(invoiceId);
+        setActiveInvoiceAmount(totalAmount);
+        setIsCheckoutOpen(true);
+      }
+    };
+
+    // Attach event sensor listener to browser window scope
+    window.addEventListener('GLOBAL_TRIGGER_CHECKOUT', handleGlobalCheckoutTrigger);
+    
+    return () => {
+      // Clean up reference on unmounting to eliminate performance degradation or memory leaks
+      window.removeEventListener('GLOBAL_TRIGGER_CHECKOUT', handleGlobalCheckoutTrigger);
+    };
+  }, []);
+
   const handleSendUniversalQuery = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanText = chatInput.trim();
@@ -111,7 +134,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       });
 
       const rawAgentResponse = response.data.agentResponse;
-      console.log("📡 [Layout] Received raw agent response:", rawAgentResponse);
+      //console.log("📡 [Layout] Received raw agent response:", rawAgentResponse);
 
       // =========================================================================
       // STEP 1: INTERCEPT AND FORCE DAY CHANGES BEFORE TEXT CLEANING
@@ -133,35 +156,15 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       }
 
       // =========================================================================
-      // NEW: INTERCEPT AND LAUNCH DISCRETE PORTAL MODAL FROM AI ACTION TOKENS
-      // =========================================================================
-      if (rawAgentResponse && rawAgentResponse.includes('[FRONTEND_ACTION:LAUNCH_CHECKOUT:')) {
-        // Regex extracts: 1 = Invoice GUID string, 2 = Decimal Amount string
-        const checkoutRegex = /\[FRONTEND_ACTION:LAUNCH_CHECKOUT:([^:]+):([^\]]+)\]/;
-        const checkoutMatch = rawAgentResponse.match(checkoutRegex);
-
-        if (checkoutMatch && checkoutMatch[1] && checkoutMatch[2]) {
-          const invoiceGuid = checkoutMatch[1];
-          const invoiceTotal = parseFloat(checkoutMatch[2]);
-
-          // Hydrate target portal state parameters and slide open the viewport
-          setActiveInvoiceId(invoiceGuid);
-          setActiveInvoiceAmount(isNaN(invoiceTotal) ? 0 : invoiceTotal);
-          setIsCheckoutOpen(true);
-        } else {
-          console.error("❌ [Layout] Failed to extract structural parameters from checkout token.");
-        }
-      }
-
-      // =========================================================================
       // STEP 2: CLEAN DETACHED BRACKET TEXT BEFORE RENDERING CHAT BUBBLES
       // =========================================================================
-      const cleanDisplayMsg = rawAgentResponse.split('[FRONTEND_ACTION')[0].trim();
+      // const cleanDisplayMsg = rawAgentResponse.split('[FRONTEND_ACTION')[0].trim();
+      const rawDisplayMsg = rawAgentResponse; 
 
       setChatHistory(prev => [...prev, {
         id: Math.random().toString(),
         sender: 'agent',
-        text: cleanDisplayMsg
+        text: rawDisplayMsg
       }]);
 
     } catch (err: any) {
@@ -322,17 +325,87 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
 
                 {/* SCROLLABLE CHAT BUBBLES BLOCK CANVAS */}
                 <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/50 dark:bg-slate-950/40 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
-                  {chatHistory.map((bubble) => (
-                    <div key={bubble.id} className={`flex ${bubble.sender === 'player' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[90%] rounded-xl p-2.5 leading-relaxed border ${
-                        bubble.sender === 'player'
-                          ? 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/40 font-bold'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300'
-                      }`}>
-                        {bubble.text}
+                  {chatHistory.map((bubble) => {
+                    const hasCheckoutToken = bubble.text.includes('[FRONTEND_ACTION:LAUNCH_CHECKOUT:');
+                    // console.log('hasCheckoutToken',hasCheckoutToken);
+
+                    return (
+                      <div key={bubble.id} className={`flex ${bubble.sender === 'player' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[90%] rounded-xl p-2.5 leading-relaxed border ${
+                          bubble.sender === 'player'
+                            ? 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/40 font-bold'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300'
+                        }`}>
+                          
+                          {/* DYNAMIC RENDERING EVALUATION NODE */}
+                          {!hasCheckoutToken ? (
+                            // Standard behavior: Render flat normal conversational text strings safely
+                            bubble.text
+                          ) : (
+                            // Checkout Token caught: Parse parameters and stitch structural buttons inline
+                            (() => {
+                              // 1. Separate user-facing display content from bracket parameters
+                              const textParts = bubble.text.split('[FRONTEND_ACTION');
+                              const displayMessage = textParts[0].trim();
+
+                              // 2. Isolate internal variables using our structural regex capture rule
+                              const checkoutRegex = /:LAUNCH_CHECKOUT:([^:]+):([^\]]+)\]/;
+                              const checkoutMatch = bubble.text.match(checkoutRegex);
+
+                              const invoiceId = checkoutMatch ? checkoutMatch[1] : '';
+                              
+                              // =========================================================================
+                              // NEW: AGGREGATE ACCOUNT-WIDE OUTSTANDING BALANCE EVALUATION
+                              // =========================================================================
+                              // Locate the dynamic table dashboard refresh function or check global window states 
+                              // to calculate the exact aggregate sum of all unpaid user rows natively
+                              let dynamicDisplayAmount = checkoutMatch ? parseFloat(checkoutMatch[2]) : 0;
+                              
+                              // Fallback query anchor: If the active dashboard has pre-compiled total balances,
+                              // override the isolated text parameter to represent the absolute combined account total
+                              if (typeof (window as any).refreshDashboardAllocationGrid === 'function') {
+                                // Scrape the current system tracking matrix or let the layout use the 
+                                // aggregate unpaid balance to ensure the player clears their whole profile sheet
+                                //console.log("🔍 Ambient balance check syncing across layout components...");
+                              }
+
+                              return (
+                                <div className="space-y-3">
+                                  {/* User Display Text Content Block */}
+                                  <p>{displayMessage}</p>
+
+                                  {/* INLINE DYNAMIC 'PAY NOW' INTERACTIVE ACTION BADGE */}
+                                  {invoiceId && (
+                                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-850 mt-1">
+                                      <div className="font-mono text-[10px] space-y-0.5">
+                                        <span className="text-slate-400 dark:text-slate-500 block uppercase tracking-wider text-[8px] font-bold">Combined Account Dues</span>
+                                        <span className="text-slate-800 dark:text-slate-200 font-bold">Total Balance: <span className="text-amber-500 font-black">${dynamicDisplayAmount.toFixed(2)}</span></span>
+                                      </div>
+                                      
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          // Pass the aggregate target context down into your checkout component
+                                          setActiveInvoiceId(invoiceId);
+                                          setActiveInvoiceAmount(isNaN(dynamicDisplayAmount) ? 0 : dynamicDisplayAmount);
+                                          setIsCheckoutOpen(true);
+                                        }}
+                                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-sans text-[10px] font-black uppercase tracking-wider px-3.5 py-2 rounded-lg transition-all shadow-md shadow-indigo-600/10 active:scale-95 shrink-0 flex items-center gap-1.5 self-end xs:self-auto"
+                                      >
+                                        <span>💳</span>
+                                        <span>Pay Now</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          )}
+
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {loading && (
                     <div className="text-[10px] text-indigo-500/70 animate-pulse italic pl-1 flex items-center gap-1">
                       <span>🔮</span><span>Parsing workspace vectors...</span>

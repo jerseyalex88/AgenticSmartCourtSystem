@@ -30,11 +30,15 @@ interface BillingDashboardProps {
   onTriggerCheckoutPortal: (invoiceId: string, amount: number) => void;
 }
 
-export default function BillingDashboard({ onTriggerCheckoutPortal }: BillingDashboardProps) {
+export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: BillingDashboardProps) {
   const [statements, setStatements] = useState<BillingStatement[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
+
+  // Dynamically compute the total sum of all outstanding unpaid invoice values
+  const unpaidInvoicesList = statements.filter(inv => inv.status === 'Unpaid');
+  const totalUnpaidBalance = unpaidInvoicesList.reduce((sum, inv) => sum + inv.totalAmount, 0);
 
   const fetchStatements = async () => {
     try {
@@ -69,6 +73,13 @@ export default function BillingDashboard({ onTriggerCheckoutPortal }: BillingDas
       case 'Refunded': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
       default: return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
     }
+  };
+
+  const dispatchCheckoutEvent = (invoiceId: string, totalAmount: number) => {
+    const checkoutEvent = new CustomEvent('GLOBAL_TRIGGER_CHECKOUT', {
+      detail: { invoiceId, totalAmount }
+    });
+    window.dispatchEvent(checkoutEvent);
   };
 
   if (loading) {
@@ -110,6 +121,37 @@ export default function BillingDashboard({ onTriggerCheckoutPortal }: BillingDas
                   <th className="p-4 text-center">Customer</th>
                 </tr>
               </thead>
+              {totalUnpaidBalance > 0 && (
+                  <tr className="bg-amber-500/5 border-b border-amber-500/20 text-amber-500 font-bold">
+                    <td className="p-4 text-center">📊</td>
+                    <td className="p-4 font-mono text-[10px] uppercase tracking-wider">Outstanding Balance Summary</td>
+                    <td className="p-4 italic font-sans text-slate-400 dark:text-slate-500 font-normal">
+                      Accumulated unresolved dues across {unpaidInvoicesList.length} billing items
+                    </td>
+                    <td className="p-4">
+                      <span className="px-2 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-[9px] font-black uppercase tracking-widest animate-pulse">
+                        Dues Outstanding
+                      </span>
+                    </td>
+                    <td className="p-4 text-right font-mono text-sm font-black text-amber-500">
+                      ${totalUnpaidBalance.toFixed(2)}
+                    </td>
+                    <td className="p-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (unpaidInvoicesList.length > 0) {
+                            // DISPATCH VIA GLOBAL EVENT BUS
+                            dispatchCheckoutEvent("ALL UNPAID INVOICES", totalUnpaidBalance);
+                          }
+                        }}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-lg transition-all shadow-md shadow-amber-500/10 active:scale-95"
+                      >
+                        ⚡ Pay Now ({unpaidInvoicesList.length})
+                      </button>
+                    </td>
+                  </tr>
+                )}
               <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
                 {statements.map((inv) => (
                   <React.Fragment key={inv.invoiceId}>
@@ -142,7 +184,10 @@ export default function BillingDashboard({ onTriggerCheckoutPortal }: BillingDas
                         {inv.status === 'Unpaid' ? (
                           <button
                             type="button"
-                            onClick={() => onTriggerCheckoutPortal(inv.invoiceId, inv.totalAmount)}
+                            onClick={() => {
+                              // DISPATCH VIA GLOBAL EVENT BUS
+                              dispatchCheckoutEvent(inv.invoiceId, inv.totalAmount);
+                            }}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all shadow shadow-emerald-900/10"
                           >
                             💳 Pay Dues
