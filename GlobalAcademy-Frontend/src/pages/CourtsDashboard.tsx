@@ -189,23 +189,30 @@ export default function CourtsDashboard() {
 
   return (
     <div className="space-y-6">
+      <div className="border-b border-slate-800 pb-4 mb-6">
+        <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">🏟️ Core Asset Matrix</h2>
+        <p className="text-xs text-slate-500 mt-1 font-mono">Manage branch and court provisions, deploy venue and explore court surface status.</p>
+      </div>
+
       {actionError && (
         <div className="p-4 bg-rose-950/40 border border-rose-900 text-rose-300 rounded-xl text-xs font-medium flex items-center space-x-2">
           <span>⚠️</span> <span>{actionError}</span>
         </div>
       )}
 
-      <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 p-5 rounded-2xl shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">Active Branch Location Node</label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-800">Active Branch Location Node</label>
             {branches.length > 0 ? (
               <div className="flex items-center space-x-2">
-                <select value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-emerald-500 min-w-[200px]" >
+                <select value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} 
+                className="bg-slate-700 border border-slate-200 rounded-xl px-4 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-emerald-500 min-w-[200px]" >
                   {branches.map(b => (<option key={b.id} value={b.id}>{b.name}</option>))}
                 </select>
                 {!isEditingBranch && (
-                  <button onClick={() => setIsEditingBranch(true)} className="text-xs bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg transition">📝 Edit Info</button>
+                  <button onClick={() => setIsEditingBranch(true)} 
+                  className="bg-slate-700 hover:bg-slate-900 text-slate-200 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold transition">📝 Edit Info</button>
                 )}
               </div>
             ) : (
@@ -213,13 +220,16 @@ export default function CourtsDashboard() {
             )}
           </div>
           <div className="flex items-center space-x-2">
-            <button onClick={() => setShowBranchModal(true)} className="bg-slate-950 hover:bg-slate-850 text-slate-300 border border-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition">➕ Deploy Venue</button>
-            <button disabled={!selectedBranchId} onClick={() => setShowCourtModal(true)} className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition">➕ Provision Court</button>
+            <button onClick={() => setShowBranchModal(true)} 
+              className="bg-slate-700 hover:bg-slate-900 text-slate-200 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold transition">➕ Deploy Venue</button>
+            <button disabled={!selectedBranchId} onClick={() => setShowCourtModal(true)} 
+              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition">➕ Provision Court</button>
           </div>
         </div>
 
         {isEditingBranch && (
-          <form onSubmit={handleUpdateBranch} className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <form onSubmit={handleUpdateBranch} 
+            className="p-4 bg-slate-200/80 border border-slate-850 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <div className="space-y-1">
               <label className="block font-bold text-slate-500 uppercase">Modify Branch Title</label>
               <input type="text" required value={editBranchData.name} onChange={(e) => setEditBranchData({...editBranchData, name: e.target.value})} className="w-full bg-slate-900 border border-slate-800 p-2 rounded-lg text-slate-200" />
@@ -257,29 +267,30 @@ export default function CourtsDashboard() {
           const isCurrentCourtEditing = editingCourtId === court.id;
           
           return (
-            <div key={court.id} className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl transition flex flex-col justify-between space-y-4">
+            <div key={court.id} 
+              className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-5 shadow-xl transition flex flex-col justify-between space-y-4">
               
               {!isCurrentCourtEditing ? (
                 <div className="space-y-4 flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-sm font-black text-slate-100 tracking-tight">{court.name}</h3>
-                        <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{court.description}</p>
+                        <h3 className="text-sm font-black text-slate-800 tracking-tight">{court.name}</h3>
+                        <p className="text-[11px] text-slate-700 mt-0.5 line-clamp-2 leading-relaxed">{court.description}</p>
                       </div>
-                      <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border bg-emerald-950/40 text-emerald-400 border-emerald-900/60">{court.status}</span>
+                      <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border bg-emerald-950/40 text-emerald-800 border-emerald-900/60">{court.status}</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">🛠️ {court.surfaceType}</span>
-                      <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">{court.isIndoor ? '🏠 Indoor' : '☀️ Outdoor'}</span>
-                      <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-850">💧 Coeff: {court.dryCoefficient}</span>
+                      <span className="text-[10px] bg-slate-250 px-2 py-0.5 rounded-md font-mono text-slate-700 border border-slate-350">🛠️ {court.surfaceType}</span>
+                      <span className="text-[10px] bg-slate-250 px-2 py-0.5 rounded-md font-mono text-slate-700 border border-slate-350">{court.isIndoor ? '🏠 Indoor' : '☀️ Outdoor'}</span>
+                      <span className="text-[10px] bg-slate-250 px-2 py-0.5 rounded-md font-mono text-slate-700 border border-slate-350">💧 Coeff: {court.dryCoefficient}</span>
                     </div>
                   </div>
 
                   <div className="space-y-1.5 border-t border-slate-850 pt-3">
                     <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="text-slate-500 uppercase">Surface Wear</span>
-                      <span className="text-slate-400">{court.aggregateMinutesPlayed} / {court.maintenanceThresholdMinutes} m</span>
+                      <span className="text-slate-700 uppercase">Surface Wear</span>
+                      <span className="text-slate-700">{court.aggregateMinutesPlayed} / {court.maintenanceThresholdMinutes} m</span>
                     </div>
                     <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-850">
                       <div style={{ width: `${wearPercent}%` }} className="h-full bg-emerald-500 transition-all duration-500" />
@@ -287,9 +298,8 @@ export default function CourtsDashboard() {
                   </div>
 
                   <div className="flex items-center justify-end border-t border-slate-850/60 pt-2 space-x-2">
-                    <button onClick={() => handleBeginEditCourt(court)} className="text-[10px] font-bold text-slate-400 hover:text-slate-200 border border-slate-800 hover:bg-slate-850 px-2.5 py-1.5 rounded-lg transition">📝 Edit Court</button>
-                    {/* <button onClick={() => handleDeleteCourt(court.id)} className="text-[10px] font-bold text-slate-500 hover:text-rose-400 border border-transparent hover:border-rose-900/40 hover:bg-rose-950/20 px-2.5 py-1.5 rounded-lg transition">🗑️ Purge</button> */}
-                    <button onClick={() => handleTriggerPurgeModal(court.id)} className="text-[10px] font-bold text-slate-500 hover:text-rose-400 border border-transparent hover:border-rose-900/40 hover:bg-rose-950/20 px-2.5 py-1.5 rounded-lg transition">🗑️ Purge</button>
+                    <button onClick={() => handleBeginEditCourt(court)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 border border-transparent hover:border-slate-900/40 hover:bg-slate-850 px-2.5 py-1.5 rounded-lg transition">📝 Configure</button>
+                    <button onClick={() => handleTriggerPurgeModal(court.id)} className="text-[10px] font-bold text-slate-500 hover:text-rose-400 border border-transparent hover:border-rose-900/40 hover:bg-rose-950/20 px-2.5 py-1.5 rounded-lg transition">🗑️ Decommision</button>
                   </div>
                 </div>
               ) : (

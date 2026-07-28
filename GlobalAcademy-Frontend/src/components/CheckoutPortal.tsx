@@ -12,7 +12,7 @@ interface CheckoutProps {
 type ClientPaymentChoice = 'CreditCard' | 'PayPal';
 
 export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount, onPaymentComplete }) => {
-  const [paymentChoice, setPaymentChoice] = useState<ClientPaymentChoice>('CreditCard');
+  const [paymentChoice, setPaymentChoice] = useState<ClientPaymentChoice>('PayPal');
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   
@@ -20,6 +20,7 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
   const braintreeInstance = useRef<any>(null);
   const squareCardInstance = useRef<any>(null);
   const braintreeContainerRef = useRef<HTMLDivElement>(null);
+  const squareContainerRef = useRef<HTMLDivElement>(null);
 
     // ==========================================
   // PIPELINE A: SQUARE (DISCRETE CREDIT CARD)
@@ -27,32 +28,87 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
   useEffect(() => {
     if (paymentChoice !== 'CreditCard') return;
 
+    // 1. Establish strict component rendering lifecycle cancellation flags
+    let isCurrentRenderActive = true;
+    let cardInstance: any = null;
+
     const initializeSquare = async () => {
-      // Inline-cast window to any to tell TypeScript to accept the dynamic runtime attachment
+      // Small pause to guarantee that the HTML DOM element is fully painted on the screen
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (!isCurrentRenderActive) return;
+
+      // const containerNode = document.getElementById('square-card-container');
+      // if (!containerNode) {
+      //   console.error("❌ Target container element '#square-card-container' is missing from layout canvas.");
+      //   return;
+      // }
+
       const extendedWindow = window as any;
-      
       if (!extendedWindow.Square) {
-        setStatusMsg('❌ Payment infrastructure failed to load.');
+        setStatusMsg('❌ Secure payment infrastructure script failed to load. Check your network.');
         return;
       }
+
       try {
-        // Use the newly cast reference to instantiate the payments layer cleanly
-        const payments = extendedWindow.Square.payments('sandbox-sq0idb-iGj_ndMvcAhvTud9B_XYrw', 'LC4RJHB6B4BHZ');
+        // Clear previous instances out of memory cleanly
+        if (squareContainerRef.current) {
+          squareContainerRef.current.innerHTML = '';
+        }
+
+        // Ensure the box container element is completely empty before attaching an iframe
+        //containerNode.innerHTML = '';
+        console.log("🚀 [Debug] Handshaking with Square App ID: sandbox-sq0idb-iGj_ndMvcAhvTud9B_XYrw...");
+
+        // 2. Initialize payments using stable, verified credentials
+        const payments = extendedWindow.Square.payments(
+          'sandbox-sq0idb-iGj_ndMvcAhvTud9B_XYrw', 
+          'LC4RJHB6B4BHZ'
+        );
+        
+        console.log("🚀 [Debug] Handshake successful! Initializing card model engine...");
         const card = await payments.card();
         
-        await card.attach('#square-card-container');
+        // 3. Prevent mounting if the user already clicked away to the PayPal tab while this was running
+        if (!isCurrentRenderActive) {
+          await card.destroy();
+          return;
+        }
+
+        console.log("🚀 [Debug] Card object created successfully! Attaching iframe to DOM element...");
+        await card.attach(squareContainerRef.current!);
+        
+        // 4. Safely store the active instance references globally
         squareCardInstance.current = card;
-      } catch (err) {
-        console.error('Square initialization failure:', err);
+        cardInstance = card;
+        
+        // Clear any previous error messages on successful mounting
+        setStatusMsg('');
+        console.log("🎉 [Debug] Square completely loaded with zero structural errors!");
+      } catch (err: any) {
+        console.error('Square SDK attachment fault:', err);
+        // Only modify status labels if the component is actively mounted on the screen
+        if (isCurrentRenderActive) {
+          setStatusMsg('❌ Failed to mount secure credit card inputs. Try refreshing your browser.');
+        }
       }
     };
 
     initializeSquare();
 
+    // =========================================================================
+    // LIFECYCLE DESTRUCTOR GUARD: CLEARS DUPLICATE CONNECTIONS INSTANTLY
+    // =========================================================================
     return () => {
-      if (squareCardInstance.current) {
-        squareCardInstance.current.destroy();
-        squareCardInstance.current = null;
+      isCurrentRenderActive = false; // Cancels any network actions currently in mid-flight
+      
+      if (cardInstance) {
+        // Absolute unmount rule: Completely purges the iframe from the webpage
+        cardInstance.destroy().then(() => {
+          if (squareCardInstance.current === cardInstance) {
+            squareCardInstance.current = null;
+          }
+          console.log("🧼 Square secure credit card iframe cleaned up successfully.");
+        }).catch((e: any) => console.log("Clean unmount skipped:", e));
       }
     };
   }, [paymentChoice]);
@@ -70,7 +126,7 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
         // TEMPORARY FOR TESTING: Skip the backend API fetch completely
         const response = await apiClient.get('/Checkout/braintree-token');
         const { clientToken } = response.data;
-        console.log('clientToken', clientToken);
+        //console.log('clientToken', clientToken);
 
         // Use this official, static Braintree Sandbox tokenization key
         //const staticSandboxTestingKey = 'sandbox_tmw9t4pt_vpy68mmvgrttft67';
@@ -217,12 +273,21 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
       {/* Target Forms Area */}
       <form onSubmit={handlePaymentSubmit} className="space-y-4">
         {paymentChoice === 'CreditCard' ? (
-          <div className="bg-slate-950 p-3 rounded border border-slate-800 min-h-[90px]">
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 min-h-[100px] block opacity-100 transform-none">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Card Number / Expiration / CVV
+              Secure Credit Card Details
             </label>
-            {/* Square mounts its isolated v2 fields directly inside this hook identifier node */}
-            <div id="square-card-container" className="py-1"></div>
+            
+            {/* FIXED DISPLAY HOOK: Bind the ref handle and remove string lookup dependencies */}
+            <div 
+              ref={squareContainerRef}
+              className="py-2 px-1 bg-slate-900 border border-slate-700/50 rounded-lg min-h-[44px]"
+              style={{ minHeight: '44px', width: '100%', display: 'block' }}
+            >
+              <span className="text-[10px] font-mono text-slate-500 animate-pulse pl-1 block">
+                🔐 Instantiating secure encryption fields...
+              </span>
+            </div>
           </div>
         ) : (
           <div className="bg-slate-950 p-2 rounded border border-slate-800">

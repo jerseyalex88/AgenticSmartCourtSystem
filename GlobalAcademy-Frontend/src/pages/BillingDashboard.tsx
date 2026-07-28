@@ -36,6 +36,10 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
   const [errorMsg, setErrorMsg] = useState('');
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
 
+  const squareCardInstance = React.useRef<any>(null);
+  const [squareLoading, setSquareLoading] = useState(false);
+  const [squareStatusMsg, setSquareStatusMsg] = useState('');
+
   // Dynamically compute the total sum of all outstanding unpaid invoice values
   const unpaidInvoicesList = statements.filter(inv => inv.status === 'Unpaid');
   const totalUnpaidBalance = unpaidInvoicesList.reduce((sum, inv) => sum + inv.totalAmount, 0);
@@ -45,7 +49,18 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
       setLoading(true);
       setErrorMsg('');
       const response = await apiClient.get('/Checkout/my-statements');
-      setStatements(response.data);
+      const sortedData = [...response.data].sort((a, b) => {
+        // Condition 1: If 'a' is Unpaid and 'b' is settled, float 'a' upward (-1)
+        if (a.status === 'Unpaid' && b.status !== 'Unpaid') return -1;
+        
+        // Condition 2: If 'b' is Unpaid and 'a' is settled, push 'b' upward (1)
+        if (a.status !== 'Unpaid' && b.status === 'Unpaid') return 1;
+        
+        // Condition 3: If statuses are identical, maintain our secondary sorting rule:
+        // Keep the newest invoices at the top by falling back onto CreatedAtUtc
+        return new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime();
+      });
+      setStatements(sortedData);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.message || 'Failed to sync with financial ledger tables.');
     } finally {
@@ -80,6 +95,106 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
       detail: { invoiceId, totalAmount }
     });
     window.dispatchEvent(checkoutEvent);
+  };
+
+  //Isolated lifecycle loop to initialize Square securely onto the static page
+  useEffect(() => {
+    // Only mount if there are actual outstanding balances left to settle
+    if (totalUnpaidBalance <= 0 || loading) return;
+
+    let isCurrentRenderActive = true;
+    let cardInstance: any = null;
+
+    const initializeInlineSquare = async () => {
+      // Small pause to guarantee that the static HTML container is fully painted
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      if (!isCurrentRenderActive) return;
+
+      const containerNode = document.getElementById('inline-square-card-container');
+      if (!containerNode) return;
+
+      const extendedWindow = window as any;
+      if (!extendedWindow.Square) {
+        setSquareStatusMsg('❌ Credit card subsystem offline: Script asset missing.');
+        return;
+      }
+
+      try {
+        containerNode.innerHTML = '';
+
+        // Initialize using your verified App ID and universal bypass location keyword
+        const payments = extendedWindow.Square.payments(
+          'sandbox-sq0idb-iGj_ndMvcAhvTud9B_XYrw', 
+          'main-location'
+        );
+        
+        const card = await payments.card();
+        
+        if (!isCurrentRenderActive) {
+          await card.destroy();
+          return;
+        }
+
+        await card.attach('#inline-square-card-container');
+        squareCardInstance.current = card;
+        cardInstance = card;
+        setSquareStatusMsg('');
+      } catch (err) {
+        console.error('Square initialization failure:', err);
+      }
+    };
+
+    initializeInlineSquare();
+
+    return () => {
+      isCurrentRenderActive = false;
+      if (cardInstance) {
+        cardInstance.destroy().then(() => {
+          if (squareCardInstance.current === cardInstance) {
+            squareCardInstance.current = null;
+          }
+        }).catch((e: any) => console.log("Clean unmount skipped:", e));
+      }
+    };
+  }, [totalUnpaidBalance, loading]);
+
+  const handleSquarePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!squareCardInstance.current || unpaidInvoicesList.length === 0) return;
+
+    setSquareLoading(true);
+    setSquareStatusMsg('');
+
+    try {
+      // 1. Force the secure single-use token generation exactly ONCE
+      const result = await squareCardInstance.current.tokenize();
+      if (result.status !== 'OK') {
+        throw new Error(result.errors?.message || 'Card validation fields failed.');
+      }
+
+      // 2. Map all outstanding invoice id GUID strings into an array payload structure
+      const targetInvoiceIds = unpaidInvoicesList.map(inv => inv.invoiceId);
+
+      // 3. Dispatch a SINGLE network call representing the consolidated aggregate total sum
+      const response = await apiClient.post('/Checkout/process-consolidated', {
+        invoiceIds: targetInvoiceIds,
+        provider: 1, // PreferredGateway.Square numerical mapping index
+        method: 0,   // PaymentMethod.CreditCard numerical mapping index
+        paymentToken: result.token,
+        currencyCode: 'CAD'
+      });
+
+      if (response.data.success) {
+        setSquareStatusMsg(`🎉 Payment Approved! A single consolidated charge of $${totalUnpaidBalance.toFixed(2)} was processed successfully, clearing all ${unpaidInvoicesList.length} unpaid items.`);
+        await fetchStatements(); // Instant background grid data refresh
+      } else {
+        setSquareStatusMsg(`❌ Error: ${response.data.message}`);
+      }
+    } catch (err: any) {
+      setSquareStatusMsg(`❌ Error: ${err.response?.data?.message || err.message || 'Transaction aborted.'}`);
+    } finally {
+      setSquareLoading(false);
+    }
   };
 
   if (loading) {
@@ -138,7 +253,7 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
                       ${totalUnpaidBalance.toFixed(2)}
                     </td>
                     <td className="p-4 text-center">
-                      <button
+                      {/* <button
                         type="button"
                         onClick={() => {
                           if (unpaidInvoicesList.length > 0) {
@@ -149,8 +264,9 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
                         className="bg-amber-500 hover:bg-amber-600 text-slate-950 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-lg transition-all shadow-md shadow-amber-500/10 active:scale-95"
                       >
                         ⚡ Pay Now ({unpaidInvoicesList.length})
-                      </button>
+                      </button> */}
                     </td>
+                    <td className="p-4 text-right font-mono text-sm font-black text-amber-500"></td>
                   </tr>
                 )}
               
@@ -243,6 +359,7 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
 
                           </div>
                         </td>
+                        <td className="bg-slate-50/50 dark:bg-slate-950/40"></td>
                       </tr>
                     )}
                   </React.Fragment>
@@ -252,6 +369,51 @@ export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: Bill
           </div>
         </div>
       )}
+      {/* ========================================================================= */}
+      {/* NEW: STATIC INLINE CREDIT CARD TERMINAL VIEW CONTEXT PANEL               */}
+      {/* ========================================================================= */}
+      {totalUnpaidBalance > 0 && (
+        <div className="mt-8 bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white max-w-xl mx-auto shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-2.5 mb-4 border-b border-slate-800 pb-3">
+            <span className="text-xl">💳</span>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider">Secure Credit Card Quick-Pay</h3>
+              <p className="text-[10px] text-slate-500 font-mono">Direct Sandbox Processing Terminal</p>
+            </div>
+          </div>
+
+          <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-850/80 text-xs mb-4 flex justify-between items-center font-mono">
+            <span className="text-slate-400">Total Consolidated Outstanding Balance:</span>
+            <span className="text-base font-black text-amber-500">${totalUnpaidBalance.toFixed(2)}</span>
+          </div>
+
+          <form onSubmit={handleSquarePaymentSubmit} className="space-y-4">
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 min-h-[92px]">
+              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                Card Number / Expiration / Security Code / Zip
+              </label>
+              
+              {/* FIXED HOOK NODE: Square mounts its fields directly onto this unmoving element */}
+              <div id="inline-square-card-container" className="py-1"></div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={squareLoading}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 font-sans text-xs font-black uppercase tracking-widest text-white py-3 rounded-xl transition-all shadow-md shadow-indigo-950/20 active:scale-[0.98]"
+            >
+              {squareLoading ? 'Authorizing Card Vector...' : `Authorize & Clear Dues ($${totalUnpaidBalance.toFixed(2)})`}
+            </button>
+          </form>
+
+          {squareStatusMsg && (
+            <div className="mt-4 p-3 bg-slate-950 border border-slate-850 text-[11px] font-mono font-medium rounded-xl text-center text-slate-300">
+              {squareStatusMsg}
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 };

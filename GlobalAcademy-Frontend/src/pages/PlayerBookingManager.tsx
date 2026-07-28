@@ -8,6 +8,8 @@ interface ActiveBooking {
   branchName: string;
   slotTimeDisplay: string; 
   durationMinutes: number;
+  isPaid: boolean;
+  isExpired: boolean;
 }
 
 interface PendingStandby {
@@ -107,10 +109,10 @@ export function PlayerBookingManager() {
     });
   };
 
-  const handleReleaseSlotClick = (bookingId: string, courtName: string) => {
+  const handleReleaseSlotClick = (bookingId: string, courtName: string, slotTime: string) => {
     showAlert({
       title: 'Release Booking Slot?',
-      message: `Are you absolutely certain you want to cancel your reservation for ${courtName}?`,
+      message: `Are you absolutely certain you want to cancel your reservation for ${courtName} on ${slotTime}?`,
       type: 'warning',
       onConfirm: async () => {
         try {
@@ -127,36 +129,57 @@ export function PlayerBookingManager() {
   const activeDayMatrix = matrixData[selectedDayIndex];
 
   return (
-    <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl font-mono text-xs text-slate-300">
+    <div className="space-y-6 text-sans">
       <div className="border-b border-slate-800 pb-4 mb-6">
-        <h2 className="text-sm font-black text-slate-100 uppercase tracking-wider">⏱️ Player Booking Lifecycle Center</h2>
-        <p className="text-slate-400 mt-1">Manage your active court allocations, verify standby queue states, and explore live availability grids.</p>
+        <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">⏱️ Player Booking Lifecycle Center</h2>
+        <p className="text-xs text-slate-500 mt-1 font-mono">Manage your active court allocations, verify standby queue states, and explore live availability grids.</p>
       </div>
+
+    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-sm font-mono text-xs text-slate-300">
 
       {loading && matrixData.length === 0 ? (
         <div className="p-12 text-center text-slate-600 animate-pulse">Syncing personal booking matrices...</div>
       ) : (
         <div className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            <div className="lg:col-span-2 space-y-4">
-              <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-400">📅 Confirmed Court Allocations</h3>
+            <div className="lg:col-span-3 space-y-4">
+              <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-600">📅 Confirmed Court Allocations</h3>
               {myBookings.length === 0 ? (
-                <div className="p-6 bg-slate-950 border border-slate-800 rounded-xl text-center text-slate-600 italic">You have no upcoming confirmed matches.</div>
+                <div className="p-6 bg-white bg-slate-950 border border-slate-200 rounded-xl text-center text-slate-600 italic">You have no upcoming confirmed matches.</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {myBookings.map((b) => (
-                    <div key={b.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition">
+                    <div key={b.id} className="bg-white bg-slate-950 border border-slate-200 p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition">
                       <div>
-                        <div className="text-xs font-black text-slate-100 uppercase tracking-wide">{b.courtName}</div>
-                        <div className="text-slate-500 mt-1 text-[11px]">⏱️ Schedule: {b.slotTimeDisplay}</div>
+                        <div className="text-xs font-black text-slate-800 uppercase tracking-wide">{b.courtName}</div>
+                        <div className="text-slate-700 mt-1 text-[11px]">⏱️ Schedule: {b.slotTimeDisplay}</div>
+                        {b.isPaid && !b.isExpired && (
+                          <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                            ✓ Paid Secured
+                          </span>
+                        )}
+                        {b.isExpired && (
+                          <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 border border-blue-500/20 rounded-md">
+                            ✓ Expired
+                          </span>
+                        )}
                       </div>
-                      <button onClick={() => handleReleaseSlotClick(b.id, b.courtName)} className="mt-4 w-full bg-slate-900 border border-slate-800 hover:bg-rose-950/30 text-rose-400 font-bold py-1.5 rounded-lg uppercase text-[10px] transition">❌ Cancel Slot</button>
+                      {!b.isPaid && !b.isExpired && (
+                      <button onClick={() => handleReleaseSlotClick(b.id, b.courtName, b.slotTimeDisplay)} 
+                        className="mt-4 w-full bg-slate-700 border border-slate-600 hover:bg-rose-950/30 text-rose-400 font-bold py-1.5 rounded-lg uppercase text-[10px] transition"
+                        title={
+                          b.isExpired ? "Historical past bookings cannot be dropped." :
+                          b.isPaid ? "Settled payments are locked. Contact Director for refunds." : "Cancel this reservation slot"
+                        }
+                        >❌ Cancel Slot</button>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
-
+            
+            {myStandby.length > 0 && (
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
               <h3 className="text-[10px] font-black tracking-widest uppercase text-amber-400 border-b border-slate-800 pb-2 mb-3">⏳ Standby Shadow Queue Monitors</h3>
               {myStandby.length === 0 ? (
@@ -172,12 +195,14 @@ export function PlayerBookingManager() {
                 </div>
               )}
             </div>
+            )}
+
           </div>
           <div className="border-t border-slate-800 pt-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
               <div>
-                <h3 className="text-[10px] font-black tracking-widest uppercase text-emerald-400">⚡ 7-Day Live Court Availability Matrix Grid</h3>
-                <p className="text-slate-400 mt-0.5 text-[11px]">Select a day tab to view available intervals. Unavailable or booked slots appear greyed out.</p>
+                <h3 className="text-[10px] font-black tracking-widest uppercase text-emerald-600">⚡ 7-Day Live Court Availability Matrix Grid</h3>
+                <p className="text-slate-600 mt-0.5 text-[11px]">Select a day tab to view available intervals. Unavailable or booked slots appear greyed out.</p>
               </div>
               
               <input
@@ -255,6 +280,6 @@ export function PlayerBookingManager() {
           </div>
         </div>
       )}
-    </div>
+    </div></div>
   );
 }

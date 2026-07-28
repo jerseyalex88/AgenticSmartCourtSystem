@@ -73,6 +73,15 @@ public class PlayerBookingController : ControllerBase
                 .Where(b => b.AcademyId == currentAcademyId && b.BookedPlayerName == currentUserName && !b.IsAvailableSlot)
                 .OrderByDescending(b => b.StartTimeUtc) // 1st Priority: Latest booking slots first
                 .ThenBy(b => b.CourtName));
+        
+        var paidBookingIds = await _dbContext.InvoiceLineItems
+            .Where(li => _dbContext.Invoices.Any(i => i.InvoiceId == li.InvoiceId 
+                                                   && i.IssuedToUserId == userIdClaimString 
+                                                   && i.AcademyId == currentAcademyId 
+                                                   && i.Status == InvoiceStatus.Paid)
+                      && li.AssociatedBookingId != null)
+            .Select(li => li.AssociatedBookingId.Value)
+            .ToListAsync();
 
         var payload = userBookings.Select(b => {
             // Dynamically resolve timezone parameters by traversing the booking entity relation links
@@ -87,13 +96,21 @@ public class PlayerBookingController : ControllerBase
 
             DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(b.StartTimeUtc, branchTimeZone);
             
+            // NEW VERIFICATION FLAG CHECK: Determine if this booking ID resides within our paid registry list
+            bool isSettled = paidBookingIds.Contains(b.Id);
+            // NEW TIMING CHECK: Compare the booking's structural UTC timestamp directly against the current moment.
+            // If the start time is strictly earlier than now, the slot is marked as expired.
+            bool hasPassed = b.StartTimeUtc < DateTime.UtcNow;
+
             return new
             {
                 id = b.Id.ToString(),
                 courtName = b.CourtName,
                 branchName = b.Court?.Branch?.Name ?? "Main Campus Area Hub", 
                 slotTimeDisplay = localTime.ToString("MMM dd, yyyy 'at' hh:mm tt"), 
-                durationMinutes = b.DurationInMinutes
+                durationMinutes = b.DurationInMinutes,
+                isPaid = isSettled,
+                isExpired = hasPassed
             };
         });
 
@@ -296,6 +313,8 @@ public class PlayerBookingController : ControllerBase
         if (courtInfo == null) 
             return BadRequest("Infrastructure Exception: Target court identifier missing.");
 
+        int durationMinutes = 60;
+
         var freshBooking = new Booking
         {
             Id = Guid.NewGuid(),
@@ -308,10 +327,41 @@ public class PlayerBookingController : ControllerBase
             SlotTime = startUtc, // Legacy column backfill compatibility
             BookedPlayerName = currentUserName,
             BookedByUserId = bookedByUserIdGuid.ToString(),
+            OpponentUserId = string.Empty, // Nullable / Empty fallback initialization
             IsAvailableSlot = false, // Locked down
             BookingType = "Player App Secured Reservation",
+            Notes = "Booked manually by player via Smart Court OS.",
+            DurationInMinutes = durationMinutes,
             PricePaid = 0.00m,
             CreatedAtUtc = DateTime.UtcNow
+        };
+
+        // 8. Accumulate wear minutes onto the court asset matrix tracking
+        courtInfo.AggregateMinutesPlayed += durationMinutes;
+
+        // 9. Instantiation mapping for a linked Unified Ledger Invoice
+        var invoiceId = Guid.NewGuid();
+        var invoicePrice = 50.00m; // Default uniform court slot rate rule
+
+        var newInvoice = new Invoice
+        {
+            InvoiceId = invoiceId,
+            AcademyId = currentAcademyId,
+            IssuedToUserId = bookedByUserIdGuid.ToString(),
+            CustomerName = currentUserName,
+            CreatedAtUtc = DateTime.UtcNow,
+            Status = InvoiceStatus.Unpaid,
+            TotalAmount = invoicePrice
+        };
+
+        var lineItem = new InvoiceLineItem
+        {
+            LineItemId = Guid.NewGuid(),
+            InvoiceId = invoiceId,
+            ItemDescription = $"Court Rental Fee: {courtInfo.Name} on {startUtc.Date} @ {startUtc.Hour}",
+            Quantity = 1,
+            UnitPrice = invoicePrice,
+            AssociatedBookingId = freshBooking.Id
         };
 
         using (var transaction = await _dbContext.Database.BeginTransactionAsync())
@@ -319,6 +369,8 @@ public class PlayerBookingController : ControllerBase
             try
             {
                 _dbContext.Bookings.Add(freshBooking);
+                _dbContext.Invoices.Add(newInvoice);
+                _dbContext.InvoiceLineItems.Add(lineItem);
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync(); // Physical data flush straight to disk
             }
@@ -342,8 +394,58 @@ public class PlayerBookingController : ControllerBase
             return BadRequest("Invalid transaction identifier formatting standard.");
 
         var targetBooking = await _dbContext.Bookings.FirstOrDefaultAsync(b => b.Id == bookingGuid);
+
         if (targetBooking == null) 
             return NotFound("Target reservation allocation row does not exist.");
+
+        var timeUntilMatch = targetBooking.StartTimeUtc - DateTime.UtcNow;
+
+        // Block execution if match starts in under 24 hours AND the user is NOT an Academy Director
+        if (timeUntilMatch.TotalHours < 24) // && !_isDirector)
+        {
+            return BadRequest("Cancellation Locked: Reservations starting in less than 24 hours cannot be dropped by players. Please contact an Academy Director for an override.");
+        }
+
+        var court = await _dbContext.Courts
+            .Include(c => c.Branch)
+            .FirstOrDefaultAsync(c => c.AcademyId == targetBooking.AcademyId && c.Name.ToLower() == targetBooking.CourtName.ToLower());
+
+        if (court == null)
+        {
+            return BadRequest($"Validation error: Court matching the name '{targetBooking.CourtName}' does not exist inside your academy ecosystem.");
+        }
+
+        // 7. Locate the associated invoice using our historical booking tracking ID reference key
+        var associatedLineItem = await _dbContext.InvoiceLineItems
+            .FirstOrDefaultAsync(li => li.AssociatedBookingId == targetBooking.Id);
+
+        string financialStatusUpdateMessage = "No linked financial invoices were altered.";
+
+        if (associatedLineItem != null)
+        {
+            var invoice = await _dbContext.Invoices
+                .FirstOrDefaultAsync(i => i.InvoiceId == associatedLineItem.InvoiceId && i.AcademyId == targetBooking.AcademyId);
+
+            if (invoice != null)
+            {
+                if (invoice.Status == InvoiceStatus.Unpaid)
+                {
+                    // Scenario A: User hasn't paid yet -> Simply void the outstanding balance sheet row
+                    invoice.Status = InvoiceStatus.Voided;
+                    financialStatusUpdateMessage = $"Linked outstanding Invoice #{invoice.InvoiceId} has been successfully VOIDED.";
+                }
+                else if (invoice.Status == InvoiceStatus.Paid)
+                {
+                    // Scenario B: User already settled -> Mark as Refunded
+                    // In production, this flag triggers an async webhook listener dispatching credit back through Braintree/Square
+                    invoice.Status = InvoiceStatus.Refunded;
+                    financialStatusUpdateMessage = $"Linked paid Invoice #{invoice.InvoiceId} has been marked as REFUNDED. Funds will return to the original gateway account.";
+                }
+            }
+        }
+
+        // 8. Credit back play minutes to the court surface wear metrics tracking system before removing row
+        court.AggregateMinutesPlayed = Math.Max(0, court.AggregateMinutesPlayed - targetBooking.DurationInMinutes);
 
         // SECURITY GUARD: Double verify user owns this match slot row before mutating table cells
 

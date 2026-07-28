@@ -33,7 +33,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
       
       {/* UNIVERSAL MODAL POPUP PORTAL OVERLAY CONTAINER */}
       {activeAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 font-mono text-xs backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-250/80 font-mono text-xs animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-up">
             
             {/* MODAL HEADER BLOCK MATRICES */}

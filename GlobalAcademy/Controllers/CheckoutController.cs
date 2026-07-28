@@ -52,6 +52,30 @@ public class CheckoutController : ControllerBase
         return Ok(new { success = true, referenceId = result.ReferenceId });
     }
     
+    /// <summary>
+    /// POST api/Checkout/process-consolidated
+    /// Charges a single unified total sum balance and clears multiple unpaid invoices atomically.
+    /// </summary>
+    [HttpPost("process-consolidated")]
+    public async Task<IActionResult> ProcessConsolidatedCheckout([FromBody] ConsolidatedCheckoutRequest payload)
+    {
+        var academyIdClaim = User.FindFirst("AcademyId")?.Value;
+        if (string.IsNullOrEmpty(academyIdClaim) || !Guid.TryParse(academyIdClaim, out var academyId))
+        {
+            return BadRequest(new { success = false, message = "Access Denied: Missing multi-tenant partition context parameters." });
+        }
+
+        // Invoke our single-charge multi-clear transactional execution node service
+        var result = await _checkoutService.ExecuteConsolidatedCheckoutAsync(academyId, payload);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { success = false, message = result.ErrorMessage });
+        }
+
+        return Ok(new { success = true, referenceId = result.ReferenceId });
+    }
+    
     [HttpGet("my-statements")]
     public async Task<IActionResult> GetMyBillingStatements()
     {
