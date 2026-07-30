@@ -2,10 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Define the shape of our decrypted cryptographic passport claim data matrix
 interface UserProfile {
+  id: string,
   email: string;
   role: string;
   academyId: string;
   userName: string;
+  academyName: string;
 }
 
 interface AuthContextType {
@@ -32,22 +34,24 @@ function decodeJwtClaims(token: string): UserProfile {
     
     const parsed = JSON.parse(jsonPayload);
 
-    //console.log(`parsed value: "${JSON.stringify(parsed)}"`);
+    // console.log(`parsed value: "${JSON.stringify(parsed)}"`);
 
     // Modern .NET 10 token claims mapping parameters
-    const email = parsed["http://xmlsoap.org"] || parsed.sub || "";
+    const id = parsed.nameidentifier || "";
+    const email = parsed.email || "";
     const role = parsed["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || parsed.role || "Player";
     const academyId = parsed.AcademyId || parsed.academyId || "";
     const userName = parsed["http://xmlsoap.org"] || parsed.unique_name || "";
+    const academyName = parsed.AcademyName || parsed.academyName || "";
 
     // console.log("==================================================");
     // console.log(`[DECODING JWT] Extracted Role Claim Value: "${role}"`);
     // console.log("==================================================");
 
-    return { email, role, academyId, userName };
+    return { id, email, role, academyId, userName, academyName };
   } catch (err) {
     console.error("Failed to parse cryptographic JWT token structure claims:", err);
-    return { email: "", role: "Player", academyId: "", userName: "" };
+    return { id: "", email: "", role: "Player", academyId: "", userName: "", academyName: "" };
   }
 }
 

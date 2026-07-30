@@ -79,14 +79,19 @@ export default function AgentDispatchCenter() {
   };
 
   return (
-    <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl font-mono text-xs text-slate-300">
+    <div className="space-y-6 text-sans">
+      <div>
+          <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">⚡ Autonomous AI Dispatch Command Hub</h2>
+          <p className="text-xs text-slate-500 mt-1 font-mono">Reactive match-saving agent executing real-time spatial rerouting and SMS negotiation hooks [2].</p>
+        </div>
+    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-xl font-mono text-xs text-slate-800">
       
       {/* SECTION BANNER TEMPLATE */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 border-b border-slate-800 pb-4 gap-4">
-        <div>
+        {/* <div>
           <h2 className="text-sm font-black text-slate-100 uppercase tracking-wider">⚡ Autonomous AI Dispatch Command Hub</h2>
           <p className="text-slate-400 mt-1">Reactive match-saving agent executing real-time spatial rerouting and SMS negotiation hooks [2].</p>
-        </div>
+        </div> */}
         
         <button
           onClick={triggerRainCancellationSimulator}
@@ -103,8 +108,8 @@ export default function AgentDispatchCenter() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         
         {/* VIEW 1: ACTIVE LIVE COMMITTED AI TRAFFIC FLOWS (Takes 2 Columns) */}
-        <div className="xl:col-span-2 bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="p-3 bg-slate-900 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-300 rounded-xl overflow-hidden">
+          <div className="p-3 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-850 text-slate-400 uppercase tracking-wider font-bold text-[10px]">
             Live Dispatch Relocation Pipeline Monitor ({offers.length})
           </div>
 
@@ -117,15 +122,15 @@ export default function AgentDispatchCenter() {
           ) : (
             <div className="divide-y divide-slate-800">
               {offers.map((offer) => (
-                <div key={offer.queueId} className="p-4 hover:bg-slate-900/30 transition flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div key={offer.queueId} className="p-4 hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-black text-slate-200 text-sm">{offer.playerName}</span>
-                      <span className="text-[10px] text-slate-500">{offer.phoneNumber}</span>
+                      <span className="font-black text-slate-800 text-sm">{offer.playerName}</span>
+                      <span className="text-[10px] text-slate-700">{offer.phoneNumber}</span>
                     </div>
-                    <div className="mt-1 text-slate-400 leading-relaxed">
+                    <div className="mt-1 text-slate-700 leading-relaxed">
                       ❌ Rained out on <span className="text-rose-400 font-bold">{offer.originalCourtName}</span> <br/>
-                      🤖 AI Solution: <span className="text-emerald-400 font-bold">{offer.proposedCourtName}</span> at <span className="text-slate-300 font-bold">{offer.proposedBranchName}</span> ({offer.proposedTime}) [2]
+                      🤖 AI Solution: <span className="text-emerald-400 font-bold">{offer.proposedCourtName}</span> at <span className="text-slate-700 font-bold">{offer.proposedBranchName}</span> ({offer.proposedTime}) [2]
                     </div>
                   </div>
 
@@ -185,6 +190,6 @@ export default function AgentDispatchCenter() {
         </div>
 
       </div>
-    </div>
+    </div></div>
   );
 }

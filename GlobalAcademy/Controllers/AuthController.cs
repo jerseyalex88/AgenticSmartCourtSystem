@@ -80,7 +80,8 @@ public class AuthController : ControllerBase
             {
                 new Claim("http://xmlsoap.org", user.UserName!),
                 new Claim("jti", Guid.NewGuid().ToString()),
-                new Claim("nameidentifier", user.Id)
+                new Claim("nameidentifier", user.Id),
+                new Claim("email", user.Email)
             };
 
             // =========================================================================
@@ -88,6 +89,7 @@ public class AuthController : ControllerBase
             // =========================================================================
             // We filter out any old, stale "role" claims sitting in the claims table 
             // to prevent them from colliding with your upgraded role state.
+            
             foreach (var claim in userClaims)
             {
                 if (claim.Type != ClaimTypes.Role && claim.Type != "role")
@@ -101,6 +103,10 @@ public class AuthController : ControllerBase
             {
                 authClaims.Add(new Claim(ClaimTypes.Role, userRole));
             }
+
+            var academyClaim = Guid.Parse(userClaims.FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value);
+            var academy = _dbContext.Academies.FirstOrDefault(a=> a.Id == academyClaim);
+            authClaims.Add(new Claim("academyName", academy.Name));
 
             // --- Generate Token Signing Configurations ---
             var jwtSettings = _configuration.GetSection("JwtSettings");
@@ -180,6 +186,7 @@ public class AuthController : ControllerBase
                     email = user.Email,
                     userName = user.UserName,
                     role = roles.FirstOrDefault() ?? "Player",
+                    phoneNumber = user.PhoneNumber,
                     isActive = user.EmailConfirmed // Using Identity flags or a custom property to track operational state
                 });
             }
@@ -228,9 +235,24 @@ public class AuthController : ControllerBase
     // UPDATE EXISTING IDENTITY USER PROFILE METADATA & ROLES (PUT)
     // =========================================================================
     [HttpPut("users/{userId}")]
-    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    [Authorize]
     public async Task<IActionResult> UpdateUser(string userId, [FromBody] UpdateUserPayloadDto model)
     {
+        // Extract the calling user's Identity Id from the JWT claims context
+        var userIdClaimString = HttpContext.User.Claims
+            .FirstOrDefault(c => c.Type.Contains("nameidentifier") || c.Type == "sub" || c.Type == "nameid")?.Value;
+
+        // Isolate clearance flags using the ambient User role claims context
+        var isDirector = User.IsInRole("AcademyDirector") || User.IsInRole("GlobalAdmin");
+
+        // =========================================================================
+        // SECURITY IN-METHOD FIREWALL BLOCK: PROTECTS AGAINST CROSS-USER SCRIPTING
+        // =========================================================================
+        if (!isDirector && userIdClaimString != userId)
+        {
+            return Forbid("Security Violation: Players are strictly locked to modifying their own profile nodes.");
+        }
+
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) return NotFound("Target identity user account could not be found.");
 
@@ -248,7 +270,14 @@ public class AuthController : ControllerBase
             user.Email = model.Email.Trim();
             user.UserName = model.UserName.Trim(); 
             user.PhoneNumber = model.PhoneNumber;
-            user.EmailConfirmed = model.IsActive; 
+
+            // =========================================================================
+            // PRIVILEGE LOCKS: Players cannot activate/deactivate accounts or change roles
+            // =========================================================================
+            if (isDirector)
+            {
+                user.EmailConfirmed = model.IsActive; 
+            }
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
@@ -257,12 +286,14 @@ public class AuthController : ControllerBase
                 return BadRequest("Failed to update identity registration rows.");
             }
 
-            // Synchronize Security Role Assignments
+            // Only run the complex role assignment tracking loop if a Director initiates it
             var currentRoles = await _userManager.GetRolesAsync(user);
-            if (!currentRoles.Contains(model.Role))
+            string activeTargetRole = isDirector ? model.Role : currentRoles.FirstOrDefault() ?? "Player";
+
+            if (isDirector && !currentRoles.Contains(activeTargetRole))
             {
                 var removeRoleResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
-                var addRoleResult = await _userManager.AddToRoleAsync(user, model.Role);
+                var addRoleResult = await _userManager.AddToRoleAsync(user, activeTargetRole);
 
                 if (!removeRoleResult.Succeeded || !addRoleResult.Succeeded)
                 {
@@ -273,7 +304,7 @@ public class AuthController : ControllerBase
                 // Update the token generation role claim row
                 var oldRoleClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role");
                 if (oldRoleClaim != null) await _userManager.RemoveClaimAsync(user, oldRoleClaim);
-                await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, model.Role));
+                await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, activeTargetRole));
             }
 
             // 2. COMMIT TRANSACTION LIVE TO POSTGRESQL REGISTRIES
@@ -284,7 +315,7 @@ public class AuthController : ControllerBase
                 id = user.Id,
                 email = user.Email,
                 userName = user.UserName,
-                role = model.Role,
+                role = activeTargetRole, // Echoes the safe validated role
                 isActive = user.EmailConfirmed,
                 phoneNumber = user.PhoneNumber
             });

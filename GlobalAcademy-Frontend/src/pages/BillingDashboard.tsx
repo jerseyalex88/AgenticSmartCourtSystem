@@ -26,11 +26,7 @@ interface BillingStatement {
   receipts: TransactionReceipt[];
 }
 
-interface BillingDashboardProps {
-  onTriggerCheckoutPortal: (invoiceId: string, amount: number) => void;
-}
-
-export default function BillingDashboard(){ //({ onTriggerCheckoutPortal }: BillingDashboardProps) {
+export default function BillingDashboard(){
   const [statements, setStatements] = useState<BillingStatement[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');

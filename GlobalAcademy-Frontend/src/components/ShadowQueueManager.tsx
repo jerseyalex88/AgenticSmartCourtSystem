@@ -65,14 +65,19 @@ export default function ShadowQueueManager() {
   };
 
   return (
-    <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl font-mono text-xs text-slate-300">
+    <div className="space-y-6 text-sans">
+      <div>
+        <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">🔄 Displaced Player Shadow Queue Matrix</h2>
+        <p className="text-xs text-slate-500 mt-1 font-mono">Live academy standby tracking pipeline optimized by autonomous gpt-5.4-mini subagents.</p>
+      </div>
+    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-xl font-mono text-xs text-slate-800">
       
       {/* HEADER CONTROLS COMPONENT */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 border-b border-slate-800 pb-4 gap-4">
-        <div>
+        {/* <div>
           <h2 className="text-sm font-black text-slate-100 uppercase tracking-wider">🔄 Displaced Player Shadow Queue Matrix</h2>
           <p className="text-slate-400 mt-1">Live academy standby tracking pipeline optimized by autonomous gpt-5.4-mini subagents.</p>
-        </div>
+        </div> */}
         
         <div className="flex items-center gap-2 self-end md:self-auto">
           <button
@@ -107,8 +112,8 @@ export default function ShadowQueueManager() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         {/* LIVE QUEUE STANDBY GRID (Takes 2 columns) */}
-        <div className="lg:col-span-2 bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="p-3 bg-slate-900 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-300 rounded-xl overflow-hidden">
+          <div className="p-3 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-850 text-slate-400 uppercase tracking-wider font-bold text-[10px]">
             Active Displaced Standby Roster ({queue.length})
           </div>
           
@@ -119,10 +124,10 @@ export default function ShadowQueueManager() {
           ) : (
             <div className="divide-y divide-slate-800">
               {queue.map((item) => (
-                <div key={item.id} className="p-3 flex items-center justify-between hover:bg-slate-900/50 transition">
+                <div key={item.id} className="p-3 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition">
                   <div>
-                    <div className="font-bold text-slate-200">{item.playerName}</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">Preference Window: {item.preferredWindow}</div>
+                    <div className="font-bold text-slate-800">{item.playerName}</div>
+                    <div className="text-[10px] text-slate-700 mt-0.5">Preference Window: {item.preferredWindow}</div>
                   </div>
                   <div>
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
@@ -156,6 +161,6 @@ export default function ShadowQueueManager() {
         </div>
 
       </div>
-    </div>
+    </div></div>
   );
 }

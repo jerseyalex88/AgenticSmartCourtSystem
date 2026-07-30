@@ -149,15 +149,7 @@ export default function App() {
       case 'shadow-queue':
         return <ShadowQueueManager />;
       case 'financial-ledger':
-        return <BillingDashboard
-          onTriggerCheckoutPortal={(id, amt) => {
-                    // This is the active execution function wrapper block!
-                    // It listens for the child page parameters and executes layout updates.
-                    setActiveInvoiceId(id);
-                    setActiveInvoiceAmount(amt);
-                    setIsCheckoutOpen(true);
-                  }} 
-        />;
+        return <BillingDashboard />;
       case 'maintenance':
         return (
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
@@ -169,6 +161,8 @@ export default function App() {
         );
       case 'agent-dispatch':
         return <AgentDispatchCenter />;
+      case 'user-profile':
+        return <AdminTools />; 
       default:
         return <div className="text-slate-500 p-4">View container out of sync.</div>;
     }

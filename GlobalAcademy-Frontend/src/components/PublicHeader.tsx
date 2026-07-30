@@ -14,8 +14,8 @@ export default function PublicHeader({ onNavigate, activeAuthMode, onSetAuthMode
       <div className="flex items-center space-x-3 cursor-pointer" onClick={() => onNavigate('landing')}>
         <span className="text-2xl bg-gradient-to-br from-emerald-500 to-teal-400 p-2 rounded-xl border border-emerald-500/20 text-slate-950 font-black">🎾</span>
         <div>
-          <h1 className="text-xs font-black tracking-widest uppercase bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">High Frequency Vanguard</h1>
-          <p className="text-[10px] font-mono tracking-wider text-emerald-400">ACADEMY SANDBOX</p>
+          <h1 className="text-xs font-black tracking-widest uppercase bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">High Frequency</h1>
+          <p className="text-[10px] font-mono tracking-wider text-emerald-400">TENNIS ACADEMY</p>
         </div>
       </div>
 

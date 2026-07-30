@@ -186,8 +186,9 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     { id: 'agent-dispatch', label: '⚡ AI Dispatch Center', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'maintenance', label: '🔧 Work Order Tickets', roles: ['AcademyDirector', 'Groundskeeper'] },
     { id: 'roster', label: '👥 Staff Roster Manager', roles: ['AcademyDirector', 'GlobalAdmin'] },
-    { id: 'admin', label: '⚙️ Role Administrator', roles: ['AcademyDirector', 'GlobalAdmin'] },
-    { id: 'password', label: '🔐 Security Passwords', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
+    { id: 'admin', label: '⚙️ Profiles Administration', roles: ['AcademyDirector', 'GlobalAdmin'] },
+    { id: 'user-profile', label: '⚙️ Player Profile', roles: ['Player'] },
+    { id: 'password', label: '🔐 Security Settings', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
   ];
 
   const filteredNavItems = navItems.filter(item => item.roles.includes(user?.role || ''));
@@ -254,7 +255,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
             </div>
             <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 px-3 py-1.5 rounded-xl">
               <span className="h-2 w-2 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-pulse" />
-              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Multi-Tenant Firewall Active</span>
+              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase">{user?.academyName ? user.academyName : 'Multi-Tenant Firewall Active'}</span>
             </div>
             {user && (
               <div 
@@ -263,7 +264,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     }`}
   >
                 <div className="text-right hidden sm:block">
-                  <div className="font-black text-slate-300 tracking-wide max-w-[275px] truncate">{user.email || user.userName}</div>
+                  <div className="font-black text-slate-300 tracking-wide max-w-[275px] truncate">{user.userName || user.email}</div>
                   <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5 flex items-center justify-end gap-1">
                     <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
                     {user?.role ? user.role.replace(/([A-Z])/g, ' $1').trim() : 'Player'}
