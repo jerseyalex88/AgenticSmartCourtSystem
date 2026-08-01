@@ -216,11 +216,9 @@ namespace GlobalAcademy.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CustomerName")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("IssuedToUserId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Status")
@@ -251,7 +249,6 @@ namespace GlobalAcademy.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("ItemDescription")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Quantity")
