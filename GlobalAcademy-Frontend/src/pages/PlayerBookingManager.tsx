@@ -156,13 +156,13 @@ export function PlayerBookingManager() {
   const activeDayMatrix = matrixData[selectedDayIndex];
 
   return (
-    <div className="space-y-6 text-sans">
+    <div className="space-y-6 font-sans">
       <div className="border-b border-slate-800 pb-4 mb-6">
         <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">⏱️ Player Booking Lifecycle Center</h2>
         <p className="text-xs text-slate-500 mt-1 font-mono">Manage your active court allocations, verify standby queue states, and explore live availability grids.</p>
       </div>
 
-      <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-sm font-mono text-xs text-slate-300">
+      <div className="p-6 bg-white dark:bg-slate-100 border border-slate-300 shadow-lg shadow-purple-900/10 font-sans text-xs text-slate-700">
 
         {loading && matrixData.length === 0 ? (
           <div className="p-12 text-center text-slate-600 animate-pulse">Syncing personal booking matrices...</div>
@@ -172,28 +172,28 @@ export function PlayerBookingManager() {
               <div className="lg:col-span-3 space-y-4">
                 <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-600">📅 Confirmed Court Allocations</h3>
                 {myBookings.length === 0 ? (
-                  <div className="p-6 bg-white bg-slate-950 border border-slate-200 rounded-xl text-center text-slate-600 italic">You have no upcoming confirmed matches.</div>
+                  <div className="p-6 bg-white border border-slate-300 text-center text-slate-600 italic">You have no upcoming confirmed matches.</div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {myBookings.map((b) => (
-                      <div key={b.id} className="bg-white bg-slate-950 border border-slate-200 p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition">
+                      <div key={b.id} className="bg-white border border-slate-300 p-4 flex flex-col justify-between hover:border-purple-500 transition shadow-md">
                         <div>
                           <div className="text-xs font-black text-slate-800 uppercase tracking-wide">{b.courtName}</div>
                           <div className="text-slate-700 mt-1 text-[11px]">⏱️ Schedule: {b.slotTimeDisplay}</div>
                           {b.isPaid && !b.isExpired && (
-                            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-purple-600 bg-purple-100 border border-purple-300">
                               ✓ Paid Secured for {b.bookedPlayerName}
                             </span>
                           )}
                           {b.isExpired && (
-                            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 border border-blue-500/20 rounded-md">
+                            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-600 bg-blue-100 border border-blue-300">
                               ✓ Expired
                             </span>
                           )}
                         </div>
                         {!b.isPaid && !b.isExpired && (
                         <button onClick={() => handleReleaseSlotClick(b.id, b.courtName, b.slotTimeDisplay)} 
-                          className="mt-4 w-full bg-slate-700 border border-slate-600 hover:bg-rose-950/30 text-rose-400 font-bold py-1.5 rounded-lg uppercase text-[10px] transition"
+                          className="mt-4 w-full bg-slate-200 border border-slate-300 hover:bg-rose-100 text-rose-600 font-bold py-1.5 uppercase text-[10px] transition focus:ring-2 focus:ring-rose-500/50"
                           title={
                             b.isExpired ? "Historical past bookings cannot be dropped." :
                             b.isPaid ? "Settled payments are locked. Contact Director for refunds." : "Cancel this reservation slot"
@@ -207,16 +207,16 @@ export function PlayerBookingManager() {
               </div>
               
               {myStandby.length > 0 && (
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-                <h3 className="text-[10px] font-black tracking-widest uppercase text-amber-400 border-b border-slate-800 pb-2 mb-3">⏳ Standby Shadow Queue Monitors</h3>
+              <div className="bg-slate-100 border border-slate-300 p-4 shadow-md">
+                <h3 className="text-[10px] font-black tracking-widest uppercase text-amber-600 border-b border-slate-300 pb-2 mb-3">⏳ Standby Shadow Queue Monitors</h3>
                 {myStandby.length === 0 ? (
                   <div className="text-slate-600 italic py-4 text-center">Your profile is completely clear of standby queues.</div>
                 ) : (
                   <div className="space-y-3">
                     {myStandby.map((s) => (
-                      <div key={s.id} className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex items-center justify-between">
-                        <div><div className="font-bold text-slate-200">Standby Request Token</div><div className="text-[10px] text-slate-500 mt-0.5">Window: {s.preferredWindow}</div></div>
-                        <span className="px-2 py-0.5 bg-amber-950 text-amber-400 border border-amber-800 rounded text-[9px] font-black uppercase animate-pulse">Awaiting AI Fix</span>
+                      <div key={s.id} className="bg-white border border-slate-300 p-3 flex items-center justify-between">
+                        <div><div className="font-bold text-slate-800">Standby Request Token</div><div className="text-[10px] text-slate-600 mt-0.5">Window: {s.preferredWindow}</div></div>
+                        <span className="px-2 py-0.5 bg-amber-100 text-amber-600 border border-amber-300 text-[9px] font-black uppercase animate-pulse">Awaiting AI Fix</span>
                       </div>
                     ))}
                   </div>
@@ -228,7 +228,7 @@ export function PlayerBookingManager() {
             <div className="border-t border-slate-800 pt-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
                 <div>
-                  <h3 className="text-[10px] font-black tracking-widest uppercase text-emerald-600">⚡ 7-Day Live Court Availability Matrix Grid</h3>
+                  <h3 className="text-[10px] font-black tracking-widest uppercase text-purple-600">⚡ 7-Day Live Court Availability Matrix Grid</h3>
                   <p className="text-slate-600 mt-0.5 text-[11px]">Select a day tab to view available intervals. Unavailable or booked slots appear greyed out.</p>
                 </div>
                 
@@ -239,22 +239,22 @@ export function PlayerBookingManager() {
                     setStartDate(e.target.value);
                     setSelectedDayIndex(0); 
                   }}
-                  className="bg-slate-950 border border-slate-800 text-slate-200 font-bold p-2 rounded-xl focus:outline-none focus:border-slate-700 transition self-start md:self-auto"
+                  className="bg-white border border-slate-300 text-slate-800 font-bold p-2 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/50 transition self-start md:self-auto"
                 />
               </div>
 
               {matrixData.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-4 bg-slate-950 p-1.5 rounded-xl border border-slate-800 overflow-x-auto">
+                <div className="flex flex-wrap gap-1 mb-4 bg-slate-100 p-1.5 border border-slate-300 overflow-x-auto">
                   {matrixData.map((day, idx) => {
                     const weekday = new Date(day.dateString + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
                     return (
                       <button
                         key={day.dateString}
                         onClick={() => setSelectedDayIndex(idx)}
-                        className={`flex-1 min-w-[95px] text-center py-2 rounded-lg font-bold uppercase transition text-[10px] ${
+                        className={`flex-1 min-w-[95px] text-center py-2 font-bold uppercase transition text-[10px] ${
                           selectedDayIndex === idx
-                            ? 'bg-emerald-600 text-white'
-                            : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20'
+                            : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'
                         }`}
                       >
                         {weekday}
@@ -271,28 +271,28 @@ export function PlayerBookingManager() {
                       key={`${slot.courtId}_${index}`}
                       disabled={!slot.isAvailable}
                       onClick={() => handleClaimDynamicSlotClick(slot)}
-                      className={`p-3 border rounded-xl text-left transition flex flex-col justify-between group h-24 ${
+                      className={`p-3 border text-left transition flex flex-col justify-between group h-24 ${
                         slot.isAvailable
-                          ? 'bg-slate-950 border-slate-800 hover:border-emerald-600 hover:bg-emerald-950/10 cursor-pointer'
-                          : 'bg-slate-950/40 border-slate-900 text-slate-600 cursor-not-allowed select-none opacity-40'
+                          ? 'bg-slate-100 border-slate-300 hover:border-purple-500 hover:bg-purple-50 cursor-pointer shadow-md'
+                          : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed select-none opacity-40'
                       }`}
                     >
                       <div>
-                        <div className={`font-black tracking-wide transition-colors ${slot.isAvailable ? 'text-slate-200 group-hover:text-emerald-400' : 'text-slate-600'}`}>
+                        <div className={`font-black tracking-wide transition-colors ${slot.isAvailable ? 'text-slate-800 group-hover:text-purple-600' : 'text-slate-400'}`}>
                           {slot.courtName}
                         </div>
-                        <div className="text-[11px] mt-1 text-slate-400 flex items-center gap-1">
+                        <div className="text-[11px] mt-1 text-slate-600 flex items-center gap-1">
                           <span>🕒</span>
-                          <span className="font-bold text-slate-300">{slot.branchLocalDateDisplay}</span>
+                          <span className="font-bold text-slate-700">{slot.branchLocalDateDisplay}</span>
                           <span className="text-slate-500">@</span>
                           <span>{slot.branchLocalTimeDisplay}</span>
                         </div>
                       </div>
 
-                      <div className={`mt-2 w-full text-center font-bold py-1 rounded-lg uppercase text-[9px] tracking-wider border transition ${
+                      <div className={`mt-2 w-full text-center font-bold py-1 uppercase text-[9px] tracking-wider border transition ${
                         slot.isAvailable
-                          ? 'bg-slate-900 border-slate-800 group-hover:border-emerald-600 text-slate-400 group-hover:text-emerald-400'
-                          : 'bg-transparent border-transparent text-slate-700'
+                          ? 'bg-white border-slate-300 group-hover:border-purple-500 text-slate-600 group-hover:text-purple-600'
+                          : 'bg-transparent border-transparent text-slate-400'
                       }`}>
                         {slot.isAvailable ? '⚡ Reserve Slot' : `🔒 Booked (${slot.bookedPlayerName?.split('@')[0]})`}
                       </div>
@@ -300,7 +300,7 @@ export function PlayerBookingManager() {
                   ))}
                 </div>
               ) : (
-                <div className="p-8 bg-slate-950 border border-slate-800 rounded-xl text-center text-slate-600 italic">
+                <div className="p-8 bg-white border border-slate-300 text-center text-slate-600 italic">
                   Awaiting matrix stream data layout...
                 </div>
               )}

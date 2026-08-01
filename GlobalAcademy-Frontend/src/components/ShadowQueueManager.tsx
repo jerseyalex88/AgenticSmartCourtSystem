@@ -70,10 +70,10 @@ export default function ShadowQueueManager() {
         <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">🔄 Displaced Player Shadow Queue Matrix</h2>
         <p className="text-xs text-slate-500 mt-1 font-mono">Live academy standby tracking pipeline optimized by autonomous gpt-5.4-mini subagents.</p>
       </div>
-    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-xl font-mono text-xs text-slate-800">
+    <div className="p-6 bg-white border border-slate-300 shadow-xl font-sans text-xs text-slate-800">
       
       {/* HEADER CONTROLS COMPONENT */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 border-b border-slate-800 pb-4 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 border-b border-slate-300 pb-4 gap-4">
         {/* <div>
           <h2 className="text-sm font-black text-slate-100 uppercase tracking-wider">🔄 Displaced Player Shadow Queue Matrix</h2>
           <p className="text-slate-400 mt-1">Live academy standby tracking pipeline optimized by autonomous gpt-5.4-mini subagents.</p>
@@ -83,8 +83,8 @@ export default function ShadowQueueManager() {
           <button
             onClick={executeTestDataSeeder}
             disabled={seeding || running}
-            className={`px-3 py-2 rounded-lg font-bold uppercase tracking-wider transition text-[10px] ${
-              seeding ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+            className={`px-3 py-2 font-bold uppercase tracking-wider transition text-[10px] ${
+              seeding ? 'bg-slate-200 text-slate-600 cursor-not-allowed' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300'
             }`}
           >
             {seeding ? 'Injecting Mock Rows...' : '🧪 Seed Tenant Sandbox Data'}
@@ -93,8 +93,8 @@ export default function ShadowQueueManager() {
           <button
             onClick={executeAiOptimizer}
             disabled={running || seeding}
-            className={`px-4 py-2 rounded-lg font-bold uppercase tracking-wider transition ${
-              running ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            className={`px-4 py-2 font-bold uppercase tracking-wider transition ${
+              running ? 'bg-slate-200 text-slate-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-500 text-white'
             }`}
           >
             {running ? 'Running Agent Loop...' : '⚡ Launch AI Match-Saver'}
@@ -103,7 +103,7 @@ export default function ShadowQueueManager() {
       </div>
 
       {seedMessage && (
-        <div className="mb-4 p-2 bg-slate-950 border border-slate-800 rounded-lg text-amber-400 text-[10px]">
+        <div className="mb-4 p-2 bg-amber-100 border border-amber-300 text-amber-600 text-[10px]">
           ℹ️ [Data Engine Status]: {seedMessage}
         </div>
       )}
@@ -112,8 +112,8 @@ export default function ShadowQueueManager() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         {/* LIVE QUEUE STANDBY GRID (Takes 2 columns) */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-300 rounded-xl overflow-hidden">
-          <div className="p-3 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-850 text-slate-400 uppercase tracking-wider font-bold text-[10px]">
+        <div className="lg:col-span-2 bg-white border border-slate-300 overflow-hidden">
+          <div className="p-3 bg-slate-100 border-b border-slate-300 text-slate-600 uppercase tracking-wider font-bold text-[10px]">
             Active Displaced Standby Roster ({queue.length})
           </div>
           
@@ -122,18 +122,18 @@ export default function ShadowQueueManager() {
           ) : queue.length === 0 ? (
             <div className="p-8 text-center text-slate-600 italic">No displaced players sitting in standby partition buffers.</div>
           ) : (
-            <div className="divide-y divide-slate-800">
+            <div className="divide-y divide-slate-200">
               {queue.map((item) => (
-                <div key={item.id} className="p-3 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition">
+                <div key={item.id} className="p-3 flex items-center justify-between hover:bg-slate-100 transition">
                   <div>
                     <div className="font-bold text-slate-800">{item.playerName}</div>
                     <div className="text-[10px] text-slate-700 mt-0.5">Preference Window: {item.preferredWindow}</div>
                   </div>
                   <div>
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase ${
                       item.isResolved 
-                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' 
-                        : 'bg-amber-950 text-amber-400 border border-amber-800'
+                        ? 'bg-emerald-100 text-emerald-600 border border-emerald-300' 
+                        : 'bg-amber-100 text-amber-600 border border-amber-300'
                     }`}>
                       {item.isResolved ? '✅ Reallocated' : '⏳ Pending Rescue'}
                     </span>
@@ -145,12 +145,12 @@ export default function ShadowQueueManager() {
         </div>
 
         {/* AI LOG SUMMARY DRAWER PANEL (Takes 1 column) */}
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 min-h-[200px]">
-          <div className="text-emerald-400 font-bold uppercase tracking-wider mb-2 border-b border-slate-800 pb-2 text-[10px]">
+        <div className="bg-white border border-slate-300 p-4 min-h-[200px]">
+          <div className="text-emerald-600 font-bold uppercase tracking-wider mb-2 border-b border-slate-300 pb-2 text-[10px]">
             🤖 Subagent Operations Report
           </div>
           {report ? (
-            <div className="text-slate-300 text-[11px] whitespace-pre-wrap leading-relaxed">
+            <div className="text-slate-700 text-[11px] whitespace-pre-wrap leading-relaxed">
               {report}
             </div>
           ) : (

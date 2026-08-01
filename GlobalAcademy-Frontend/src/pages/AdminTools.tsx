@@ -164,108 +164,105 @@ export default function AdminTools() {
         <p className="text-xs text-slate-500 mt-1 font-mono">Manage user profiles</p>
       </div>
 
-      {actionError && <div className="p-4 bg-rose-950/40 border border-rose-900 text-rose-300 rounded-xl text-xs font-medium">⚠️ {actionError}</div>}
-      {uiSuccessMessage && <div className="p-4 bg-emerald-950/40 border border-emerald-900 text-emerald-900 rounded-xl text-xs font-medium">✅ {uiSuccessMessage}</div>}
+      {actionError && <div className="p-4 bg-rose-100 border border-rose-300 text-rose-600 text-xs font-medium">⚠️ {actionError}</div>}
+      {uiSuccessMessage && <div className="p-4 bg-emerald-100 border border-emerald-300 text-emerald-700 text-xs font-medium">✅ {uiSuccessMessage}</div>}
 
       {!isPlayer && (
         <>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 p-5 rounded-2xl shadow-xl">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-300 p-5 shadow-xl">
           <input 
             type="text" 
             placeholder="🔍 Search users by email or authorization tier..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:max-w-md bg-white dark:bg-slate-950 border border-slate-400 p-2.5 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+            className="w-full sm:max-w-md bg-white border border-slate-300 p-2.5 text-xs text-slate-800 focus:outline-none focus:border-purple-500"
           />
-          <button onClick={() => setShowCreateModal(true)} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition whitespace-nowrap">
+          <button onClick={() => setShowCreateModal(true)} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 text-xs font-black transition whitespace-nowrap">
             ➕ Provision Fresh User Account
           </button>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="bg-white border border-slate-300 overflow-hidden shadow-2xl">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-850 text-slate-400 uppercase tracking-wider font-bold text-[10px]">
+              <tr className="bg-slate-100 border-b border-slate-300 text-slate-600 uppercase tracking-wider font-bold text-[10px]">
                 <th className="p-4">Account Email / Identifier</th>
                 <th className="p-4">Authorization Tier</th>
                 <th className="p-4">Status Flag</th>
                 <th className="p-4 text-right">Operational Actions Matrix</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-850">
+            <tbody className="divide-y divide-slate-200">
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-850/30 transition">
-                  <td className="p-4 font-semibold text-slate-200">
-                    <div className="text-slate-800 font-mono">{user.userName}</div>
-                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">{user.email}</div>
-                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">{user.id}</div>
+                <tr key={user.id} className="hover:bg-slate-100 transition">
+                  <td className="p-4 font-semibold text-slate-800">
+                    <div className="text-slate-900 font-sans">{user.userName}</div>
+                    <div className="text-[10px] text-slate-600 font-sans mt-0.5">{user.email}</div>
+                    <div className="text-[10px] text-slate-500 font-sans mt-0.5">{user.id}</div>
                   </td>
                   <td className="p-4">
-                    <span className="bg-blue-950 text-blue-400 border border-blue-900/60 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                    <span className="bg-blue-100 text-blue-600 border border-blue-300 px-2 py-0.5 text-[10px] font-bold uppercase">
                       {user.role}
                     </span>
                   </td>
                   <td className="p-4">
-                    <span className={`h-2 w-2 inline-block rounded-full mr-1.5 ${user.isActive ? 'bg-emerald-400 shadow-lg shadow-emerald-400/40' : 'bg-slate-600'}`} />
-                    <span className="font-medium text-slate-400">{user.isActive ? 'Active' : 'Suspended'}</span>
+                    <span className={`h-2 w-2 inline-block rounded-full mr-1.5 ${user.isActive ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : 'bg-slate-400'}`} />
+                    <span className="font-medium text-slate-700">{user.isActive ? 'Active' : 'Suspended'}</span>
                   </td>
                   <td className="p-4 text-right space-x-2">
-                    <button onClick={() => handleBeginEditUser(user)} className="text-slate-400 hover:text-slate-200 font-bold border border-slate-800 bg-slate-950 px-2.5 py-1.5 rounded-lg transition">📝 Edit</button>
-                    <button onClick={() => handleDeleteIdentityUser(user.id, user.email)} className="text-slate-500 hover:text-rose-400 px-2.5 py-1.5 rounded-lg transition font-bold">🗑️ Delete</button>
+                    <button onClick={() => handleBeginEditUser(user)} className="text-slate-600 hover:text-slate-800 font-bold border border-slate-300 bg-white px-2.5 py-1.5 transition">📝 Edit</button>
+                    <button onClick={() => handleDeleteIdentityUser(user.id, user.email)} className="text-slate-600 hover:text-rose-600 px-2.5 py-1.5 transition font-bold">🗑️ Delete</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {filteredUsers.length === 0 && <div className="p-12 text-center text-xs font-mono text-slate-500 italic">No matching identity user profiles tracked across this tenant segment.</div>}
+          {filteredUsers.length === 0 && <div className="p-12 text-center text-xs font-sans text-slate-600 italic">No matching identity user profiles tracked across this tenant segment.</div>}
         </div>
         </>
       )}
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-400/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl">
             <form onSubmit={handleCreateIdentityUser} className="space-y-4">
-            <h3 className="text-base font-black text-slate-100">Provision Fresh Account Entry</h3>
+            <h3 className="text-base font-black text-slate-900">Provision Fresh Account Entry</h3>
               <div>
-                  <label className="block font-bold text-slate-400 uppercase mb-1">User Handle (Username)</label>
+                  <label className="block font-bold text-slate-600 uppercase mb-1">User Handle (Username)</label>
                   <input 
                     type="text" 
                     required 
-                    value={showCreateModal ? createUserPayload.userName : editUserPayload.userName} 
-                    onChange={(e) => showCreateModal 
-                      ? setCreateUserPayload({...createUserPayload, userName: e.target.value})
-                      : setEditUserPayload({...editUserPayload, userName: e.target.value})
-                    } 
+                    value={createUserPayload.userName} 
+                    onChange={(e) => setCreateUserPayload({...createUserPayload, userName: e.target.value})}
                     placeholder="SamSpade" 
-                    className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500" 
+                    className="w-full bg-white border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:border-purple-500" 
                   />
                 </div>
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Email Coordinates</label>
-                <input type="email" required value={createUserPayload.email} onChange={(e) => setCreateUserPayload({...createUserPayload, email: e.target.value})} placeholder="staff@domain.com" className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" />
+                <label className="block font-bold text-slate-600 uppercase mb-1">Email Coordinates</label>
+                <input type="email" required value={createUserPayload.email} onChange={(e) => setCreateUserPayload({...createUserPayload, email: e.target.value})} placeholder="staff@domain.com" className="w-full bg-white border border-slate-300 p-2.5 text-slate-800" />
               </div>
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Initial Password Gate</label>
-                <input type="password" required value={createUserPayload.password} onChange={(e) => setCreateUserPayload({...createUserPayload, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" />
+                <label className="block font-bold text-slate-600 uppercase mb-1">Initial Password Gate</label>
+                <input type="password" required value={createUserPayload.password} onChange={(e) => setCreateUserPayload({...createUserPayload, password: e.target.value})} placeholder="••••••••" className="w-full bg-white border border-slate-300 p-2.5 text-slate-800" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-400 uppercase mb-1">Initial Security Role</label>
-                  <select value={createUserPayload.role} onChange={(e) => setCreateUserPayload({...createUserPayload, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200">
+                  <label className="block font-bold text-slate-600 uppercase mb-1">Initial Security Role</label>
+                  <select value={createUserPayload.role} onChange={(e) => setCreateUserPayload({...createUserPayload, role: e.target.value})} className="w-full bg-white border border-slate-300 p-2.5 text-slate-800">
                     <option value="Player">Player</option>
                     <option value="Groundskeeper">Groundskeeper</option>
                     <option value="AcademyDirector">AcademyDirector</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-400 uppercase mb-1">Contact Phone</label>
-                  <input type="text" value={createUserPayload.phoneNumber} onChange={(e) => setCreateUserPayload({...createUserPayload, phoneNumber: e.target.value})} placeholder="Optional" className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" />
+                  <label className="block font-bold text-slate-600 uppercase mb-1">Contact Phone</label>
+                  <input type="text" value={createUserPayload.phoneNumber} onChange={(e) => setCreateUserPayload({...createUserPayload, phoneNumber: e.target.value})} placeholder="Optional" className="w-full bg-white border border-slate-300 p-2.5 text-slate-800" />
                 </div>
               </div>
               <div className="flex items-center justify-end space-x-2 pt-2">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="bg-slate-950 hover:bg-slate-850 px-4 py-2 rounded-xl text-slate-400 transition">Cancel</button>
-                <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-4 py-2 rounded-xl transition">Provision Node</button>
+                <button type="button" onClick={() => setShowCreateModal(false)} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 text-slate-700 transition">Cancel</button>
+                <button type="submit" className="bg-purple-600 hover:bg-purple-500 text-white font-black px-4 py-2 transition">Provision Node</button>
               </div>
             </form>
           </div>
@@ -273,51 +270,46 @@ export default function AdminTools() {
       )}
 
       {editingUserId && (
-        <div className={isPlayer ? "max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl" : "fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"}>
-          <div className={isPlayer ? "space-y-4 w-full" : "bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl"}>            
-        {/* <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl"> */}
+        <div className={isPlayer ? "max-w-xl mx-auto bg-white border border-slate-300 p-6 shadow-2xl" : "fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"}>
+          <div className={isPlayer ? "space-y-4 w-full" : "bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl"}>
             <form onSubmit={handleUpdateIdentityUser} className="space-y-4">
-            <h3 className="text-base font-black text-slate-100">Modify Account Identity Profile</h3>
+            <h3 className="text-base font-black text-slate-900">Modify Account Identity Profile</h3>
               <div>
-                  <label className="block font-bold text-slate-400 uppercase mb-1">User Handle (Username)</label>
+                  <label className="block font-bold text-slate-600 uppercase mb-1">User Handle (Username)</label>
                   <input 
                     type="text" 
                     required 
-                    value={showCreateModal ? createUserPayload.userName : editUserPayload.userName} 
-                    onChange={(e) => showCreateModal 
-                      ? setCreateUserPayload({...createUserPayload, userName: e.target.value})
-                      : setEditUserPayload({...editUserPayload, userName: e.target.value})
-                    } 
+                    value={editUserPayload.userName} 
+                    onChange={(e) => setEditUserPayload({...editUserPayload, userName: e.target.value})}
                     placeholder="SamSpade" 
-                    className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500" 
+                    className="w-full bg-white border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:border-purple-500" 
                   />
                 </div>
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">User Email Reference</label>
-                <input type="email" required value={editUserPayload.email} disabled={isPlayer} onChange={(e) => setEditUserPayload({...editUserPayload, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" />
+                <label className="block font-bold text-slate-600 uppercase mb-1">User Email Reference</label>
+                <input type="email" required value={editUserPayload.email} disabled={isPlayer} onChange={(e) => setEditUserPayload({...editUserPayload, email: e.target.value})} className="w-full bg-white border border-slate-300 p-2.5 text-slate-800" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-400 uppercase mb-1">Security Clearance Tier</label>
-                  <select disabled={isPlayer} value={editUserPayload.role} onChange={(e) => setEditUserPayload({...editUserPayload, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200">
+                  <label className="block font-bold text-slate-600 uppercase mb-1">Security Clearance Tier</label>
+                  <select disabled={isPlayer} value={editUserPayload.role} onChange={(e) => setEditUserPayload({...editUserPayload, role: e.target.value})} className="w-full bg-white border border-slate-300 p-2.5 text-slate-800">
                     <option value="Player">Player</option>
                     <option value="Groundskeeper">Groundskeeper</option>
                     <option value="AcademyDirector">AcademyDirector</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-400 uppercase mb-1">Contact Phone</label>
-                  <input type="text" value={editUserPayload.phoneNumber} onChange={(e) => setEditUserPayload({...editUserPayload, phoneNumber: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" />
+                  <label className="block font-bold text-slate-600 uppercase mb-1">Contact Phone</label>
+                  <input type="text" value={editUserPayload.phoneNumber} onChange={(e) => setEditUserPayload({...editUserPayload, phoneNumber: e.target.value})} className="w-full bg-white border border-slate-300 p-2.5 text-slate-800" />
                 </div>
               </div>
               <div className="flex items-center space-x-1.5 py-1">
-                <input type="checkbox" id="isActiveCheck" checked={editUserPayload.isActive} onChange={(e) => setEditUserPayload({...editUserPayload, isActive: e.target.checked})} className="accent-emerald-500 rounded h-4 w-4" />
-                <label htmlFor="isActiveCheck" className="text-slate-300 font-semibold cursor-pointer">Account login permissions remain functional (IsActive)</label>
+                <input type="checkbox" id="isActiveCheck" checked={editUserPayload.isActive} onChange={(e) => setEditUserPayload({...editUserPayload, isActive: e.target.checked})} className="accent-purple-500 rounded h-4 w-4" />
+                <label htmlFor="isActiveCheck" className="text-slate-700 font-semibold cursor-pointer">Account login permissions remain functional (IsActive)</label>
               </div>
               <div className="flex items-center justify-end space-x-2 pt-2">
-                <button type="button" onClick={() => setEditingUserId(null)} className="bg-slate-950 hover:bg-slate-850 px-4 py-2 rounded-xl text-slate-400 transition">Cancel</button>
-                <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-4 py-2 rounded-xl transition">Save</button>
+                <button type="button" onClick={() => setEditingUserId(null)} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 text-slate-700 transition">Cancel</button>
+                <button type="submit" className="bg-purple-600 hover:bg-purple-500 text-white font-black px-4 py-2 transition">Save</button>
               </div>
             </form>
           </div>

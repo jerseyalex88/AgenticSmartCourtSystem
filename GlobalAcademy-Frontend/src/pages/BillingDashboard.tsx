@@ -79,10 +79,10 @@ export default function BillingDashboard(){
 
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
-      case 'Paid': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'Unpaid': return 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse';
-      case 'Refunded': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      default: return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+      case 'Paid': return 'bg-purple-100 text-purple-600 border-purple-300';
+      case 'Unpaid': return 'bg-amber-100 text-amber-600 border-amber-300 animate-pulse';
+      case 'Refunded': return 'bg-blue-100 text-blue-600 border-blue-300';
+      default: return 'bg-slate-100 text-slate-600 border-slate-300';
     }
   };
 
@@ -201,28 +201,28 @@ export default function BillingDashboard(){
     );
   }
   return (
-    <div className="space-y-6 text-sans">
+    <div className="space-y-6 font-sans">
       <div>
         <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Financial Ledger Statement</h2>
-        <p className="text-xs text-slate-500 mt-1 font-mono">Continuous Multi-Tenant Real-Time Audit Summary</p>
+        <p className="text-xs text-slate-500 mt-1 font-sans">Continuous Multi-Tenant Real-Time Audit Summary</p>
       </div>
 
       {errorMsg && (
-        <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-400 font-medium">
+        <div className="p-3 bg-rose-100 border border-rose-300 text-xs text-rose-600 font-medium">
           {errorMsg}
         </div>
       )}
 
       {statements.length === 0 ? (
-        <div className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-400 font-medium">
+        <div className="p-8 text-center bg-white border border-slate-300 text-xs text-slate-600 font-medium">
           📭 Clean Ledger Sheet: No historical financial entries found matching your account ID.
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-slate-300 overflow-hidden shadow-lg shadow-purple-900/10">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-850 text-slate-400 uppercase tracking-wider font-bold text-[10px]">
+                <tr className="bg-slate-100 border-b border-slate-300 text-slate-600 uppercase tracking-wider font-bold text-[10px]">
                   <th className="p-4 w-12"></th>
                   <th className="p-4">Issued Timestamp</th>
                   <th className="p-4">Invoice Reference Key</th>
@@ -232,20 +232,20 @@ export default function BillingDashboard(){
                   <th className="p-4 text-center">Customer</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+              <tbody className="divide-y divide-slate-200">
               {totalUnpaidBalance > 0 && (
-                  <tr className="bg-amber-500/5 border-b border-amber-500/20 text-amber-500 font-bold">
+                  <tr className="bg-amber-50 border-b border-amber-300 text-amber-600 font-bold">
                     <td className="p-4 text-center">📊</td>
-                    <td className="p-4 font-mono text-[10px] uppercase tracking-wider">Outstanding Balance Summary</td>
-                    <td className="p-4 italic font-sans text-slate-400 dark:text-slate-500 font-normal">
+                    <td className="p-4 font-sans text-[10px] uppercase tracking-wider">Outstanding Balance Summary</td>
+                    <td className="p-4 italic font-sans text-slate-600 font-normal">
                       Accumulated unresolved dues across {unpaidInvoicesList.length} billing items
                     </td>
                     <td className="p-4">
-                      <span className="px-2 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-[9px] font-black uppercase tracking-widest animate-pulse">
+                      <span className="px-2 py-0.5 border border-amber-300 bg-amber-100 text-[9px] font-black uppercase tracking-widest animate-pulse">
                         Dues Outstanding
                       </span>
                     </td>
-                    <td className="p-4 text-right font-mono text-sm font-black text-amber-500">
+                    <td className="p-4 text-right font-sans text-sm font-black text-amber-500">
                       ${totalUnpaidBalance.toFixed(2)}
                     </td>
                     <td className="p-4 text-center">
@@ -262,13 +262,13 @@ export default function BillingDashboard(){
                         ⚡ Pay Now ({unpaidInvoicesList.length})
                       </button> */}
                     </td>
-                    <td className="p-4 text-right font-mono text-sm font-black text-amber-500"></td>
+                    <td className="p-4 text-right font-sans text-sm font-black text-amber-500"></td>
                   </tr>
                 )}
               
                 {statements.map((inv) => (
                   <React.Fragment key={inv.invoiceId}>
-                    <tr className="hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition-colors font-medium">
+                    <tr className="hover:bg-slate-100 hover:bg-purple-50 transition-colors font-medium">
                       <td className="p-4 text-center">
                         <button 
                           type="button"
@@ -279,10 +279,10 @@ export default function BillingDashboard(){
                           ▶
                         </button>
                       </td>
-                      <td className="p-4 text-slate-600 dark:text-slate-400 font-mono">
+                      <td className="p-4 text-slate-600 font-sans">
                         {new Date(inv.createdAtUtc).toLocaleString()}
                       </td>
-                      <td className="p-4 font-mono font-bold tracking-tight text-slate-700 dark:text-slate-300 max-w-[180px] truncate" title={inv.invoiceId}>
+                      <td className="p-4 font-sans font-bold tracking-tight text-slate-800 max-w-[180px] truncate" title={inv.invoiceId}>
                         {inv.invoiceId}
                       </td>
                       <td className="p-4">
@@ -290,7 +290,7 @@ export default function BillingDashboard(){
                           {inv.status}
                         </span>
                       </td>
-                      <td className="p-4 text-right font-mono font-black text-slate-800 dark:text-white">
+                      <td className="p-4 text-right font-sans font-black text-slate-900">
                         ${inv.totalAmount.toFixed(2)}
                       </td>
                       <td className="p-4 text-center">
@@ -301,33 +301,33 @@ export default function BillingDashboard(){
                               // DISPATCH VIA GLOBAL EVENT BUS
                               dispatchCheckoutEvent(inv.invoiceId, inv.totalAmount);
                             }}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all shadow shadow-emerald-900/10"
+                            className="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 transition-all shadow shadow-purple-900/10 focus:ring-2 focus:ring-purple-500/50"
                           >
                             💳 Pay Dues
                           </button>
                         ) : (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono italic">Settled Ledger Row</span>
+                          <span className="text-[10px] text-slate-500 font-sans italic">Settled Ledger Row</span>
                         )}
                       </td>
-                      <td className="p-4 text-slate-600 dark:text-slate-400 font-mono">
+                      <td className="p-4 text-slate-700 font-sans">
                         {inv.customerName}
                       </td>
                     </tr>
 
                     {/* EXPANDABLE DETAIL SHEET NEST */}
                     {expandedInvoiceId === inv.invoiceId && (
-                      <tr className="bg-slate-50/50 dark:bg-slate-950/40">
-                        <td colSpan={6} className="p-5 border-t border-b border-slate-100 dark:border-slate-850">
-                          <div className="space-y-4 max-w-3xl font-mono text-[11px]">
+                      <tr className="bg-slate-50">
+                        <td colSpan={6} className="p-5 border-t border-b border-slate-300">
+                          <div className="space-y-4 max-w-3xl font-sans text-[11px]">
                             
                             {/* Line Items List Layout Grid */}
                             <div>
                               <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Purchased Item Line Details</span>
-                              <div className="space-y-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3">
+                              <div className="space-y-1 bg-white border border-slate-300 p-3">
                                 {inv.lineItems.map((item, index) => (
-                                  <div key={index} className="flex justify-between items-center text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-850 last:border-0 pb-1.5 last:pb-0 pt-1.5 first:pt-0">
+                                  <div key={index} className="flex justify-between items-center text-slate-700 border-b border-slate-200 last:border-0 pb-1.5 last:pb-0 pt-1.5 first:pt-0">
                                     <span>{item.itemDescription} <span className="text-slate-400 font-normal">x{item.quantity}</span></span>
-                                    <span className="font-bold text-slate-800 dark:text-slate-200">${item.lineTotal.toFixed(2)}</span>
+                                    <span className="font-bold text-slate-900">${item.lineTotal.toFixed(2)}</span>
                                   </div>
                                 ))}
                               </div>
@@ -339,9 +339,9 @@ export default function BillingDashboard(){
                                 <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">External Gateway Transaction Logs</span>
                                 <div className="space-y-1">
                                   {inv.receipts.map((rcpt, index) => (
-                                    <div key={index} className={`p-2.5 rounded-xl border flex justify-between items-center ${rcpt.isSuccess ? 'bg-slate-100/40 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800' : 'bg-rose-500/5 border-rose-500/10 text-rose-400'}`}>
+                                    <div key={index} className={`p-2.5 border flex justify-between items-center ${rcpt.isSuccess ? 'bg-white border-slate-300' : 'bg-rose-50 border-rose-300 text-rose-600'}`}>
                                       <div>
-                                        <p className="font-bold text-slate-700 dark:text-slate-300">
+                                        <p className="font-bold text-slate-800">
                                           Processor Engine: {rcpt.processedByGateway === 1 ? 'Discrete Card' : 'Discrete Wallet (PayPal)'}
                                         </p>
                                         <p className="text-[10px] text-slate-400 mt-0.5">Ref Token: {rcpt.gatewayReferenceId}</p>
@@ -355,7 +355,7 @@ export default function BillingDashboard(){
 
                           </div>
                         </td>
-                        <td className="bg-slate-50/50 dark:bg-slate-950/40"></td>
+                        <td className="bg-slate-50"></td>
                       </tr>
                     )}
                   </React.Fragment>
@@ -369,23 +369,23 @@ export default function BillingDashboard(){
       {/* NEW: STATIC INLINE CREDIT CARD TERMINAL VIEW CONTEXT PANEL               */}
       {/* ========================================================================= */}
       {totalUnpaidBalance > 0 && (
-        <div className="mt-8 bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white max-w-xl mx-auto shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="flex items-center gap-2.5 mb-4 border-b border-slate-800 pb-3">
+        <div className="mt-8 bg-white border border-slate-300 p-6 text-slate-800 max-w-xl mx-auto shadow-xl shadow-purple-900/10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-2.5 mb-4 border-b border-slate-300 pb-3">
             <span className="text-xl">💳</span>
             <div>
               <h3 className="text-sm font-black uppercase tracking-wider">Secure Credit Card Quick-Pay</h3>
-              <p className="text-[10px] text-slate-500 font-mono">Direct Sandbox Processing Terminal</p>
+              <p className="text-[10px] text-slate-600 font-sans">Direct Sandbox Processing Terminal</p>
             </div>
           </div>
 
-          <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-850/80 text-xs mb-4 flex justify-between items-center font-mono">
-            <span className="text-slate-400">Total Consolidated Outstanding Balance:</span>
+          <div className="bg-slate-100 p-3 border border-slate-300 text-xs mb-4 flex justify-between items-center font-sans">
+            <span className="text-slate-600">Total Consolidated Outstanding Balance:</span>
             <span className="text-base font-black text-amber-500">${totalUnpaidBalance.toFixed(2)}</span>
           </div>
 
           <form onSubmit={handleSquarePaymentSubmit} className="space-y-4">
-            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 min-h-[92px]">
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
+            <div className="bg-white p-3.5 border border-slate-300 min-h-[92px]">
+              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">
                 Card Number / Expiration / Security Code / Zip
               </label>
               
@@ -396,14 +396,14 @@ export default function BillingDashboard(){
             <button
               type="submit"
               disabled={squareLoading}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 font-sans text-xs font-black uppercase tracking-widest text-white py-3 rounded-xl transition-all shadow-md shadow-indigo-950/20 active:scale-[0.98]"
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-slate-300 font-sans text-xs font-black uppercase tracking-widest text-white py-3 transition-all shadow-md shadow-purple-900/20 active:scale-[0.98] focus:ring-2 focus:ring-purple-500/50"
             >
               {squareLoading ? 'Authorizing Card Vector...' : `Authorize & Clear Dues ($${totalUnpaidBalance.toFixed(2)})`}
             </button>
           </form>
 
           {squareStatusMsg && (
-            <div className="mt-4 p-3 bg-slate-950 border border-slate-850 text-[11px] font-mono font-medium rounded-xl text-center text-slate-300">
+            <div className="mt-4 p-3 bg-slate-100 border border-slate-300 text-[11px] font-sans font-medium text-center text-slate-700">
               {squareStatusMsg}
             </div>
           )}

@@ -195,24 +195,24 @@ export default function CourtsDashboard() {
       </div>
 
       {actionError && (
-        <div className="p-4 bg-rose-950/40 border border-rose-900 text-rose-300 rounded-xl text-xs font-medium flex items-center space-x-2">
+        <div className="p-4 bg-rose-100 border border-rose-300 text-rose-600 text-xs font-medium flex items-center space-x-2">
           <span>⚠️</span> <span>{actionError}</span>
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 p-5 rounded-2xl shadow-xl space-y-4">
+      <div className="bg-white border border-slate-300 p-5 shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
             <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-800">Active Branch Location Node</label>
             {branches.length > 0 ? (
               <div className="flex items-center space-x-2">
                 <select value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} 
-                className="bg-slate-700 border border-slate-200 rounded-xl px-4 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-emerald-500 min-w-[200px]" >
+                className="bg-white border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-purple-500 min-w-[200px]" >
                   {branches.map(b => (<option key={b.id} value={b.id}>{b.name}</option>))}
                 </select>
                 {!isEditingBranch && (
                   <button onClick={() => setIsEditingBranch(true)} 
-                  className="bg-slate-700 hover:bg-slate-900 text-slate-200 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold transition">📝 Edit Info</button>
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 px-4 py-2.5 text-xs font-bold transition">📝 Edit Info</button>
                 )}
               </div>
             ) : (
@@ -221,27 +221,27 @@ export default function CourtsDashboard() {
           </div>
           <div className="flex items-center space-x-2">
             <button onClick={() => setShowBranchModal(true)} 
-              className="bg-slate-700 hover:bg-slate-900 text-slate-200 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold transition">➕ Deploy Venue</button>
+              className="bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 px-4 py-2.5 text-xs font-bold transition">➕ Deploy Venue</button>
             <button disabled={!selectedBranchId} onClick={() => setShowCourtModal(true)} 
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition">➕ Provision Court</button>
+              className="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-4 py-2.5 text-xs font-black transition">➕ Provision Court</button>
           </div>
         </div>
 
         {isEditingBranch && (
           <form onSubmit={handleUpdateBranch} 
-            className="p-4 bg-slate-200/80 border border-slate-850 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            className="p-4 bg-slate-100 border border-slate-300 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <div className="space-y-1">
-              <label className="block font-bold text-slate-500 uppercase">Modify Branch Title</label>
-              <input type="text" required value={editBranchData.name} onChange={(e) => setEditBranchData({...editBranchData, name: e.target.value})} className="w-full bg-slate-900 border border-slate-800 p-2 rounded-lg text-slate-200" />
+              <label className="block font-bold text-slate-600 uppercase">Modify Branch Title</label>
+              <input type="text" required value={editBranchData.name} onChange={(e) => setEditBranchData({...editBranchData, name: e.target.value})} className="w-full bg-white border border-slate-300 p-2 text-slate-800" />
             </div>
             <div className="space-y-1">
-              <label className="block font-bold text-slate-500 uppercase">Modify Area Focus</label>
-              <input type="text" required value={editBranchData.description} onChange={(e) => setEditBranchData({...editBranchData, description: e.target.value})} className="w-full bg-slate-900 border border-slate-800 p-2 rounded-lg text-slate-200" />
+              <label className="block font-bold text-slate-600 uppercase">Modify Area Focus</label>
+              <input type="text" required value={editBranchData.description} onChange={(e) => setEditBranchData({...editBranchData, description: e.target.value})} className="w-full bg-white border border-slate-300 p-2 text-slate-800" />
             </div>
             <div className="space-y-1">
-              <label className="block font-bold text-slate-500 uppercase">Modify Zone</label>
+              <label className="block font-bold text-slate-600 uppercase">Modify Zone</label>
               <div className="flex space-x-2">
-                <select value={editBranchData.timeZoneId} onChange={(e) => setEditBranchData({...editBranchData, timeZoneId: e.target.value})} className="w-full bg-slate-900 border border-slate-800 p-2 rounded-lg text-slate-200" >
+                <select value={editBranchData.timeZoneId} onChange={(e) => setEditBranchData({...editBranchData, timeZoneId: e.target.value})} className="w-full bg-white border border-slate-300 p-2 text-slate-800" >
                   <option value="Europe/London">Europe/London</option>
                   <option value="Asia/Dubai">Asia/Dubai</option>
                   <option value="America/New_York">America/New_York</option>
@@ -253,8 +253,8 @@ export default function CourtsDashboard() {
                   <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
                   <option value="UTC">UTC (Universal Coordinated Time)</option>                  
                 </select>
-                <button type="submit" className="bg-emerald-600 font-bold px-3 py-1 rounded-lg text-slate-950">Save</button>
-                <button type="button" onClick={() => setIsEditingBranch(false)} className="bg-slate-800 px-3 py-1 rounded-lg text-slate-300">Cancel</button>
+                <button type="submit" className="bg-purple-600 font-bold px-3 py-1 text-white">Save</button>
+                <button type="button" onClick={() => setIsEditingBranch(false)} className="bg-slate-200 px-3 py-1 text-slate-700">Cancel</button>
               </div>
             </div>
           </form>
@@ -268,7 +268,7 @@ export default function CourtsDashboard() {
           
           return (
             <div key={court.id} 
-              className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-5 shadow-xl transition flex flex-col justify-between space-y-4">
+              className="bg-white border border-slate-300 p-5 shadow-xl transition flex flex-col justify-between space-y-4">
               
               {!isCurrentCourtEditing ? (
                 <div className="space-y-4 flex-1 flex flex-col justify-between">
@@ -278,65 +278,65 @@ export default function CourtsDashboard() {
                         <h3 className="text-sm font-black text-slate-800 tracking-tight">{court.name}</h3>
                         <p className="text-[11px] text-slate-700 mt-0.5 line-clamp-2 leading-relaxed">{court.description}</p>
                       </div>
-                      <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border bg-emerald-950/40 text-emerald-800 border-emerald-900/60">{court.status}</span>
+                      <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider border bg-emerald-100 text-emerald-700 border-emerald-300">{court.status}</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      <span className="text-[10px] bg-slate-250 px-2 py-0.5 rounded-md font-mono text-slate-700 border border-slate-350">🛠️ {court.surfaceType}</span>
-                      <span className="text-[10px] bg-slate-250 px-2 py-0.5 rounded-md font-mono text-slate-700 border border-slate-350">{court.isIndoor ? '🏠 Indoor' : '☀️ Outdoor'}</span>
-                      <span className="text-[10px] bg-slate-250 px-2 py-0.5 rounded-md font-mono text-slate-700 border border-slate-350">💧 Coeff: {court.dryCoefficient}</span>
+                      <span className="text-[10px] bg-slate-100 px-2 py-0.5 font-sans text-slate-700 border border-slate-300">🛠️ {court.surfaceType}</span>
+                      <span className="text-[10px] bg-slate-100 px-2 py-0.5 font-sans text-slate-700 border border-slate-300">{court.isIndoor ? '🏠 Indoor' : '☀️ Outdoor'}</span>
+                      <span className="text-[10px] bg-slate-100 px-2 py-0.5 font-sans text-slate-700 border border-slate-300">💧 Coeff: {court.dryCoefficient}</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 border-t border-slate-850 pt-3">
-                    <div className="flex items-center justify-between text-[10px] font-mono">
+                  <div className="space-y-1.5 border-t border-slate-300 pt-3">
+                    <div className="flex items-center justify-between text-[10px] font-sans">
                       <span className="text-slate-700 uppercase">Surface Wear</span>
                       <span className="text-slate-700">{court.aggregateMinutesPlayed} / {court.maintenanceThresholdMinutes} m</span>
                     </div>
-                    <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-850">
+                    <div className="w-full bg-slate-200 h-1.5 overflow-hidden border border-slate-300">
                       <div style={{ width: `${wearPercent}%` }} className="h-full bg-emerald-500 transition-all duration-500" />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end border-t border-slate-850/60 pt-2 space-x-2">
-                    <button onClick={() => handleBeginEditCourt(court)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 border border-transparent hover:border-slate-900/40 hover:bg-slate-850 px-2.5 py-1.5 rounded-lg transition">📝 Configure</button>
-                    <button onClick={() => handleTriggerPurgeModal(court.id)} className="text-[10px] font-bold text-slate-500 hover:text-rose-400 border border-transparent hover:border-rose-900/40 hover:bg-rose-950/20 px-2.5 py-1.5 rounded-lg transition">🗑️ Decommision</button>
+                  <div className="flex items-center justify-end border-t border-slate-300 pt-2 space-x-2">
+                    <button onClick={() => handleBeginEditCourt(court)} className="text-[10px] font-bold text-slate-600 hover:text-slate-800 border border-transparent hover:border-slate-400 hover:bg-slate-100 px-2.5 py-1.5 transition">📝 Configure</button>
+                    <button onClick={() => handleTriggerPurgeModal(court.id)} className="text-[10px] font-bold text-slate-600 hover:text-rose-600 border border-transparent hover:border-rose-300 hover:bg-rose-50 px-2.5 py-1.5 transition">🗑️ Decommision</button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-3 text-xs flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
-                    <h4 className="font-bold text-emerald-400 border-b border-slate-850 pb-1 text-[11px] uppercase tracking-wide">Modify Court Configuration</h4>
+                    <h4 className="font-bold text-emerald-600 border-b border-slate-300 pb-1 text-[11px] uppercase tracking-wide">Modify Court Configuration</h4>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Reference Title</label>
-                      <input type="text" value={editCourtData.name} onChange={(e) => setEditCourtData({...editCourtData, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2 rounded-lg text-slate-200" />
+                      <label className="text-[10px] font-bold text-slate-600 uppercase">Reference Title</label>
+                      <input type="text" value={editCourtData.name} onChange={(e) => setEditCourtData({...editCourtData, name: e.target.value})} className="w-full bg-white border border-slate-300 p-2 text-slate-800" />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Materials Description</label>
-                      <input type="text" value={editCourtData.description} onChange={(e) => setEditCourtData({...editCourtData, description: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2 rounded-lg text-slate-200" />
+                      <label className="text-[10px] font-bold text-slate-600 uppercase">Materials Description</label>
+                      <input type="text" value={editCourtData.description} onChange={(e) => setEditCourtData({...editCourtData, description: e.target.value})} className="w-full bg-white border border-slate-300 p-2 text-slate-800" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase">Type</label>
-                        <select value={editCourtData.surfaceType} onChange={(e) => setEditCourtData({...editCourtData, surfaceType: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-1.5 rounded-lg text-slate-200" >
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Type</label>
+                        <select value={editCourtData.surfaceType} onChange={(e) => setEditCourtData({...editCourtData, surfaceType: e.target.value})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800" >
                           <option value="Grass">Grass</option>
                           <option value="Clay">Clay</option>
                           <option value="Hard">Hard</option>
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase">Drying Coeff</label>
-                        <input type="number" step="0.1" value={editCourtData.dryCoefficient} onChange={(e) => setEditCourtData({...editCourtData, dryCoefficient: parseFloat(e.target.value) || 1.0})} className="w-full bg-slate-950 border border-slate-800 p-1.5 rounded-lg text-slate-200" />
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Drying Coeff</label>
+                        <input type="number" step="0.1" value={editCourtData.dryCoefficient} onChange={(e) => setEditCourtData({...editCourtData, dryCoefficient: parseFloat(e.target.value) || 1.0})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800" />
                       </div>
                     </div>
                     <div className="flex items-center space-x-1.5 pt-1">
-                      <input type="checkbox" id={`editIndoor-${court.id}`} checked={editCourtData.isIndoor} onChange={(e) => setEditCourtData({...editCourtData, isIndoor: e.target.checked})} className="accent-emerald-500 rounded h-3.5 w-3.5" />
-                      <label htmlFor={`editIndoor-${court.id}`} className="text-slate-400 font-semibold text-[11px] cursor-pointer">Insulated Indoor Enclosure</label>
+                      <input type="checkbox" id={`editIndoor-${court.id}`} checked={editCourtData.isIndoor} onChange={(e) => setEditCourtData({...editCourtData, isIndoor: e.target.checked})} className="accent-purple-500 rounded h-3.5 w-3.5" />
+                      <label htmlFor={`editIndoor-${court.id}`} className="text-slate-700 font-semibold text-[11px] cursor-pointer">Insulated Indoor Enclosure</label>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end space-x-2 border-t border-slate-850 pt-3">
-                    <button type="button" onClick={() => setEditingCourtId(null)} className="bg-slate-950 hover:bg-slate-850 px-3 py-1.5 rounded-lg text-slate-400 text-[10px] font-bold">Cancel</button>
-                    <button type="button" onClick={() => handleUpdateCourt(court.id)} className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-3 py-1.5 rounded-lg text-[10px]">Commit Modifications</button>
+                  <div className="flex items-center justify-end space-x-2 border-t border-slate-300 pt-3">
+                    <button type="button" onClick={() => setEditingCourtId(null)} className="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 text-slate-700 text-[10px] font-bold">Cancel</button>
+                    <button type="button" onClick={() => handleUpdateCourt(court.id)} className="bg-purple-600 hover:bg-purple-500 text-white font-black px-3 py-1.5 text-[10px]">Commit Modifications</button>
                   </div>
                 </div>
               )}
@@ -345,7 +345,7 @@ export default function CourtsDashboard() {
           );
         })}
         {courts.length === 0 && (
-          <div className="col-span-full border border-dashed border-slate-800 rounded-2xl p-12 text-center text-xs font-mono text-slate-500 italic">
+          <div className="col-span-full border border-dashed border-slate-300 p-12 text-center text-xs font-sans text-slate-600 italic">
             No physical court assets provisioned under this specific branch configuration profile.
           </div>
         )}
@@ -354,29 +354,29 @@ export default function CourtsDashboard() {
           MODALS REGION OVERLAYS (DEPLOY NEW BRANCH OVERLAY INCLUDED FOR COMPLIANCE)
           ========================================================================= */}
       {showBranchModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-black text-slate-100">Deploy Location Branch Venue</h3>
+        <div className="fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 className="text-base font-black text-slate-900">Deploy Location Branch Venue</h3>
             <form onSubmit={handleCreateBranch} className="space-y-3 text-xs">
               <div className="space-y-1">
-                <label className="block font-bold text-slate-400 uppercase">Venue Location Name</label>
-                <input type="text" required value={newBranch.name} onChange={(e) => setNewBranch({...newBranch, name: e.target.value})} placeholder="e.g., London Grass Core" className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500" />
+                <label className="block font-bold text-slate-600 uppercase">Venue Location Name</label>
+                <input type="text" required value={newBranch.name} onChange={(e) => setNewBranch({...newBranch, name: e.target.value})} placeholder="e.g., London Grass Core" className="w-full bg-white border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:border-purple-500" />
               </div>
               <div className="space-y-1">
-                <label className="block font-bold text-slate-400 uppercase">Structural Description</label>
-                <textarea rows={2} required value={newBranch.description} onChange={(e) => setNewBranch({...newBranch, description: e.target.value})} placeholder="Describe operational focus boundaries..." className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500" />
+                <label className="block font-bold text-slate-600 uppercase">Structural Description</label>
+                <textarea rows={2} required value={newBranch.description} onChange={(e) => setNewBranch({...newBranch, description: e.target.value})} placeholder="Describe operational focus boundaries..." className="w-full bg-white border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:border-purple-500" />
               </div>
               <div className="space-y-1">
-                <label className="block font-bold text-slate-400 uppercase">Regional IANA Time-Zone Routing Vector</label>
-                <select value={newBranch.timeZoneId} onChange={(e) => setNewBranch({...newBranch, timeZoneId: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none" >
+                <label className="block font-bold text-slate-600 uppercase">Regional IANA Time-Zone Routing Vector</label>
+                <select value={newBranch.timeZoneId} onChange={(e) => setNewBranch({...newBranch, timeZoneId: e.target.value})} className="w-full bg-white border border-slate-300 p-2.5 text-slate-800 focus:outline-none" >
                   <option value="Europe/London">Europe/London</option>
                   <option value="Asia/Dubai">Asia/Dubai</option>
                   <option value="America/New_York">America/New_York</option>
                 </select>
               </div>
               <div className="flex items-center justify-end space-x-2 pt-2">
-                <button type="button" onClick={() => setShowBranchModal(false)} className="bg-slate-950 hover:bg-slate-850 px-4 py-2 rounded-xl text-slate-400 transition">Cancel</button>
-                <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-4 py-2 rounded-xl transition">Deploy Node</button>
+                <button type="button" onClick={() => setShowBranchModal(false)} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 text-slate-700 transition">Cancel</button>
+                <button type="submit" className="bg-purple-600 hover:bg-purple-500 text-white font-black px-4 py-2 transition">Deploy Node</button>
               </div>
             </form>
           </div>
@@ -384,39 +384,39 @@ export default function CourtsDashboard() {
       )}
 
       {showCourtModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-black text-slate-100">Provision Court Asset Framework</h3>
+        <div className="fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 className="text-base font-black text-slate-900">Provision Court Asset Framework</h3>
             <form onSubmit={handleCreateCourt} className="space-y-3 text-xs">
               <div className="space-y-1">
-                <label className="block font-bold text-slate-400 uppercase">Court Asset Reference Title</label>
-                <input type="text" required value={newCourt.name} onChange={(e) => setNewCourt({...newCourt, name: e.target.value})} placeholder="e.g., Championship Grass 1" className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500" />
+                <label className="block font-bold text-slate-600 uppercase">Court Asset Reference Title</label>
+                <input type="text" required value={newCourt.name} onChange={(e) => setNewCourt({...newCourt, name: e.target.value})} placeholder="e.g., Championship Grass 1" className="w-full bg-white border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:border-purple-500" />
               </div>
               <div className="space-y-1">
-                <label className="block font-bold text-slate-400 uppercase">Hardware Configuration Description</label>
-                <textarea rows={2} required value={newCourt.description} onChange={(e) => setNewCourt({...newCourt, description: e.target.value})} placeholder="Detail materials layout..." className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500" />
+                <label className="block font-bold text-slate-600 uppercase">Hardware Configuration Description</label>
+                <textarea rows={2} required value={newCourt.description} onChange={(e) => setNewCourt({...newCourt, description: e.target.value})} placeholder="Detail materials layout..." className="w-full bg-white border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:border-purple-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block font-bold text-slate-400 uppercase">Surface Construction Type</label>
-                  <select value={newCourt.surfaceType} onChange={(e) => setNewCourt({...newCourt, surfaceType: e.target.value})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" >
+                  <label className="block font-bold text-slate-600 uppercase">Surface Construction Type</label>
+                  <select value={newCourt.surfaceType} onChange={(e) => setNewCourt({...newCourt, surfaceType: e.target.value})} className="w-full bg-white border border-slate-300 p-2.5 text-slate-800" >
                     <option value="Grass">Traditional Grass</option>
                     <option value="Clay">Moisture Red Clay</option>
                     <option value="Hard">Standard Hardcourt</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="block font-bold text-slate-400 uppercase">Drying Coefficient Multiplier</label>
-                  <input type="number" step="0.1" required value={newCourt.dryCoefficient} onChange={(e) => setNewCourt({...newCourt, dryCoefficient: parseFloat(e.target.value) || 1.0})} className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200" />
+                  <label className="block font-bold text-slate-600 uppercase">Drying Coefficient Multiplier</label>
+                  <input type="number" step="0.1" required value={newCourt.dryCoefficient} onChange={(e) => setNewCourt({...newCourt, dryCoefficient: parseFloat(e.target.value) || 1.0})} className="w-full bg-white border border-slate-300 p-2.5 text-slate-800" />
                 </div>
               </div>
               <div className="flex items-center space-x-2 py-1">
-                <input type="checkbox" id="indoorCheck" checked={newCourt.isIndoor} onChange={(e) => setNewCourt({...newCourt, isIndoor: e.target.checked})} className="rounded bg-slate-950 border-slate-800 text-emerald-500 accent-emerald-500 h-4 w-4" />
-                <label htmlFor="indoorCheck" className="text-slate-300 font-semibold cursor-pointer">Indoor Enclosure</label>
+                <input type="checkbox" id="indoorCheck" checked={newCourt.isIndoor} onChange={(e) => setNewCourt({...newCourt, isIndoor: e.target.checked})} className="rounded bg-white border-slate-300 text-purple-500 accent-purple-500 h-4 w-4" />
+                <label htmlFor="indoorCheck" className="text-slate-700 font-semibold cursor-pointer">Indoor Enclosure</label>
               </div>
               <div className="flex items-center justify-end space-x-2 pt-2">
-                <button type="button" onClick={() => setShowCourtModal(false)} className="bg-slate-950 hover:bg-slate-850 px-4 py-2 rounded-xl text-slate-400 transition">Cancel</button>
-                <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-4 py-2 rounded-xl transition">Commit Asset</button>
+                <button type="button" onClick={() => setShowCourtModal(false)} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 text-slate-700 transition">Cancel</button>
+                <button type="submit" className="bg-purple-600 hover:bg-purple-500 text-white font-black px-4 py-2 transition">Commit Asset</button>
               </div>
             </form>
           </div>
@@ -427,16 +427,16 @@ export default function CourtsDashboard() {
           MODAL INTERFACES: CUSTOM HIGH-UTILITY CONFIRM PURGE OVERLAY
           ========================================================================= */}
       {courtToDeleteId && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+        <div className="fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white border border-slate-300 max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
             
-            <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xl shadow-inner">
+            <div className="inline-flex items-center justify-center h-12 w-12 bg-rose-100 border border-rose-300 text-rose-600 text-xl shadow-inner">
               ⚠️
             </div>
             
             <div className="space-y-1">
-              <h3 className="text-base font-black text-slate-100 tracking-tight">Purge Physical Court Asset</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <h3 className="text-base font-black text-slate-900 tracking-tight">Purge Physical Court Asset</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Are you absolutely sure you want to decouple this asset? This action will permanently remove this court and all historical scheduling logs from the PostgreSQL cluster database.
               </p>
             </div>
@@ -452,7 +452,7 @@ export default function CourtsDashboard() {
               <button 
                 type="button" 
                 onClick={() => setCourtToDeleteId(null)} 
-                className="w-full bg-slate-950 hover:bg-slate-850 text-slate-400 border border-slate-850 p-2.5 rounded-xl transition font-semibold"
+                className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 p-2.5 transition font-semibold"
               >
                 Cancel Action
               </button>
