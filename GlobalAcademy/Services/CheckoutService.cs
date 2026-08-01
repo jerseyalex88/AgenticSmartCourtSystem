@@ -22,7 +22,7 @@ namespace GlobalAcademy.Payment.Services
         string CurrencyCode = "CAD"
     );
 
-    public record CheckoutResult(bool IsSuccess, string ReferenceId, string ErrorMessage);
+    public record CheckoutResult(bool IsSuccess, string? ReferenceId, string? ErrorMessage);
 
     public class CheckoutService
     {
@@ -146,6 +146,82 @@ namespace GlobalAcademy.Payment.Services
             await _context.SaveChangesAsync();
 
             return new CheckoutResult(true, gatewayResult.ReferenceId, null);
+        }
+        public async Task<CheckoutResult> ProcessInvoiceReversalAsync(Guid academyId, Guid invoiceId)
+        {
+            // Fetch target invoice within strict tenant boundary partitions
+            var invoice = await _context.Invoices
+                .Include(i => i.Transactions)
+                .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId && i.AcademyId == academyId);
+
+            if (invoice == null)
+            {
+                return new CheckoutResult(false, null, "Reversal Denied: Target invoice record not found.");
+            }
+
+            // Scenario A: Invoice is unpaid -> Perform an instant absolute database VOID
+            if (invoice.Status == InvoiceStatus.Unpaid)
+            {
+                invoice.Status = InvoiceStatus.Voided;
+                await _context.SaveChangesAsync();
+                return new CheckoutResult(true, "VOIDED-SUCCESSFULLY", null);
+            }
+
+            // Scenario B: Already settled -> Initiate third-party refund API calls
+            if (invoice.Status == InvoiceStatus.Paid)
+            {
+                // Isolate the successful ledger transaction receipt string block
+                var successfulTx = invoice.Transactions.FirstOrDefault(t => t.IsSuccess);
+                if (successfulTx == null)
+                {
+                    return new CheckoutResult(false, null, "Refund Denied: Could not locate matching transaction receipt.");
+                }
+
+                if (string.IsNullOrWhiteSpace(successfulTx.GatewayReferenceId))
+                {
+                    return new CheckoutResult(false, null, "Refund Denied: The original payment reference key is missing or corrupted on this ledger item row.");
+                }
+
+                // =========================================================================
+                // LIVE GATEWAY INTEGRATION CORE: FETCH ADAPTER AND EXECUTE REVERSAL
+                // =========================================================================
+                // 1. Resolve the concrete adapter (Square or Braintree) dynamically via the factory container
+                var gateway = _gatewayFactory.GetGateway(successfulTx.ProcessedByGateway);
+
+                // 2. DISPATCH THE LIVE GATEWAY REFUND handshakes out over the web network!
+                var gatewayRefundResult = await gateway.RefundPaymentAsync(
+                    successfulTx.GatewayReferenceId, 
+                    invoice.TotalAmount,
+                    "CAD" // Aligns with your baseline Currency settings
+                );
+
+                if (!gatewayRefundResult.IsSuccess)
+                {
+                    return new CheckoutResult(false, null, $"Gateway Refund Failure: {gatewayRefundResult.ErrorMessage}");
+                }
+
+                // 3. Queue up the historical adjustment transaction record layout row
+                var refundLog = new LedgerTransaction
+                {
+                    TransactionId = Guid.NewGuid(),
+                    AcademyId = academyId,
+                    InvoiceId = invoice.InvoiceId,
+                    Method = successfulTx.Method,
+                    ProcessedByGateway = successfulTx.ProcessedByGateway,
+                    GatewayReferenceId = $"REF-{gatewayRefundResult.ReferenceId}", // Stores live API tracking token
+                    Amount = invoice.TotalAmount,
+                    TimestampUtc = DateTime.UtcNow,
+                    IsSuccess = true
+                };
+
+                _context.LedgerTransactions.Add(refundLog);
+                invoice.Status = InvoiceStatus.Refunded;
+                
+                await _context.SaveChangesAsync();
+                return new CheckoutResult(true, refundLog.GatewayReferenceId, null);
+            }
+
+            return new CheckoutResult(false, null, $"Reversal Denied: Invoices with state '{invoice.Status}' cannot be altered.");
         }
     }
 }

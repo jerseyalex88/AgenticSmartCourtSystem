@@ -83,7 +83,7 @@ public class CheckoutController : ControllerBase
         var currentAcademyId = _tenantProvider.GetTenantId();
 
         var currentUserName = HttpContext.User.Claims
-            .FirstOrDefault(c => c.Type.Contains("xmlsoap.org"))?.Value;
+            .FirstOrDefault(c => c.Type.Contains("username"))?.Value;
 
         if (string.IsNullOrEmpty(currentUserName))
         {
@@ -174,13 +174,13 @@ public class CheckoutController : ControllerBase
         catch (Exception ex)
         {
             // Catch any account or credential mapping issues without spilling raw traces to client logs
-            return StatusCode(500, new { success = false, message = "Failed to synchronize handshake context with gateway server." });
+            return StatusCode(500, new { success = false, message = $"Failed to synchronize handshake context with gateway server. {ex.Message}" });
         }
     }
 }
 
 public record InvoiceLineItemDto(
-        string ItemDescription,
+        string? ItemDescription,
         int Quantity,
         decimal UnitPrice,
         decimal LineTotal
@@ -188,14 +188,14 @@ public record InvoiceLineItemDto(
 
 public record TransactionReceiptDto(
     PreferredGateway ProcessedByGateway,
-    string GatewayReferenceId,
+    string? GatewayReferenceId,
     decimal Amount,
     DateTime TimestampUtc,
     bool IsSuccess
 );
 
 public record BillingStatementDto(
-    string CustomerName,
+    string? CustomerName,
     Guid InvoiceId,
     DateTime CreatedAtUtc,
     string Status,

@@ -81,7 +81,8 @@ public class AuthController : ControllerBase
                 new Claim("http://xmlsoap.org", user.UserName!),
                 new Claim("jti", Guid.NewGuid().ToString()),
                 new Claim("nameidentifier", user.Id),
-                new Claim("email", user.Email)
+                new Claim("email", user.Email!),
+                new Claim("username", user.UserName!)
             };
 
             // =========================================================================
@@ -104,9 +105,19 @@ public class AuthController : ControllerBase
                 authClaims.Add(new Claim(ClaimTypes.Role, userRole));
             }
 
-            var academyClaim = Guid.Parse(userClaims.FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value);
+            var academyClaimValue = userClaims
+            .FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value;
+
+            if (string.IsNullOrEmpty(academyClaimValue) || !Guid.TryParse(academyClaimValue, out Guid academyClaim))
+            {
+
+                // Security Guard: Halt processing immediately to prevent cross-tenant parameter bleeding
+                return BadRequest("Access Denied: Missing or malformed multi-tenant organization context parameters.");
+            }
+
             var academy = _dbContext.Academies.FirstOrDefault(a=> a.Id == academyClaim);
-            authClaims.Add(new Claim("academyName", academy.Name));
+            string academyName = academy?.Name ?? "Unknown Academy";
+            authClaims.Add(new Claim("academyName", academyName));
 
             // --- Generate Token Signing Configurations ---
             var jwtSettings = _configuration.GetSection("JwtSettings");

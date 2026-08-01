@@ -394,7 +394,9 @@ public class AiOrchestrationController : ControllerBase
                 {
                     new System.Security.Claims.Claim("http://xmlsoap.org", user.UserName!),
                     new System.Security.Claims.Claim("jti", Guid.NewGuid().ToString()),
-                    new System.Security.Claims.Claim("nameidentifier", user.Id)
+                    new System.Security.Claims.Claim("nameidentifier", user.Id),
+                    new System.Security.Claims.Claim("email", user.Email!),
+                    new System.Security.Claims.Claim("username", user.UserName!)
                 };
 
                 // Add role-based access attributes dynamically

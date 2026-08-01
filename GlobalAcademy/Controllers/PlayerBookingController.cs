@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using GlobalAcademy.Security;
+using GlobalAcademy.Payment.Services;
 
 namespace GlobalAcademy.Controllers;
 
@@ -37,7 +38,7 @@ public class PlayerBookingController : ControllerBase
         var currentAcademyId = _tenantProvider.GetTenantId();
 
         var currentUserName = HttpContext.User.Claims
-            .FirstOrDefault(c => c.Type.Contains("xmlsoap.org"))?.Value;
+            .FirstOrDefault(c => c.Type.Contains("username"))?.Value;
 
         if (string.IsNullOrEmpty(currentUserName))
         {
@@ -66,21 +67,42 @@ public class PlayerBookingController : ControllerBase
         }
         
         // Pull active bookings alongside their physical parent court and branch relationship tracking paths
+        // 1. Initialize the base query attached to your multi-tenant boundary wall
+        var bookingsQuery = _dbContext.Bookings
+            .Include(b => b.Court!)
+            .ThenInclude(c => c.Branch!) 
+            .Where(b => b.AcademyId == currentAcademyId && !b.IsAvailableSlot);
+
+        // Isolate clearance flags using the ambient User role claims context
+        var isDirector = User.IsInRole("AcademyDirector") || User.IsInRole("GlobalAdmin");
+
+        // 2. POLYMORPHIC CONSTRAINT: Append user isolation filters ONLY if the caller is a standard player
+        if (!isDirector)
+        {
+            bookingsQuery = bookingsQuery.Where(b => b.BookedByUserId == userIdClaimString);
+        }
+
+        // 3. Finalize execution with secondary ordering matrices atomically
         var userBookings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .ToListAsync(_dbContext.Bookings
-                .Include(b => b.Court)
-                .ThenInclude(c => c.Branch) // Deep relationship loading chain
-                .Where(b => b.AcademyId == currentAcademyId && b.BookedByUserId == userIdClaimString && !b.IsAvailableSlot)
-                .OrderByDescending(b => b.StartTimeUtc) // 1st Priority: Latest booking slots first
+            .ToListAsync(bookingsQuery
+                .OrderByDescending(b => b.StartTimeUtc) 
                 .ThenBy(b => b.CourtName));
-        
+
+        var invoiceFilterQuery = _dbContext.Invoices
+            .Where(i => i.AcademyId == currentAcademyId && i.Status == InvoiceStatus.Paid);
+
+        // 2. POLYMORPHIC CONSTRAINT: Restrict to a single player's scope ONLY if the caller is not a director
+        if (!isDirector)
+        {
+            invoiceFilterQuery = invoiceFilterQuery.Where(i => i.IssuedToUserId == userIdClaimString);
+        }
+
+        // 3. Finalize the main query, checking against our dynamically modified invoice registry loop
         var paidBookingIds = await _dbContext.InvoiceLineItems
-            .Where(li => _dbContext.Invoices.Any(i => i.InvoiceId == li.InvoiceId 
-                                                   && i.IssuedToUserId == userIdClaimString 
-                                                   && i.AcademyId == currentAcademyId 
-                                                   && i.Status == InvoiceStatus.Paid)
+            .Where(li => invoiceFilterQuery.Any(i => i.InvoiceId == li.InvoiceId)
                       && li.AssociatedBookingId != null)
-            .Select(li => li.AssociatedBookingId.Value)
+            .Select(li => li.AssociatedBookingId ?? Guid.Empty)
+            .Where(id => id != Guid.Empty) // Clear out empty fallbacks safely
             .ToListAsync();
 
         var payload = userBookings.Select(b => {
@@ -110,7 +132,8 @@ public class PlayerBookingController : ControllerBase
                 slotTimeDisplay = localTime.ToString("MMM dd, yyyy 'at' hh:mm tt"), 
                 durationMinutes = b.DurationInMinutes,
                 isPaid = isSettled,
-                isExpired = hasPassed
+                isExpired = hasPassed,
+                bookedPlayerName = b.BookedPlayerName,
             };
         });
 
@@ -266,7 +289,7 @@ public class PlayerBookingController : ControllerBase
         var currentAcademyId = _tenantProvider.GetTenantId();
 
         var currentUserName = HttpContext.User.Claims
-            .FirstOrDefault(c => c.Type.Contains("xmlsoap.org"))?.Value;
+            .FirstOrDefault(c => c.Type.Contains("username"))?.Value;
 
         if (string.IsNullOrEmpty(currentUserName))
         {
@@ -388,20 +411,63 @@ public class PlayerBookingController : ControllerBase
     // 5. DELETE: DESTRUCTIVE TRANSACTIONAL SLOT CANCELLATION RELEASE HANDLER
     // =========================================================================
     [HttpDelete("release/{bookingId}")]
-    public async Task<IActionResult> ReleaseReservationSlot(string bookingId)
+    public async Task<IActionResult> ReleaseReservationSlot(string bookingId, [FromServices] CheckoutService checkoutService)
     {
         if (!Guid.TryParse(bookingId, out Guid bookingGuid)) 
             return BadRequest("Invalid transaction identifier formatting standard.");
 
-        var targetBooking = await _dbContext.Bookings.FirstOrDefaultAsync(b => b.Id == bookingGuid);
+        // =========================================================================
+        // STEP 1: IDENTITY GUARD HOOKS SHIFTED TO TOP FOR SECURITY FASTRACKING
+        // =========================================================================
+        var currentUserName = HttpContext.User.Claims
+            .FirstOrDefault(c => c.Type.Contains("username"))?.Value;
 
+        if (string.IsNullOrEmpty(currentUserName))
+        {
+            currentUserName = HttpContext.User.Identity?.Name;
+        }
+
+        if (string.IsNullOrEmpty(currentUserName)) 
+        {
+            return Unauthorized(new { Message = "Security Obstacle: User identity claim string (username) was not detected inside the active session token." });
+        }
+
+        var userIdClaimString = HttpContext.User.Claims
+            .FirstOrDefault(c => c.Type.Contains("nameidentifier") || c.Type == "sub" || c.Type == "nameid")?.Value;
+
+        Guid bookedByUserIdGuid = Guid.Empty;
+        if (!string.IsNullOrEmpty(userIdClaimString) && Guid.TryParse(userIdClaimString, out Guid parsedGuid))
+        {
+            bookedByUserIdGuid = parsedGuid;
+        }
+        else
+        {
+            return Unauthorized(new { Message = "Security Obstacle: User identity claim string (id) was not detected inside the active session token." });
+        }
+
+        // Isolate authority clearance tags natively from the active token session claims context
+        var isDirector = User.IsInRole("AcademyDirector") || User.IsInRole("GlobalAdmin");
+
+        // 2. Fetch the target booking slot row from the database
+        var targetBooking = await _dbContext.Bookings.FirstOrDefaultAsync(b => b.Id == bookingGuid);
         if (targetBooking == null) 
             return NotFound("Target reservation allocation row does not exist.");
 
+        // =========================================================================
+        // STEP 2: MULTI-USER IDENTITY MATCH VALIDATION RUNS IMMEDIATELY
+        // =========================================================================
+        if (!isDirector && targetBooking.BookedPlayerName != currentUserName && targetBooking.BookedByUserId != bookedByUserIdGuid.ToString()) 
+        {
+            return Forbid("Security Violation: Cross-identity data dropping transaction rejected.");
+        }
+
+        // =========================================================================
+        // STEP 3: DYNAMIC 24-HOUR CANCELLATION TIMING POLICY EVALUATION
+        // =========================================================================
         var timeUntilMatch = targetBooking.StartTimeUtc - DateTime.UtcNow;
 
-        // Block execution if match starts in under 24 hours AND the user is NOT an Academy Director
-        if (timeUntilMatch.TotalHours < 24) // && !_isDirector)
+        // Condition: Block execution if match starts in under 24 hours AND the user is NOT an Academy Director
+        if (timeUntilMatch.TotalHours < 24 && !isDirector)
         {
             return BadRequest("Cancellation Locked: Reservations starting in less than 24 hours cannot be dropped by players. Please contact an Academy Director for an override.");
         }
@@ -415,7 +481,7 @@ public class PlayerBookingController : ControllerBase
             return BadRequest($"Validation error: Court matching the name '{targetBooking.CourtName}' does not exist inside your academy ecosystem.");
         }
 
-        // 7. Locate the associated invoice using our historical booking tracking ID reference key
+        // 4. Locate the associated invoice using our historical booking tracking ID reference key
         var associatedLineItem = await _dbContext.InvoiceLineItems
             .FirstOrDefaultAsync(li => li.AssociatedBookingId == targetBooking.Id);
 
@@ -423,65 +489,26 @@ public class PlayerBookingController : ControllerBase
 
         if (associatedLineItem != null)
         {
-            var invoice = await _dbContext.Invoices
-                .FirstOrDefaultAsync(i => i.InvoiceId == associatedLineItem.InvoiceId && i.AcademyId == targetBooking.AcademyId);
-
-            if (invoice != null)
+            // =========================================================================
+            // STEP 4: INTEGRATE THE REVERSAL CORE (VOIDS UNPAID OR REFUNDS GATEWAY FUNDS)
+            // =========================================================================
+            // Calls your centralized service to process live refunds or atomic database voids
+            var reversalResult = await checkoutService.ProcessInvoiceReversalAsync(targetBooking.AcademyId, associatedLineItem.InvoiceId);
+            
+            if (!reversalResult.IsSuccess)
             {
-                if (invoice.Status == InvoiceStatus.Unpaid)
-                {
-                    // Scenario A: User hasn't paid yet -> Simply void the outstanding balance sheet row
-                    invoice.Status = InvoiceStatus.Voided;
-                    financialStatusUpdateMessage = $"Linked outstanding Invoice #{invoice.InvoiceId} has been successfully VOIDED.";
-                }
-                else if (invoice.Status == InvoiceStatus.Paid)
-                {
-                    // Scenario B: User already settled -> Mark as Refunded
-                    // In production, this flag triggers an async webhook listener dispatching credit back through Braintree/Square
-                    invoice.Status = InvoiceStatus.Refunded;
-                    financialStatusUpdateMessage = $"Linked paid Invoice #{invoice.InvoiceId} has been marked as REFUNDED. Funds will return to the original gateway account.";
-                }
+                return BadRequest($"Financial Ledger Rejection: {reversalResult.ErrorMessage}");
             }
+
+            financialStatusUpdateMessage = reversalResult.ReferenceId == "VOIDED-SUCCESSFULLY"
+                ? $"Linked outstanding Invoice #{associatedLineItem.InvoiceId} has been successfully VOIDED."
+                : $"Linked paid Invoice #{associatedLineItem.InvoiceId} has been marked as REFUNDED. Gateway Ref Handle: {reversalResult.ReferenceId}";
         }
 
-        // 8. Credit back play minutes to the court surface wear metrics tracking system before removing row
+        // 5. Credit back play minutes to the court surface wear metrics tracking system
         court.AggregateMinutesPlayed = Math.Max(0, court.AggregateMinutesPlayed - targetBooking.DurationInMinutes);
 
-        // SECURITY GUARD: Double verify user owns this match slot row before mutating table cells
-
-        var currentUserName = HttpContext.User.Claims
-            .FirstOrDefault(c => c.Type.Contains("xmlsoap.org"))?.Value;
-
-        if (string.IsNullOrEmpty(currentUserName))
-        {
-            // Fallback: Check standard default name mapping keys if the array elements shuffle
-            currentUserName = HttpContext.User.Identity?.Name;
-        }
-
-        if (string.IsNullOrEmpty(currentUserName)) 
-        {
-            return Unauthorized(new { Message = "Security Obstacle: User identity claim string (username) was not detected inside the active session token." });
-        }
-
-        var userIdClaimString = HttpContext.User.Claims
-            .FirstOrDefault(c => c.Type.Contains("nameidentifier") || c.Type == "sub" || c.Type == "nameid")?.Value;
-
-        Guid bookedByUserIdGuid = Guid.Empty;
-        
-        // Safely parse the extracted token string value into a valid structural Guid token type
-        if (!string.IsNullOrEmpty(userIdClaimString) && Guid.TryParse(userIdClaimString, out Guid parsedGuid))
-        {
-            bookedByUserIdGuid = parsedGuid;
-        }
-        else
-        {
-            return Unauthorized(new { Message = "Security Obstacle: User identity claim string (id) was not detected inside the active session token." });
-        }
-
-        if (targetBooking.BookedPlayerName != currentUserName && targetBooking.BookedByUserId != bookedByUserIdGuid.ToString()) 
-            return Forbid("Security Violation: Cross-identity data dropping transaction rejected.");
-
-        // Model B Action Rules: Simply drop the booking entry row straight from your active event logs database!
+        // 6. Execute atomic database record extraction transaction loop
         using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
             try
@@ -497,8 +524,9 @@ public class PlayerBookingController : ControllerBase
             }
         }
 
-        return Ok(new { Message = "Slot transaction dropped and released successfully." });
+        return Ok(new { Message = $"Slot transaction dropped and released successfully. {financialStatusUpdateMessage}" });
     }
+
 }
 
 // Data Transfer Object definition record model

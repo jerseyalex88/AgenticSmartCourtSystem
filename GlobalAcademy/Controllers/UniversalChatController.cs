@@ -39,7 +39,7 @@ public class UniversalChatController : ControllerBase
             if (string.IsNullOrEmpty(userInput)) return BadRequest("Input text vector empty.");
 
             // 1. EXTRACTION: Pull the authenticated user's name and multi-tenant firewall parameters
-            var currentUserName = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("xmlsoap.org"))?.Value ?? HttpContext.User.Identity?.Name;
+            var currentUserName = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("username"))?.Value ?? HttpContext.User.Identity?.Name;
             var tenantIdClaim = HttpContext.User.FindFirst("AcademyId")?.Value;
             var userRole = HttpContext.User.FindFirst(ClaimTypes.Role)?.Value ?? "Player";
             var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -165,7 +165,7 @@ public class UniversalChatController : ControllerBase
             if (string.IsNullOrEmpty(userInput)) return BadRequest("Input text vector empty.");
 
             // 1. EXTRACTION: Pull the authenticated user's name and multi-tenant firewall parameters
-            var currentUserName = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("xmlsoap.org"))?.Value ?? HttpContext.User.Identity?.Name;
+            var currentUserName = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("username"))?.Value ?? HttpContext.User.Identity?.Name;
             var tenantIdClaim = HttpContext.User.FindFirst("AcademyId")?.Value;
             var userRole = HttpContext.User.FindFirst(ClaimTypes.Role)?.Value ?? "Unknown";
             var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

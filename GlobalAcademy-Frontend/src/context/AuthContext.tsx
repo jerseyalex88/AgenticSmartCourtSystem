@@ -39,9 +39,9 @@ function decodeJwtClaims(token: string): UserProfile {
     // Modern .NET 10 token claims mapping parameters
     const id = parsed.nameidentifier || "";
     const email = parsed.email || "";
-    const role = parsed["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || parsed.role || "Player";
+    const role = parsed.role || parsed["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || "Player";
     const academyId = parsed.AcademyId || parsed.academyId || "";
-    const userName = parsed["http://xmlsoap.org"] || parsed.unique_name || "";
+    const userName = parsed.username || parsed["http://xmlsoap.org"] || "";
     const academyName = parsed.AcademyName || parsed.academyName || "";
 
     // console.log("==================================================");

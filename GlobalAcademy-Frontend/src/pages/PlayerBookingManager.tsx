@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
 import { useAlert } from '../context/AlertContext';
 
@@ -10,6 +10,7 @@ interface ActiveBooking {
   durationMinutes: number;
   isPaid: boolean;
   isExpired: boolean;
+  bookedPlayerName: string | null;
 }
 
 interface PendingStandby {
@@ -109,18 +110,44 @@ export function PlayerBookingManager() {
     });
   };
 
-  const handleReleaseSlotClick = (bookingId: string, courtName: string, slotTime: string) => {
+    const handleReleaseSlotClick = (bookingId: string, courtName: string, slotTime: string) => {
     showAlert({
       title: 'Release Booking Slot?',
       message: `Are you absolutely certain you want to cancel your reservation for ${courtName} on ${slotTime}?`,
       type: 'warning',
       onConfirm: async () => {
         try {
-          await apiClient.delete(`/PlayerBooking/release/${bookingId}`);
-          showAlert({ title: 'Slot Released Cleanly', message: 'Your upcoming match window was cleared.', type: 'success' });
+          // 1. Dispatch the request to your newly compiled, reversal-hardened backend route
+          const response = await apiClient.delete(`/PlayerBooking/release/${bookingId}`);
+          
+          // 2. Extract the detailed ledger audit statement text passed back by the server
+          const serverSuccessMessage = response.data?.message || 'Your upcoming match window was cleared.';
+
+          showAlert({ 
+            title: 'Slot Released Cleanly', 
+            message: serverSuccessMessage, // ◄--- Displays custom VOIDED or REFUNDED messages inline
+            type: 'success' 
+          });
+
+          // 3. Refresh your primary user telemetry view grids
           await fetchPlayerDashboardTelemetry();
-        } catch (err) {
-          showAlert({ title: 'Cancellation Intercepted', message: 'The server rejected this release command.', type: 'error' });
+
+          // 4. Ambient window broadcast hook to update adjacent balance counters on the financial statement table
+          if (typeof (window as any).refreshDashboardAllocationGrid === 'function') {
+            (window as any).refreshDashboardAllocationGrid();
+          }
+          
+        } catch (err: any) {
+          // 5. Extract specific business rule failures (e.g., your 24-hour player lockout rule text string)
+          const serverErrorMessage = err.response?.data 
+            || err.response?.data?.message 
+            || 'The server rejected this release command.';
+
+          showAlert({ 
+            title: 'Cancellation Intercepted', 
+            message: serverErrorMessage, // ◄--- Renders "Cancellation Locked: Less than 24 hours..." accurately
+            type: 'error' 
+          });
         }
       }
     });
@@ -135,151 +162,152 @@ export function PlayerBookingManager() {
         <p className="text-xs text-slate-500 mt-1 font-mono">Manage your active court allocations, verify standby queue states, and explore live availability grids.</p>
       </div>
 
-    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-sm font-mono text-xs text-slate-300">
+      <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-sm font-mono text-xs text-slate-300">
 
-      {loading && matrixData.length === 0 ? (
-        <div className="p-12 text-center text-slate-600 animate-pulse">Syncing personal booking matrices...</div>
-      ) : (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            <div className="lg:col-span-3 space-y-4">
-              <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-600">📅 Confirmed Court Allocations</h3>
-              {myBookings.length === 0 ? (
-                <div className="p-6 bg-white bg-slate-950 border border-slate-200 rounded-xl text-center text-slate-600 italic">You have no upcoming confirmed matches.</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {myBookings.map((b) => (
-                    <div key={b.id} className="bg-white bg-slate-950 border border-slate-200 p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition">
-                      <div>
-                        <div className="text-xs font-black text-slate-800 uppercase tracking-wide">{b.courtName}</div>
-                        <div className="text-slate-700 mt-1 text-[11px]">⏱️ Schedule: {b.slotTimeDisplay}</div>
-                        {b.isPaid && !b.isExpired && (
-                          <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
-                            ✓ Paid Secured
-                          </span>
-                        )}
-                        {b.isExpired && (
-                          <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 border border-blue-500/20 rounded-md">
-                            ✓ Expired
-                          </span>
+        {loading && matrixData.length === 0 ? (
+          <div className="p-12 text-center text-slate-600 animate-pulse">Syncing personal booking matrices...</div>
+        ) : (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <div className="lg:col-span-3 space-y-4">
+                <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-600">📅 Confirmed Court Allocations</h3>
+                {myBookings.length === 0 ? (
+                  <div className="p-6 bg-white bg-slate-950 border border-slate-200 rounded-xl text-center text-slate-600 italic">You have no upcoming confirmed matches.</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {myBookings.map((b) => (
+                      <div key={b.id} className="bg-white bg-slate-950 border border-slate-200 p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition">
+                        <div>
+                          <div className="text-xs font-black text-slate-800 uppercase tracking-wide">{b.courtName}</div>
+                          <div className="text-slate-700 mt-1 text-[11px]">⏱️ Schedule: {b.slotTimeDisplay}</div>
+                          {b.isPaid && !b.isExpired && (
+                            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                              ✓ Paid Secured for {b.bookedPlayerName}
+                            </span>
+                          )}
+                          {b.isExpired && (
+                            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 border border-blue-500/20 rounded-md">
+                              ✓ Expired
+                            </span>
+                          )}
+                        </div>
+                        {!b.isPaid && !b.isExpired && (
+                        <button onClick={() => handleReleaseSlotClick(b.id, b.courtName, b.slotTimeDisplay)} 
+                          className="mt-4 w-full bg-slate-700 border border-slate-600 hover:bg-rose-950/30 text-rose-400 font-bold py-1.5 rounded-lg uppercase text-[10px] transition"
+                          title={
+                            b.isExpired ? "Historical past bookings cannot be dropped." :
+                            b.isPaid ? "Settled payments are locked. Contact Director for refunds." : "Cancel this reservation slot"
+                          }
+                          >❌ Cancel Slot</button>
                         )}
                       </div>
-                      {!b.isPaid && !b.isExpired && (
-                      <button onClick={() => handleReleaseSlotClick(b.id, b.courtName, b.slotTimeDisplay)} 
-                        className="mt-4 w-full bg-slate-700 border border-slate-600 hover:bg-rose-950/30 text-rose-400 font-bold py-1.5 rounded-lg uppercase text-[10px] transition"
-                        title={
-                          b.isExpired ? "Historical past bookings cannot be dropped." :
-                          b.isPaid ? "Settled payments are locked. Contact Director for refunds." : "Cancel this reservation slot"
-                        }
-                        >❌ Cancel Slot</button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {myStandby.length > 0 && (
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-              <h3 className="text-[10px] font-black tracking-widest uppercase text-amber-400 border-b border-slate-800 pb-2 mb-3">⏳ Standby Shadow Queue Monitors</h3>
-              {myStandby.length === 0 ? (
-                <div className="text-slate-600 italic py-4 text-center">Your profile is completely clear of standby queues.</div>
-              ) : (
-                <div className="space-y-3">
-                  {myStandby.map((s) => (
-                    <div key={s.id} className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex items-center justify-between">
-                      <div><div className="font-bold text-slate-200">Standby Request Token</div><div className="text-[10px] text-slate-500 mt-0.5">Window: {s.preferredWindow}</div></div>
-                      <span className="px-2 py-0.5 bg-amber-950 text-amber-400 border border-amber-800 rounded text-[9px] font-black uppercase animate-pulse">Awaiting AI Fix</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            )}
-
-          </div>
-          <div className="border-t border-slate-800 pt-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-              <div>
-                <h3 className="text-[10px] font-black tracking-widest uppercase text-emerald-600">⚡ 7-Day Live Court Availability Matrix Grid</h3>
-                <p className="text-slate-600 mt-0.5 text-[11px]">Select a day tab to view available intervals. Unavailable or booked slots appear greyed out.</p>
+                    ))}
+                  </div>
+                )}
               </div>
               
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setSelectedDayIndex(0); 
-                }}
-                className="bg-slate-950 border border-slate-800 text-slate-200 font-bold p-2 rounded-xl focus:outline-none focus:border-slate-700 transition self-start md:self-auto"
-              />
-            </div>
+              {myStandby.length > 0 && (
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                <h3 className="text-[10px] font-black tracking-widest uppercase text-amber-400 border-b border-slate-800 pb-2 mb-3">⏳ Standby Shadow Queue Monitors</h3>
+                {myStandby.length === 0 ? (
+                  <div className="text-slate-600 italic py-4 text-center">Your profile is completely clear of standby queues.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {myStandby.map((s) => (
+                      <div key={s.id} className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex items-center justify-between">
+                        <div><div className="font-bold text-slate-200">Standby Request Token</div><div className="text-[10px] text-slate-500 mt-0.5">Window: {s.preferredWindow}</div></div>
+                        <span className="px-2 py-0.5 bg-amber-950 text-amber-400 border border-amber-800 rounded text-[9px] font-black uppercase animate-pulse">Awaiting AI Fix</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              )}
 
-            {matrixData.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-4 bg-slate-950 p-1.5 rounded-xl border border-slate-800 overflow-x-auto">
-                {matrixData.map((day, idx) => {
-                  const weekday = new Date(day.dateString + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-                  return (
+            </div>
+            <div className="border-t border-slate-800 pt-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+                <div>
+                  <h3 className="text-[10px] font-black tracking-widest uppercase text-emerald-600">⚡ 7-Day Live Court Availability Matrix Grid</h3>
+                  <p className="text-slate-600 mt-0.5 text-[11px]">Select a day tab to view available intervals. Unavailable or booked slots appear greyed out.</p>
+                </div>
+                
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setSelectedDayIndex(0); 
+                  }}
+                  className="bg-slate-950 border border-slate-800 text-slate-200 font-bold p-2 rounded-xl focus:outline-none focus:border-slate-700 transition self-start md:self-auto"
+                />
+              </div>
+
+              {matrixData.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-4 bg-slate-950 p-1.5 rounded-xl border border-slate-800 overflow-x-auto">
+                  {matrixData.map((day, idx) => {
+                    const weekday = new Date(day.dateString + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+                    return (
+                      <button
+                        key={day.dateString}
+                        onClick={() => setSelectedDayIndex(idx)}
+                        className={`flex-1 min-w-[95px] text-center py-2 rounded-lg font-bold uppercase transition text-[10px] ${
+                          selectedDayIndex === idx
+                            ? 'bg-emerald-600 text-white'
+                            : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                        }`}
+                      >
+                        {weekday}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {activeDayMatrix && activeDayMatrix.slots.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {activeDayMatrix.slots.map((slot, index) => (
                     <button
-                      key={day.dateString}
-                      onClick={() => setSelectedDayIndex(idx)}
-                      className={`flex-1 min-w-[95px] text-center py-2 rounded-lg font-bold uppercase transition text-[10px] ${
-                        selectedDayIndex === idx
-                          ? 'bg-emerald-600 text-white'
-                          : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      key={`${slot.courtId}_${index}`}
+                      disabled={!slot.isAvailable}
+                      onClick={() => handleClaimDynamicSlotClick(slot)}
+                      className={`p-3 border rounded-xl text-left transition flex flex-col justify-between group h-24 ${
+                        slot.isAvailable
+                          ? 'bg-slate-950 border-slate-800 hover:border-emerald-600 hover:bg-emerald-950/10 cursor-pointer'
+                          : 'bg-slate-950/40 border-slate-900 text-slate-600 cursor-not-allowed select-none opacity-40'
                       }`}
                     >
-                      {weekday}
+                      <div>
+                        <div className={`font-black tracking-wide transition-colors ${slot.isAvailable ? 'text-slate-200 group-hover:text-emerald-400' : 'text-slate-600'}`}>
+                          {slot.courtName}
+                        </div>
+                        <div className="text-[11px] mt-1 text-slate-400 flex items-center gap-1">
+                          <span>🕒</span>
+                          <span className="font-bold text-slate-300">{slot.branchLocalDateDisplay}</span>
+                          <span className="text-slate-500">@</span>
+                          <span>{slot.branchLocalTimeDisplay}</span>
+                        </div>
+                      </div>
+
+                      <div className={`mt-2 w-full text-center font-bold py-1 rounded-lg uppercase text-[9px] tracking-wider border transition ${
+                        slot.isAvailable
+                          ? 'bg-slate-900 border-slate-800 group-hover:border-emerald-600 text-slate-400 group-hover:text-emerald-400'
+                          : 'bg-transparent border-transparent text-slate-700'
+                      }`}>
+                        {slot.isAvailable ? '⚡ Reserve Slot' : `🔒 Booked (${slot.bookedPlayerName?.split('@')[0]})`}
+                      </div>
                     </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {activeDayMatrix && activeDayMatrix.slots.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {activeDayMatrix.slots.map((slot, index) => (
-                  <button
-                    key={`${slot.courtId}_${index}`}
-                    disabled={!slot.isAvailable}
-                    onClick={() => handleClaimDynamicSlotClick(slot)}
-                    className={`p-3 border rounded-xl text-left transition flex flex-col justify-between group h-24 ${
-                      slot.isAvailable
-                        ? 'bg-slate-950 border-slate-800 hover:border-emerald-600 hover:bg-emerald-950/10 cursor-pointer'
-                        : 'bg-slate-950/40 border-slate-900 text-slate-600 cursor-not-allowed select-none opacity-40'
-                    }`}
-                  >
-                    <div>
-                      <div className={`font-black tracking-wide transition-colors ${slot.isAvailable ? 'text-slate-200 group-hover:text-emerald-400' : 'text-slate-600'}`}>
-                        {slot.courtName}
-                      </div>
-                      <div className="text-[11px] mt-1 text-slate-400 flex items-center gap-1">
-                        <span>🕒</span>
-                        <span className="font-bold text-slate-300">{slot.branchLocalDateDisplay}</span>
-                        <span className="text-slate-500">@</span>
-                        <span>{slot.branchLocalTimeDisplay}</span>
-                      </div>
-                    </div>
-
-                    <div className={`mt-2 w-full text-center font-bold py-1 rounded-lg uppercase text-[9px] tracking-wider border transition ${
-                      slot.isAvailable
-                        ? 'bg-slate-900 border-slate-800 group-hover:border-emerald-600 text-slate-400 group-hover:text-emerald-400'
-                        : 'bg-transparent border-transparent text-slate-700'
-                    }`}>
-                      {slot.isAvailable ? '⚡ Reserve Slot' : `🔒 Booked (${slot.bookedPlayerName?.split('@')[0]})`}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 bg-slate-950 border border-slate-800 rounded-xl text-center text-slate-600 italic">
-                Awaiting matrix stream data layout...
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 bg-slate-950 border border-slate-800 rounded-xl text-center text-slate-600 italic">
+                  Awaiting matrix stream data layout...
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div></div>
+        )}
+      </div>
+    </div>
   );
 }

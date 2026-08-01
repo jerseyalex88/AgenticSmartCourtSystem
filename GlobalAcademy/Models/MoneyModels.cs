@@ -12,8 +12,8 @@ namespace GlobalAcademy.Models
     {
         [Key] public Guid CatalogItemId { get; set; }
         public Guid AcademyId { get; set; } // Strict MT Partition Rule
-        [Required] public string SKU { get; set; }
-        [Required] public string Name { get; set; }
+        [Required] public string? SKU { get; set; }
+        [Required] public string? Name { get; set; }
         public LineItemType ItemType { get; set; }
         [Column(TypeName = "decimal(18,2)")] public decimal UnitPrice { get; set; }
         public bool IsActive { get; set; } = true;
@@ -23,8 +23,8 @@ namespace GlobalAcademy.Models
     {
         [Key] public Guid InvoiceId { get; set; }
         public Guid AcademyId { get; set; }
-        public string IssuedToUserId { get; set; } // Identity email/Guid string
-        public string CustomerName { get; set; }
+        public string? IssuedToUserId { get; set; } // Identity email/Guid string
+        public string? CustomerName { get; set; }
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
         public InvoiceStatus Status { get; set; } = InvoiceStatus.Unpaid;
         [Column(TypeName = "decimal(18,2)")] public decimal TotalAmount { get; set; }
@@ -38,7 +38,7 @@ namespace GlobalAcademy.Models
         [Key] public Guid LineItemId { get; set; }
         public Guid InvoiceId { get; set; }
         public Guid? CatalogItemId { get; set; } // Linked catalog reference
-        public string ItemDescription { get; set; }
+        public string? ItemDescription { get; set; }
         public int Quantity { get; set; }
         [Column(TypeName = "decimal(18,2)")] public decimal UnitPrice { get; set; }
         [Column(TypeName = "decimal(18,2)")] public decimal LineTotal => Quantity * UnitPrice;
@@ -58,7 +58,7 @@ namespace GlobalAcademy.Models
         [Required] public PreferredGateway ProcessedByGateway { get; set; } 
         
         // Stores the reference returned from the gateway (e.g., BT-xxxx or SQ-xxxx)
-        [Required] public string GatewayReferenceId { get; set; } 
+        [Required] public string? GatewayReferenceId { get; set; } 
         
         [Column(TypeName = "decimal(18,2)")] public decimal Amount { get; set; }
         public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
