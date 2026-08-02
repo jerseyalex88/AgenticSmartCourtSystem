@@ -23,6 +23,13 @@
   --font-family-heading: 'Space Grotesk', sans-serif;
   --font-family-body: 'Inter', sans-serif;
   --font-family-mono: 'JetBrains Mono', monospace;
+  
+  /* Landing Page Custom Color Palette */
+  --landing-navy: #0B1F3A;
+  --landing-neon-green: #B4FF39;
+  --landing-white: #FFFFFF;
+  --landing-dark-gray: #2E3138;
+  --landing-electric-blue: #00BFFF;
 }
 
 /* Override variables instantly when the document triggers a .dark token signature class */

@@ -1,236 +1,278 @@
-import React, { useState } from 'react';
-import PublicHeader from '../components/PublicHeader';
+import { useState, useEffect } from 'react';
 
 interface LandingPageProps {
   onNavigate: (route: string) => void;
 }
 
 export default function LandingPage({ onNavigate }: LandingPageProps) {
-  const [contactForm, setContactForm] = useState({
-    nombre: '',
-    email: '',
-    telefono: '',
-    captcha: '',
-    agree: false
-  });
+  const [currentVideo, setCurrentVideo] = useState(0);
+  const videos = ['/hero_1.mp4', '/hero_2.mp4', '/hero_3.mp4'];
 
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Contact dispatch payload:", contactForm);
-    alert("🚀 Telemetry saved! Your information has been submitted successfully.");
-  };
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentVideo((prev) => (prev + 1) % videos.length);
+    }, 5000); // Switch every 5 seconds
 
-  const campCards = [
-    {
-      id: 'full-week',
-      title: 'Full-Week Tennis Camps',
-      description: 'Tennis programs designed for adults of all levels. Immerse yourself in a week of tennis passion and improve your game.',
-      imgSrc: 'https://res.cloudinary.com/hjzvstjg/image/upload/v1784940170/pexels-holoshuriken-28625142_ljp4nz.jpg',
-      tags: ['Tennis Camps For Adults', 'Adults']
-    },
-    {
-      id: 'flexible',
-      title: 'Flexible tennis camps for adults',
-      description: 'If you need flexibility in schedules, these are the programs for you. Tailored intervals built around your active routine.',
-      imgSrc: 'https://res.cloudinary.com/hjzvstjg/image/upload/v1784940159/pexels-mutecevvil-22931875_c9gqlv.jpg',
-      tags: ['Tennis Camps For Adults', 'Adults']
-    },
-    {
-      id: 'holiday',
-      title: 'Tennis camps for adults during holiday periods',
-      description: 'Tennis programs during Christmas, Easter and summer vacations. Maximize your holiday windows with elite-level coaching tracking loops.',
-      imgSrc: 'https://res.cloudinary.com/hjzvstjg/image/upload/v1784940193/pexels-bossistudio-7339312_rely6n.jpg',
-      tags: ['Tennis Camps For Adults', 'Adults']
-    }
-  ];
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-teal-500 selection:text-slate-950 overflow-x-hidden">
+    <div className="min-h-screen bg-white" style={{ fontFamily: 'var(--font-family-body)' }}>
       
-      {/* TOP NOTIFICATION BAR RIBBON */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-slate-950 text-[11px] font-bold py-2 text-center tracking-wide uppercase px-4 relative z-50 shrink-0">
-        ✨ Last spots available! <span className="underline">15% off all our Junior summer programs.</span> Book here!
-      </div>
-
-      {/* HEADER NAVIGATION CONTAINER */}
-      <PublicHeader onNavigate={onNavigate} />
-      
-      {/* HERO SECTION MARQUEE */}
-      <section className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-900 py-20 px-6 text-center space-y-4">
-        <div className="text-[10px] font-mono font-bold tracking-widest text-slate-400 dark:text-slate-500 uppercase">
-          Home &gt; Adults &gt; Tennis Camps For Adults
-        </div>
-        <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-950 dark:text-slate-100 max-w-2xl mx-auto leading-tight">
-          Find your tennis camp for adults
-        </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xl mx-auto font-medium">
-          Enjoy a unique tennis experience to improve your game past standard operational limits.
-        </p>
-      </section>
-
-      {/* CORE CARDS GRID SECTION */}
-      <section id="camps" className="max-w-6xl mx-auto py-16 px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {campCards.map((card) => (
-            <div 
-              key={card.id} 
-              className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-xl flex flex-col justify-between group hover:border-slate-300 transition duration-300"
+      {/* HERO SECTION - Mobile First (390-430px) */}
+      <section className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+        {/* Video Carousel Background */}
+        <div className="absolute inset-0 z-0">
+          {videos.map((video, index) => (
+            <video
+              key={video}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                index === currentVideo ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{ backgroundColor: 'var(--landing-navy)' }}
             >
-              <div>
-                <div className="h-56 bg-slate-100 relative overflow-hidden">
-                  <img 
-                    src={card.imgSrc} 
-                    alt={card.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://picsum.photos/600/400`;
-                    }}
-                  />
-                </div>
-
-                <div className="p-6 space-y-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {card.tags.map((tag, i) => (
-                      <span 
-                        key={i} 
-                        className="bg-lime-400 text-slate-950 px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wide border border-lime-500/20"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <h3 className="text-base font-black text-slate-950 tracking-tight group-hover:text-emerald-600 transition">
-                    {card.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                    {card.description}
-                  </p>
-                </div>
-              </div>
-
-              <div className="px-6 pb-6 pt-2 flex justify-end">
-                <button 
-                  onClick={() => onNavigate('register')}
-                  className="w-8 h-8 rounded-full bg-teal-400 text-slate-950 font-black text-lg flex items-center justify-center transition hover:bg-teal-300 active:scale-95 shadow-md shadow-teal-400/20"
-                  title="Inquire details"
-                >
-                  +
-                </button>
-              </div>
-            </div>
+              <source src={video} type="video/mp4" />
+            </video>
           ))}
+          {/* Navy overlay for text readability */}
+          <div className="absolute inset-0 bg-black/50" style={{ backgroundColor: 'rgba(11, 31, 58, 0.7)' }}></div>
+        </div>
+
+        <div className="relative z-10 max-w-md mx-auto text-center space-y-6 py-20">
+          <img 
+            src="/logo_dark.png" 
+            alt="Academy Logo" 
+            className="h-32 mx-auto mb-4"
+          />
+          <div className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--landing-neon-green)' }}>
+            Elite Tennis Academy
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white leading-tight">
+            Train with purpose.
+            <br />
+            <span style={{ color: 'var(--landing-neon-green)' }}>Compete with confidence.</span>
+          </h1>
+          <p className="text-sm md:text-base text-gray-300 max-w-sm mx-auto leading-relaxed">
+            Develop confident, disciplined, and high-performing tennis players through innovative coaching and purposeful training.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <button 
+              onClick={() => onNavigate('register')}
+              className="px-8 py-4 font-black uppercase tracking-wider text-sm transition hover:opacity-90"
+              style={{ 
+                backgroundColor: 'var(--landing-electric-blue)', 
+                color: 'white' 
+              }}
+            >
+              Start Your Journey
+            </button>
+            <button 
+              className="px-8 py-4 font-black uppercase tracking-wider text-sm border-2 transition hover:bg-white/10"
+              style={{ 
+                borderColor: 'var(--landing-neon-green)', 
+                color: 'var(--landing-neon-green)' 
+              }}
+            >
+              Explore Programs
+            </button>
+          </div>
         </div>
       </section>
-      {/* DEEP NAVY FORM SECTION PANEL */}
-      <section id="contact" className="max-w-6xl mx-auto pb-20 px-6">
-        <div className="bg-slate-950 border border-slate-900 rounded-3xl p-8 lg:p-12 shadow-2xl text-slate-300 relative overflow-hidden grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
-          
-          <div className="absolute inset-0 opacity-5 pointer-events-none font-black text-8xl uppercase tracking-tighter text-slate-400 select-none p-4">
-            Get In Touch
+
+      {/* PROGRAMS SECTION */}
+      <section className="py-20 px-4" style={{ backgroundColor: 'var(--landing-white)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12 space-y-4">
+            <img 
+              src="/logo_light.png" 
+              alt="Academy Logo" 
+              className="h-24 mx-auto mb-4"
+            />
+            <div className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--landing-navy)' }}>
+              Our Programs
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight" style={{ color: 'var(--landing-navy)' }}>
+              Programs for Every Level
+            </h2>
+            <p className="text-sm md:text-base max-w-2xl mx-auto" style={{ color: 'var(--landing-dark-gray)' }}>
+              From beginners to elite competitors, our programs are designed to unlock your full potential on and off the court.
+            </p>
           </div>
 
-          <div className="lg:col-span-2 space-y-4 relative z-10 hidden sm:block">
-            <div className="h-64 lg:h-80 bg-slate-900 rounded-2xl overflow-hidden border border-slate-800">
-              <img 
-                src="https://res.cloudinary.com/hjzvstjg/image/upload/v1784940180/pexels-rdne-8224677_m2cjv4.jpg" 
-                alt="Academy Players" 
-                className="w-full h-full object-cover opacity-80"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://picsum.photos/600/400`;
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                title: 'Junior Development',
+                description: 'Build strong foundations for young players aged 6-17 with focus on technique, discipline, and character.',
+                level: 'Ages 6-17'
+              },
+              {
+                title: 'Adult Training',
+                description: 'Elevate your game with intensive training programs designed for players of all skill levels.',
+                level: 'All Levels'
+              },
+              {
+                title: 'Elite Performance',
+                description: 'For competitive players seeking to reach their highest potential through advanced coaching and competition.',
+                level: 'Advanced'
+              }
+            ].map((program, index) => (
+              <div 
+                key={index}
+                className="p-6 border-2 hover:shadow-xl transition"
+                style={{ 
+                  borderColor: 'var(--landing-navy)',
+                  backgroundColor: 'white'
                 }}
-              />
+              >
+                <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--landing-neon-green)' }}>
+                  {program.level}
+                </div>
+                <h3 className="text-xl font-black mb-3" style={{ color: 'var(--landing-navy)' }}>
+                  {program.title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--landing-dark-gray)' }}>
+                  {program.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* COACHES SECTION */}
+      <section className="py-20 px-4" style={{ backgroundColor: 'var(--landing-dark-gray)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12 space-y-4">
+            <div className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--landing-neon-green)' }}>
+              Our Team
             </div>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white">
+              World-Class Coaching
+            </h2>
+            <p className="text-sm md:text-base max-w-2xl mx-auto text-gray-400">
+              Learn from experienced coaches who have developed champions at every level of the game.
+            </p>
           </div>
 
-          <div className="lg:col-span-3 space-y-6 relative z-10 font-mono text-xs">
-            <div>
-              <h3 className="text-lg font-black text-slate-100 uppercase tracking-wider font-sans">Contact us</h3>
-              <p className="text-[11px] text-slate-500 font-sans mt-0.5">Let's make something happen. Fill out the operational parameters below:</p>
-            </div>
-
-            <form onSubmit={handleContactSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block font-bold text-slate-400 uppercase text-[10px] tracking-wider">Nombre</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={contactForm.nombre}
-                    onChange={(e) => setContactForm({...contactForm, nombre: e.target.value})}
-                    placeholder="Introduzca su nombre" 
-                    className="w-full bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-sans text-xs" 
-                  />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: 'Head Coach',
+                specialty: 'Technical Development',
+                experience: '15+ Years'
+              },
+              {
+                name: 'Performance Director',
+                specialty: 'Mental Conditioning',
+                experience: '20+ Years'
+              },
+              {
+                name: 'Youth Director',
+                specialty: 'Junior Development',
+                experience: '12+ Years'
+              }
+            ].map((coach, index) => (
+              <div 
+                key={index}
+                className="text-center space-y-4"
+              >
+                <div className="w-32 h-32 mx-auto rounded-full flex items-center justify-center text-4xl" 
+                     style={{ 
+                       backgroundColor: 'var(--landing-navy)',
+                       color: 'var(--landing-neon-green)' 
+                     }}>
+                  👤
                 </div>
-                <div className="space-y-1">
-                  <label className="block font-bold text-slate-400 uppercase text-[10px] tracking-wider">Email</label>
-                  <input 
-                    type="email" 
-                    required
-                    value={contactForm.email}
-                    onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                    placeholder="Déjanos su correo electrónico aquí..." 
-                    className="w-full bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-sans text-xs" 
-                  />
+                <div>
+                  <h3 className="text-lg font-black text-white">{coach.name}</h3>
+                  <div className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color: 'var(--landing-neon-green)' }}>
+                    {coach.specialty}
+                  </div>
+                  <div className="text-sm text-gray-400 mt-1">{coach.experience}</div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block font-bold text-slate-400 uppercase text-[10px] tracking-wider">Teléfono</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={contactForm.telefono}
-                    onChange={(e) => setContactForm({...contactForm, telefono: e.target.value})}
-                    placeholder="Tu número de teléfono es..." 
-                    className="w-full bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-sans text-xs" 
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block font-bold text-slate-400 uppercase text-[10px] tracking-wider">Captcha</label>
-                  <div className="flex gap-2">
-                    <div className="bg-slate-900 border border-slate-800 px-3 rounded-xl flex items-center justify-center font-bold tracking-widest text-slate-400 text-xs italic select-none line-through decoration-slate-700">
-                      ndVAdZ
-                    </div>
-                    <input 
-                      type="text" 
-                      required
-                      value={contactForm.captcha}
-                      onChange={(e) => setContactForm({...contactForm, captcha: e.target.value})}
-                      placeholder="Introducir código captcha" 
-                      className="w-full bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-sans text-xs" 
-                    />
+      {/* TESTIMONIALS SECTION */}
+      <section className="py-20 px-4" style={{ backgroundColor: 'var(--landing-white)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12 space-y-4">
+            <div className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--landing-navy)' }}>
+              Success Stories
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight" style={{ color: 'var(--landing-navy)' }}>
+              What Our Athletes Say
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[
+              {
+                quote: "The academy transformed my game. The coaches pushed me beyond what I thought was possible, and I'm now competing at a level I never dreamed of.",
+                author: 'Elite Player',
+                level: 'National Champion'
+              },
+              {
+                quote: "My son has grown not just as a player but as a person. The discipline and confidence he's gained here will serve him for life.",
+                author: 'Parent',
+                level: 'Junior Program'
+              }
+            ].map((testimonial, index) => (
+              <div 
+                key={index}
+                className="p-8 border-l-4"
+                style={{ 
+                  borderColor: 'var(--landing-neon-green)',
+                  backgroundColor: 'var(--landing-dark-gray)'
+                }}
+              >
+                <p className="text-white text-sm md:text-base leading-relaxed mb-6 italic">
+                  "{testimonial.quote}"
+                </p>
+                <div>
+                  <div className="font-bold text-white">{testimonial.author}</div>
+                  <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--landing-neon-green)' }}>
+                    {testimonial.level}
                   </div>
                 </div>
               </div>
-
-              <div className="flex items-start space-x-2 pt-2">
-                <input 
-                  type="checkbox" 
-                  id="agree" 
-                  required
-                  checked={contactForm.agree}
-                  onChange={(e) => setContactForm({...contactForm, agree: e.target.checked})}
-                  className="mt-0.5 accent-emerald-500 cursor-pointer" 
-                />
-                <label htmlFor="agree" className="text-[10px] text-slate-400 font-sans leading-normal cursor-pointer select-none">
-                  I agree to receive commercial communications and understand and accept the <span className="text-teal-400 underline cursor-pointer">privacy policy</span>.
-                </label>
-              </div>
-
-              <div className="pt-2">
-                <button 
-                  type="submit"
-                  className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black font-sans uppercase tracking-wider px-5 py-3 rounded-xl text-xs transition duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-emerald-400/10 active:scale-[0.99]"
-                >
-                  <span>Quiero recibir información</span>
-                  <span className="text-[10px]">🚀</span>
-                </button>
-              </div>
-            </form>
+            ))}
           </div>
+        </div>
+      </section>
 
+      {/* CTA SECTION */}
+      <section className="py-20 px-4 text-center" style={{ backgroundColor: 'var(--landing-navy)' }}>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white">
+            Ready to Transform Your Game?
+          </h2>
+          <p className="text-gray-300 text-sm md:text-base">
+            Join the academy that develops champions. Start your journey today.
+          </p>
+          <button 
+            onClick={() => onNavigate('register')}
+            className="px-10 py-4 font-black uppercase tracking-wider text-sm transition hover:opacity-90"
+            style={{ 
+              backgroundColor: 'var(--landing-neon-green)', 
+              color: 'var(--landing-navy)' 
+            }}
+          >
+            Get Started Now
+          </button>
+          <img 
+            src="/logo_dark.png" 
+            alt="Academy Logo" 
+            className="h-64 mx-auto mb-8"
+          />
         </div>
       </section>
 
