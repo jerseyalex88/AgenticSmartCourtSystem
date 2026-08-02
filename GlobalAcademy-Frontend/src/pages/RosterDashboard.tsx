@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
+import { useAlert } from '../context/AlertContext';
 
 interface Branch {
   id: string;
@@ -36,6 +37,7 @@ export default function RosterDashboard() {
   
   const [loading, setLoading] = useState<boolean>(true);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { showAlert } = useAlert();
 
   // Modal Dialog Open/Close Triggers
   const [showAssignUserModal, setShowAssignUserModal] = useState<boolean>(false);
@@ -136,15 +138,38 @@ export default function RosterDashboard() {
     }
   };
 
-  const handleRemoveUserFromBranch = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to remove this user from the location roster? All specific court clearances will be permanently purged.')) return;
-    try {
-      setActionError(null);
-      await apiClient.delete(`/Facility/branches/${selectedBranchId}/remove-user/${userId}`);
-      setRoster(roster.filter(m => m.userId !== userId));
-    } catch (err) {
-      setActionError('Removal Failure: Unable to clear user from branch roster.');
-    }
+  const handleRemoveUserFromBranch = (userId: string) => {
+    showAlert({
+      title: 'Remove User Roster?',
+      message: `Are you sure you want to remove this user from the location roster? All specific court clearances will be permanently removed.`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          // 1. Dispatch the request to your newly compiled, reversal-hardened backend route
+          await apiClient.delete(`/Facility/branches/${selectedBranchId}/remove-user/${userId}`);
+          
+          setRoster(roster.filter(m => m.userId !== userId));
+
+          showAlert({ 
+            title: 'User Roster Released Cleanly', 
+            message: "User has been removed from the location roster.",
+            type: 'success' 
+          });
+
+        } catch (err: any) {
+          // 5. Extract specific business rule failures (e.g., your 24-hour player lockout rule text string)
+          const serverErrorMessage = err.response?.data 
+            || err.response?.data?.message 
+            || 'Removal Failure: Unable to clear user from branch roster.';
+
+          showAlert({ 
+            title: 'Error', 
+            message: serverErrorMessage, // ◄--- Renders "Cancellation Locked: Less than 24 hours..." accurately
+            type: 'error' 
+          });
+        }
+      }
+    });
   };
 
   const handleOpenClearanceModal = (userId: string) => {
@@ -266,7 +291,7 @@ export default function RosterDashboard() {
 
       {/* OVERLAY DIALOGS: ADD STAFF TO LOCATION NODE */}
       {showAssignUserModal && (
-        <div className="fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-400/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl">
             <h3 className="text-base font-black text-slate-900">Assign Staff Member to Venue</h3>
             <form onSubmit={handleAssignUserToBranch} className="space-y-3 text-xs">
@@ -293,7 +318,7 @@ export default function RosterDashboard() {
 
       {/* OVERLAY DIALOGS: ADD SPECIFIC COURT PERMISSION */}
       {showCourtClearanceModal && (
-        <div className="fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-400/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl">
             <h3 className="text-base font-black text-slate-900">Grant Granular Court Task Clearance</h3>
             <form onSubmit={handleAddCourtClearance} className="space-y-3 text-xs">

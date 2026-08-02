@@ -229,29 +229,29 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
   };
 
   return (
-    <div className="p-6 bg-slate-900 text-white rounded-xl border border-slate-700 shadow-xl max-w-md mx-auto">
-      <h3 className="text-xl font-bold tracking-tight mb-2">Secure Academy Checkout</h3>
+    <div className="p-6 bg-white text-slate-800 border border-slate-300 shadow-xl max-w-md mx-auto">
+      <h3 className="text-xl font-bold tracking-tight mb-2 text-slate-900">Secure Academy Checkout</h3>
       
       {/* Invoice Details Card Context Panel */}
-      <div className="bg-slate-800 p-3 rounded-lg mb-4 border border-slate-600 text-xs">
-        <span className="text-slate-400 block uppercase tracking-wider mb-1">Invoice Target</span>
-        <span className="font-mono text-emerald-400 font-bold break-all block mb-2">{invoiceId}</span>
-        <div className="flex justify-between items-center pt-2 border-t border-slate-700">
-          <span className="text-sm font-semibold">Total Balance Due:</span>
-          <span className="text-lg font-black text-white">${totalAmount.toFixed(2)}</span>
+      <div className="bg-slate-100 p-3 mb-4 border border-slate-300 text-xs">
+        <span className="text-slate-600 block uppercase tracking-wider mb-1">Invoice Target</span>
+        <span className="font-mono text-emerald-600 font-bold break-all block mb-2">{invoiceId}</span>
+        <div className="flex justify-between items-center pt-2 border-t border-slate-300">
+          <span className="text-sm font-semibold text-slate-700">Total Balance Due:</span>
+          <span className="text-lg font-black text-slate-900">${totalAmount.toFixed(2)}</span>
         </div>
       </div>
 
       {/* Discrete Payment Category Selector Tabs */}
-      <div className="grid grid-cols-2 gap-2 mb-4 bg-slate-950 p-1 rounded border border-slate-800">
+      <div className="grid grid-cols-2 gap-2 mb-4 bg-slate-200 p-1 border border-slate-300">
         <button
           type="button"
           onClick={() => { 
             setPaymentChoice('CreditCard'); 
             setStatusMsg(''); // FIX: Wipe previous error/status strings on tab swap
           }}
-          className={`py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${
-            paymentChoice === 'CreditCard' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+          className={`py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+            paymentChoice === 'CreditCard' ? 'bg-purple-600 text-white shadow' : 'text-slate-600 hover:text-slate-800'
           }`}
         >
           💳 Credit Card
@@ -262,8 +262,8 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
             setPaymentChoice('PayPal'); 
             setStatusMsg(''); // FIX: Wipe previous error/status strings on tab swap
           }}
-          className={`py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${
-            paymentChoice === 'PayPal' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+          className={`py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+            paymentChoice === 'PayPal' ? 'bg-purple-600 text-white shadow' : 'text-slate-600 hover:text-slate-800'
           }`}
         >
           🌐 PayPal Balance
@@ -273,24 +273,24 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
       {/* Target Forms Area */}
       <form onSubmit={handlePaymentSubmit} className="space-y-4">
         {paymentChoice === 'CreditCard' ? (
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 min-h-[100px] block opacity-100 transform-none">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+          <div className="bg-white p-4 border border-slate-300 min-h-[100px] block opacity-100 transform-none">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2">
               Secure Credit Card Details
             </label>
             
             {/* FIXED DISPLAY HOOK: Bind the ref handle and remove string lookup dependencies */}
             <div 
               ref={squareContainerRef}
-              className="py-2 px-1 bg-slate-900 border border-slate-700/50 rounded-lg min-h-[44px]"
+              className="py-2 px-1 bg-white border border-slate-300 min-h-[44px]"
               style={{ minHeight: '44px', width: '100%', display: 'block' }}
             >
-              <span className="text-[10px] font-mono text-slate-500 animate-pulse pl-1 block">
+              <span className="text-[10px] font-sans text-slate-500 animate-pulse pl-1 block">
                 🔐 Instantiating secure encryption fields...
               </span>
             </div>
           </div>
         ) : (
-          <div className="bg-slate-950 p-2 rounded border border-slate-800">
+          <div className="bg-white p-2 border border-slate-300">
             {/* Braintree mounts its secure Smart PayPal buttons container here */}
             <div ref={braintreeContainerRef}></div>
           </div>
@@ -299,14 +299,14 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
         <button 
           type="submit" 
           disabled={loading}
-          className="w-full font-bold uppercase text-xs tracking-widest bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-white p-3 rounded transition-colors duration-200"
+          className="w-full font-bold uppercase text-xs tracking-widest bg-purple-600 hover:bg-purple-500 disabled:bg-slate-300 text-white p-3 transition-colors duration-200"
         >
           {loading ? 'Authorizing Funds...' : 'Settle Invoice Balancing'}
         </button>
       </form>
 
       {statusMsg && (
-        <div className="mt-4 p-3 rounded bg-slate-950 border border-slate-800 text-xs font-medium text-center text-slate-300">
+        <div className="mt-4 p-3 bg-slate-100 border border-slate-300 text-xs font-medium text-center text-slate-700">
           {statusMsg}
         </div>
       )}

@@ -155,17 +155,6 @@ export default function CourtsDashboard() {
     }
   };
 
-  const dnu_handleDeleteCourt = async (courtId: string) => {
-    if (!window.confirm('Are you absolutely sure you want to decouple and delete this physical court asset?')) return;
-    try {
-      setActionError(null);
-      await apiClient.delete(`/Facility/courts/${courtId}`);
-      setCourts(courts.filter(c => c.id !== courtId));
-    } catch (err: any) {
-      setActionError('Purge Failure: Unable to remove target court array position.');
-    }
-  };
-
     // FIX: Instead of blocking the thread with window.confirm, open the custom overlay modal
   const handleTriggerPurgeModal = (courtId: string) => {
     setCourtToDeleteId(courtId);
@@ -179,7 +168,7 @@ export default function CourtsDashboard() {
       setCourts(courts.filter(c => c.id !== courtToDeleteId));
       setCourtToDeleteId(null); // Close modal cleanly
     } catch (err: any) {
-      setActionError('Purge Failure: Unable to remove target court array position.');
+      setActionError('Decommission Failure: Unable to remove target court array position.');
     }
   };
 
@@ -354,7 +343,7 @@ export default function CourtsDashboard() {
           MODALS REGION OVERLAYS (DEPLOY NEW BRANCH OVERLAY INCLUDED FOR COMPLIANCE)
           ========================================================================= */}
       {showBranchModal && (
-        <div className="fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-400/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl">
             <h3 className="text-base font-black text-slate-900">Deploy Location Branch Venue</h3>
             <form onSubmit={handleCreateBranch} className="space-y-3 text-xs">
@@ -384,7 +373,7 @@ export default function CourtsDashboard() {
       )}
 
       {showCourtModal && (
-        <div className="fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-400/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl">
             <h3 className="text-base font-black text-slate-900">Provision Court Asset Framework</h3>
             <form onSubmit={handleCreateCourt} className="space-y-3 text-xs">
@@ -427,7 +416,7 @@ export default function CourtsDashboard() {
           MODAL INTERFACES: CUSTOM HIGH-UTILITY CONFIRM PURGE OVERLAY
           ========================================================================= */}
       {courtToDeleteId && (
-        <div className="fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-slate-400/50 flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white border border-slate-300 max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
             
             <div className="inline-flex items-center justify-center h-12 w-12 bg-rose-100 border border-rose-300 text-rose-600 text-xl shadow-inner">
@@ -435,7 +424,7 @@ export default function CourtsDashboard() {
             </div>
             
             <div className="space-y-1">
-              <h3 className="text-base font-black text-slate-900 tracking-tight">Purge Physical Court Asset</h3>
+              <h3 className="text-base font-black text-slate-900 tracking-tight">Decommission Physical Court Asset</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Are you absolutely sure you want to decouple this asset? This action will permanently remove this court and all historical scheduling logs from the PostgreSQL cluster database.
               </p>
@@ -447,7 +436,7 @@ export default function CourtsDashboard() {
                 onClick={handleExecutePurgeAction} 
                 className="w-full bg-rose-600 hover:bg-rose-500 text-white p-2.5 rounded-xl transition shadow-lg shadow-rose-950/20"
               >
-                Yes, Purge Infrastructure Asset Permanent
+                Yes, Decommission Infrastructure Asset Permanent
               </button>
               <button 
                 type="button" 

@@ -456,7 +456,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       </button>
 
       {isCheckoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 transition-opacity duration-200">
           <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-150 text-sans">
             
             {/* Native Close Button Anchor Node */}

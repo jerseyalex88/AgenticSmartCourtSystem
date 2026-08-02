@@ -77,7 +77,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                   'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
                 }`}
               >
-                {activeAlert.onConfirm ? 'Confirm Action' : 'Dismiss Output'}
+                {activeAlert.onConfirm ? 'Confirm Action' : 'Close'}
               </button>
             </div>
 

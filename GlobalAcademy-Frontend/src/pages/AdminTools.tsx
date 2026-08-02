@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
 
 interface IdentityUser {
   id: string;
@@ -23,6 +24,7 @@ export default function AdminTools() {
   // Active form triggers tracking creation vs editing workflows
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const { showAlert } = useAlert();
 
   // Input states matching your backend C# identity attributes
   const [createUserPayload, setCreateUserPayload] = useState({
@@ -123,16 +125,36 @@ export default function AdminTools() {
     }
   };
 
-  const handleDeleteIdentityUser = async (userId: string, email: string) => {
-    if (!window.confirm(`Are you absolutely sure you want to delete account ${email}? All associated data rows in database will be permanently deleted.`)) return;
-    handleClearMessages();
-    try {
-      await apiClient.delete(`/Auth/users/${userId}`);
-      setUsers(users.filter(u => u.id !== userId));
-      setUiSuccessMessage(`🎉 Account ${email} permanently removed from the Identity system.`);
-    } catch (err: any) {
-      setActionError(err.response?.data || 'Delete Failure: Unable to clear user entry.');
-    }
+  const handleDeleteIdentityUser = (userId: string, email: string) => {
+    showAlert({
+      title: 'Remove User Account?',
+      message: `Are you absolutely sure you want to delete account ${email}? All associated data rows in database will be permanently deleted.`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          await apiClient.delete(`/Auth/users/${userId}`);
+          setUsers(users.filter(u => u.id !== userId));
+
+          showAlert({ 
+            title: 'User Account Deleted', 
+            message: "User account has been permanently deleted.",
+            type: 'success' 
+          });
+
+        } catch (err: any) {
+          // 5. Extract specific business rule failures (e.g., your 24-hour player lockout rule text string)
+          const serverErrorMessage = err.response?.data 
+            || err.response?.data?.message 
+            || 'Delete Failure: Unable to delete user from the system.';
+
+          showAlert({ 
+            title: 'Error', 
+            message: serverErrorMessage, // ◄--- Renders "Cancellation Locked: Less than 24 hours..." accurately
+            type: 'error' 
+          });
+        }
+      }
+    });
   };
 
   // compile the filtered results based on search query values
@@ -270,7 +292,7 @@ export default function AdminTools() {
       )}
 
       {editingUserId && (
-        <div className={isPlayer ? "max-w-xl mx-auto bg-white border border-slate-300 p-6 shadow-2xl" : "fixed inset-0 bg-slate-400/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"}>
+        <div className={isPlayer ? "max-w-xl mx-auto bg-white border border-slate-300 p-6 shadow-2xl" : "fixed inset-0 bg-slate-400/50 flex items-center justify-center p-4 z-50"}>
           <div className={isPlayer ? "space-y-4 w-full" : "bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl"}>
             <form onSubmit={handleUpdateIdentityUser} className="space-y-4">
             <h3 className="text-base font-black text-slate-900">Modify Account Identity Profile</h3>
