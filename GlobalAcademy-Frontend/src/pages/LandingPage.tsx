@@ -39,7 +39,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </video>
           ))}
           {/* Navy overlay for text readability */}
-          <div className="absolute inset-0 bg-black/50" style={{ backgroundColor: 'rgba(11, 31, 58, 0.7)' }}></div>
+          <div className="absolute inset-0 bg-black/50" style={{ backgroundColor: 'rgba(11, 31, 58, 0.3)' }}></div>
         </div>
 
         <div className="relative z-10 max-w-md mx-auto text-center space-y-6 py-20">
