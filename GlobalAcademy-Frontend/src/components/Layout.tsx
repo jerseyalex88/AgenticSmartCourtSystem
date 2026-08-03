@@ -200,7 +200,12 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0 h-screen">
         <div className="p-5 space-y-6 overflow-y-auto">
           <div className="flex items-center space-x-3 px-1">
-            <span className="text-xl bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20 text-emerald-400">🎾</span>
+            {/* <span className="text-xl bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20 text-emerald-400">🎾</span> */}
+            <img 
+              src="/HF_emblem_light.png" 
+              alt="Academy Emblem" 
+              className="h-10 w-10"
+            />
             <div>
               <h2 className="text-sm font-black tracking-wide text-slate-800 dark:text-slate-200 uppercase">Smart Court OS</h2>
               <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">v4.0.0 // Connected</p>

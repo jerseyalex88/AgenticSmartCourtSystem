@@ -90,7 +90,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             <img 
               src="/logo_light.png" 
               alt="Academy Logo" 
-              className="h-24 mx-auto mb-4"
+              className="h-32 mx-auto mb-4"
             />
             <div className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--landing-navy)' }}>
               Our Programs
@@ -258,16 +258,28 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           <p className="text-gray-300 text-sm md:text-base">
             Join the academy that develops champions. Start your journey today.
           </p>
-          <button 
-            onClick={() => onNavigate('register')}
-            className="px-10 py-4 font-black uppercase tracking-wider text-sm transition hover:opacity-90"
-            style={{ 
-              backgroundColor: 'var(--landing-neon-green)', 
-              color: 'var(--landing-navy)' 
-            }}
-          >
-            Get Started Now
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+              onClick={() => onNavigate('register')}
+              className="px-10 py-4 font-black uppercase tracking-wider text-sm transition hover:opacity-90"
+              style={{ 
+                backgroundColor: 'var(--landing-neon-green)', 
+                color: 'var(--landing-navy)' 
+              }}
+            >
+              Get Started Now
+            </button>
+            <button 
+              onClick={() => onNavigate('login')}
+              className="px-10 py-4 font-black uppercase tracking-wider text-sm border-2 transition hover:bg-white/10"
+              style={{ 
+                borderColor: 'var(--landing-electric-blue)', 
+                color: 'var(--landing-electric-blue)' 
+              }}
+            >
+              Sign In
+            </button>
+          </div>
           <img 
             src="/logo_dark.png" 
             alt="Academy Logo" 
