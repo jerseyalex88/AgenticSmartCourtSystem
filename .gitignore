@@ -503,3 +503,8 @@ obj/
 *.sln.docstates
 .vs/
 appsettings.Development.json
+
+# Ignore local environment credential settings
+**/appsettings.json
+**/appsettings.Development.json
+**/appsettings.Production.json
