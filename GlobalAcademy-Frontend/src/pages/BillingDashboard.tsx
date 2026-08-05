@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
+import { useAuth } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
 
 interface InvoiceLineItem {
   itemDescription: string;
@@ -24,6 +26,8 @@ interface BillingStatement {
   totalAmount: number;
   lineItems: InvoiceLineItem[];
   receipts: TransactionReceipt[];
+  bookingStartTimeUtc: string;
+  isExpired: boolean;
 }
 
 export default function BillingDashboard(){
@@ -35,6 +39,16 @@ export default function BillingDashboard(){
   const squareCardInstance = React.useRef<any>(null);
   const [squareLoading, setSquareLoading] = useState(false);
   const [squareStatusMsg, setSquareStatusMsg] = useState('');
+
+  const { user: loggedInUser } = useAuth(); 
+  const isDirector = loggedInUser?.role === 'AcademyDirector' || loggedInUser?.role === 'GlobalAdmin';
+  const [refundLoadingId, setRefundLoadingId] = useState<string | null>(null);
+  const { showAlert } = useAlert();
+
+  // States to track loading actions and house the active document JSON manifest data
+  const [statementData, setStatementData] = useState<any | null>(null);
+  const [loadingStatementId, setLoadingStatementId] = useState<string | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState<boolean>(false);
 
   // Dynamically compute the total sum of all outstanding unpaid invoice values
   const unpaidInvoicesList = statements.filter(inv => inv.status === 'Unpaid');
@@ -193,6 +207,118 @@ export default function BillingDashboard(){
     }
   };
 
+  const handleDirectorRefund = async (invoiceId: string) => {
+    showAlert({
+      title: 'Refund Booking?',
+      message: `Are you absolutely sure you want to authorize this transaction reversal? Funds will return to the player's account profile.`,
+      type: 'success',
+      onConfirm: async () => {
+        try {
+          setRefundLoadingId(invoiceId);
+          await apiClient.post(`/Checkout/director-refund/${invoiceId}`);
+
+          showAlert({
+            title: 'Refund Successful',
+            message: 'Refund successfully completed!',
+            type: 'success'
+          });
+          await fetchStatements();
+        } catch (err: any) {
+          const errMsg = `❌ Refund Blocked: ${err.response?.data?.message || err.response?.data || 'Execution failure.'}`;
+          showAlert({ title: 'Refund Intercepted', message: errMsg, type: 'error' });
+        }
+        finally {
+          setRefundLoadingId(null);
+        }
+      }
+    });
+  };
+
+  const handleLoadAndPrintStatement = async (invoiceId: string) => {
+    setLoadingStatementId(invoiceId);
+    try {
+      const response = await apiClient.get(`/Checkout/statement-manifest/${invoiceId}`);
+      setStatementData(response.data);
+      setShowPrintModal(true);
+    } catch (err) {
+      alert("Failed to compile consolidated statement transaction logs.");
+    } finally {
+      setLoadingStatementId(null);
+    }
+  };
+
+    // =========================================================================
+  // FIXED NATIVE PRINT HANDLER: ELIMINATES DOCUMENT.WRITE JS DELIVR WARNINGS
+  // =========================================================================
+  const executeNativePrint = () => {
+    const printContent = document.getElementById("printable-statement-canvas");
+    const windowUrl = 'HFTA-Statement-Print-Preview.html';
+    const uniqueName = new Date().getTime();
+    const printWindow = window.open(windowUrl, uniqueName.toString(), 'left=50,top=50,width=900,height=900');
+    
+    if (printWindow && printContent) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Statement Receipt</title>
+            <style>
+              /* Embedded Native CSS: 100% Offline Compatible & Fast Rendering */
+              body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #1e293b; background: white; line-height: 1.5; }
+              .text-right { text-align: right; }
+              .text-center { text-align: center; }
+              .flex { display: flex; }
+              .justify-between { justify-content: space-between; }
+              .items-start { align-items: flex-start; }
+              .items-center { align-items: center; }
+              .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+              .border-b-2 { border-bottom: 2px solid #0f172a; }
+              .border-b { border-bottom: 1px solid #e2e8f0; }
+              .border { border: 1px solid #e2e8f0; border-radius: 8px; }
+              .pb-4 { padding-bottom: 16px; }
+              .pb-1.5 { padding-bottom: 6px; }
+              .p-4 { padding: 16px; }
+              .p-8 { padding: 32px; }
+              .mb-2.5 { margin-bottom: 10px; }
+              .mt-1 { margin-top: 4px; }
+              .space-y-4 > * + * { margin-top: 16px; }
+              .space-y-6 > * + * { margin-top: 24px; }
+              .w-full { width: 100%; }
+              .max-w-xs { max-w: 240px; }
+              .bg-slate-50 { background-color: #f8fafc; }
+              .font-mono { font-family: monospace; font-size: 12px; }
+              .font-bold { font-weight: 700; }
+              .font-black { font-weight: 900; }
+              .uppercase { text-transform: uppercase; }
+              .tracking-tight { letter-spacing: -0.05em; }
+              .text-xs { font-size: 12px; }
+              .text-sm { font-size: 14px; }
+              .text-xl { font-size: 20px; }
+              .text-slate-500 { color: #64748b; }
+              .text-slate-800 { color: #1e293b; }
+              .text-emerald-600 { color: #059669; }
+              .rounded { border-radius: 4px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+              th { padding: 4px 0; color: #64748b; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; }
+              td { padding: 6px 0; font-size: 12px; }
+              @media print { 
+                body { padding: 0; background: white; color: black; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            ${printContent.innerHTML}
+            <script>
+              window.onload = function() { window.print(); window.close(); };
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="text-xs font-mono text-indigo-400 p-4 animate-pulse">
@@ -286,9 +412,31 @@ export default function BillingDashboard(){
                         {inv.invoiceId}
                       </td>
                       <td className="p-4">
+                        <div className="flex items-center justify-end pt-2 space-x-2">
                         <span className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wide ${getStatusBadgeStyle(inv.status)}`}>
                           {inv.status}
                         </span>
+                        <button
+                          type="button"
+                          disabled={loadingStatementId === inv.invoiceId}
+                          onClick={() => handleLoadAndPrintStatement(inv.invoiceId)}
+                          className="text-[11px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white px-2 py-0.5 rounded transition flex items-center gap-1 active:scale-95 disabled:opacity-40"
+                          title="View invoice document"
+                        >
+                          {loadingStatementId === inv.invoiceId ? '⏳ ...' : '📄'}
+                        </button>
+                        {/* INSERT THIS DIRECTLY IN THE TABLE ROW ACTIONS COLUMN CELL */}
+                        {isDirector && inv.status === 'Paid' && !inv.isExpired && (
+                          <button
+                            type="button"
+                            disabled={refundLoadingId === inv.invoiceId}
+                            onClick={() => handleDirectorRefund(inv.invoiceId)}
+                            className="rounded borderbg-purple-600 hover:bg-purple-500 text-black text-[10px] font-bold uppercase tracking-wide hover:bg-rose-600 hover:text-white transition disabled:opacity-50 active:scale-95"
+                          >
+                            {refundLoadingId === inv.invoiceId ? 'Reversing...' : '↩️ Refund'}
+                          </button>
+                        )}
+                        </div>
                       </td>
                       <td className="p-4 text-right font-sans font-black text-slate-900">
                         ${inv.totalAmount.toFixed(2)}
@@ -407,6 +555,130 @@ export default function BillingDashboard(){
               {squareStatusMsg}
             </div>
           )}
+        </div>
+      )}
+
+      {/* TONED PRINT PREVIEW BACKDROP OVERLAY CANVA LAYER */}
+      {showPrintModal && statementData && (
+        <div className="fixed inset-0 bg-slate-500/50 flex items-start justify-center p-4 z-50 overflow-y-auto">
+          <div 
+            style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }} 
+            className="max-w-5xl w-full p-6 space-y-6 shadow-2xl rounded-2xl block relative mt-24 mb-16"
+          >
+            
+            {/* Modal Top Actions Navigation Bar Header */}
+            <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #334155' }} className="flex justify-between items-center pb-4 border-b border-slate-800 w-full">
+              <h3 className="text-sm font-black text-slate-200 uppercase tracking-wider font-mono">
+                Receipt Statement Archive Preview
+              </h3>
+              <div style={{ display: 'flex', gap: '8px' }} className="flex gap-2">
+                <button 
+                  type="button"
+                  onClick={executeNativePrint} 
+                  style={{ backgroundColor: '#059669', color: '#020617', cursor: 'pointer' }}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl transition shadow active:scale-95 whitespace-nowrap"
+                >
+                  🖨️ Save as PDF / Print
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowPrintModal(false)} 
+                  style={{ backgroundColor: '#020617', color: '#94a3b8', cursor: 'pointer', border: '1px solid #334155' }}
+                  className="bg-slate-950 hover:bg-slate-800 text-slate-400 text-xs px-4 py-2.5 rounded-xl transition border border-slate-800 active:scale-95"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {/* PRINT DOM TARGET CANVAS (High-contrast receipt layout styling wrapper) */}
+            <div id="printable-statement-canvas" className="bg-white text-slate-900 p-8 rounded-xl space-y-6 border border-slate-200 font-sans shadow-inner">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: '16px', borderBottom: '2px solid #0f172a' }}>
+            
+                {/* Left Cluster: Logo & Company Name Side-by-Side + Subtitle Below */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  
+                  {/* Inline Flex Row grouping Logo and Title text directly together */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img src="/logo_light.png" alt="Academy Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+                    <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '-0.05em', color: '#0f172a' }}>
+                      High Frequency Tennis Academy
+                    </h1>
+                  </div>
+                  
+                  {/* Subtitle baseline description prints cleanly underneath */}
+                  <p style={{ margin: 0, paddingLeft: '48px', fontSize: '12px', color: '#64748b', fontFamily: 'monospace' }}>
+                    SaaS Operating Infrastructure Hub
+                  </p>
+                </div>
+
+                {/* Right Cluster: Securely balanced to match the height profile of the left side */}
+                <div style={{ textAlign: 'right', fontFamily: 'monospace', fontSize: '11px', color: '#64748b', lineHeight: '1.6', paddingTop: '4px' }}>
+                  <div>Date: {new Date(statementData.dateProcessedUtc).toLocaleDateString()}</div>
+                  <div>Receipt Log: {statementData.gatewayReferenceId}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 text-xs border-b border-slate-100 pb-4 gap-4">
+                <div>
+                  <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Statement Issued To</span>
+                  <span className="font-bold text-slate-800 text-sm">👤 {statementData.customerName}</span>
+                </div>
+                <div className="text-right">
+                  <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Payment Processing Method</span>
+                  <span className="font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase">{statementData.paymentMethodDisplay}</span>
+                </div>
+              </div>
+
+              {/* Core Table Looping Matrix Layer */}
+              <div className="space-y-4">
+                {statementData.invoices.map((inv: any, idx: number) => (
+                  <div key={inv.invoiceId} className="border border-slate-100 rounded-lg p-4 bg-slate-50/50">
+                    <div className="flex justify-between items-center border-b border-slate-200/60 pb-1.5 mb-2.5">
+                      <span className="text-[10px] font-mono font-bold text-slate-400">Invoice #{idx + 1} ({inv.invoiceId.substring(0,8)})</span>
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>{inv.status}</span>
+                    </div>
+                    
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                          <th className="py-1">Line Description</th>
+                          <th className="py-1 text-center">Qty</th>
+                          <th className="py-1 text-right">Unit Price</th>
+                          <th className="py-1 text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-mono text-[11px] text-slate-700">
+                        {inv.lineItems.map((li: any, lIdx: number) => (
+                          <tr key={lIdx}>
+                            <td className="py-1.5 font-sans text-slate-800">{li.itemDescription}</td>
+                            <td className="py-1.5 text-center">{li.quantity}</td>
+                            <td className="py-1.5 text-right">${li.unitPrice.toFixed(2)}</td>
+                            <td className="py-1.5 text-right font-bold text-slate-900">${li.lineTotal.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+
+              {/* Grand Aggregate Total Display Footer Box */}
+              <div className="flex justify-end pt-2">
+                <div className="w-full max-w-[240px] border-t-2 border-slate-900 pt-3 text-right space-y-1">
+                  <div className="flex justify-between text-xs text-slate-500 font-mono">
+                    <span>Aggregated Subtotal:</span>
+                    <span>${statementData.grandTotalAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-black text-slate-900 border-t border-slate-100 pt-1">
+                    <span>GRAND TOTAL PAID:</span>
+                    <span className="font-mono text-emerald-600">${statementData.grandTotalAmount.toFixed(2)} CAD</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
 

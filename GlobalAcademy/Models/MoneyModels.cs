@@ -30,7 +30,9 @@ namespace GlobalAcademy.Models
         [Column(TypeName = "decimal(18,2)")] public decimal TotalAmount { get; set; }
         
         public ICollection<InvoiceLineItem> LineItems { get; set; } = new List<InvoiceLineItem>();
-        public ICollection<LedgerTransaction> Transactions { get; set; } = new List<LedgerTransaction>();
+        public Guid? AssociatedTransactionId { get; set; }
+        public LedgerTransaction? AssociatedTransaction { get; set; }
+        // public ICollection<LedgerTransaction> Transactions { get; set; } = new List<LedgerTransaction>();
     }
 
     public class InvoiceLineItem
@@ -50,7 +52,7 @@ namespace GlobalAcademy.Models
     {
         [Key] public Guid TransactionId { get; set; }
         public Guid AcademyId { get; set; } // Firewall rule boundary
-        public Guid InvoiceId { get; set; }
+        // public Guid InvoiceId { get; set; }
         
         // Tracks the payment type choice (CreditCard, Cash, Crypto)
         public PaymentMethod Method { get; set; } 

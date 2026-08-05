@@ -76,6 +76,12 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<LedgerTransaction>()
             .Property(p => p.Amount)
             .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.AssociatedTransaction)
+                .WithMany() // A transaction can be mapped to many invoices, but has no inverse list collection
+                .HasForeignKey(i => i.AssociatedTransactionId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevents accidental cascading purges of audit ledger data
     }
     private System.Linq.Expressions.LambdaExpression ConvertFilterExpression(Type type)
     {

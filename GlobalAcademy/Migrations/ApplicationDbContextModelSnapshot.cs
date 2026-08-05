@@ -212,6 +212,9 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("AcademyId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AssociatedTransactionId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -229,6 +232,8 @@ namespace GlobalAcademy.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("InvoiceId");
+
+                    b.HasIndex("AssociatedTransactionId");
 
                     b.ToTable("Invoices");
                 });
@@ -282,9 +287,6 @@ namespace GlobalAcademy.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("InvoiceId")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("IsSuccess")
                         .HasColumnType("boolean");
 
@@ -298,8 +300,6 @@ namespace GlobalAcademy.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("TransactionId");
-
-                    b.HasIndex("InvoiceId");
 
                     b.ToTable("LedgerTransactions");
                 });
@@ -716,19 +716,20 @@ namespace GlobalAcademy.Migrations
                     b.Navigation("Branch");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.Invoice", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.LedgerTransaction", "AssociatedTransaction")
+                        .WithMany()
+                        .HasForeignKey("AssociatedTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AssociatedTransaction");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.InvoiceLineItem", b =>
                 {
                     b.HasOne("GlobalAcademy.Models.Invoice", null)
                         .WithMany("LineItems")
-                        .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GlobalAcademy.Models.LedgerTransaction", b =>
-                {
-                    b.HasOne("GlobalAcademy.Models.Invoice", null)
-                        .WithMany("Transactions")
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -807,8 +808,6 @@ namespace GlobalAcademy.Migrations
             modelBuilder.Entity("GlobalAcademy.Models.Invoice", b =>
                 {
                     b.Navigation("LineItems");
-
-                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("GlobalAcademy.Models.UserBranch", b =>

@@ -301,7 +301,7 @@ export const CheckoutPortal: React.FC<CheckoutProps> = ({ invoiceId, totalAmount
           disabled={loading}
           className="w-full font-bold uppercase text-xs tracking-widest bg-purple-600 hover:bg-purple-500 disabled:bg-slate-300 text-white p-3 transition-colors duration-200"
         >
-          {loading ? 'Authorizing Funds...' : 'Settle Invoice Balancing'}
+          {loading ? 'Authorizing Funds...' : 'PAY NOW'}
         </button>
       </form>
 

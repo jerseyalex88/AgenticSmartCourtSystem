@@ -75,7 +75,7 @@ public class CheckoutController : ControllerBase
 
         return Ok(new { success = true, referenceId = result.ReferenceId });
     }
-    
+
     [HttpGet("my-statements")]
     public async Task<IActionResult> GetMyBillingStatements()
     {
@@ -87,7 +87,6 @@ public class CheckoutController : ControllerBase
 
         if (string.IsNullOrEmpty(currentUserName))
         {
-            // Fallback: Check standard default name mapping keys if the array elements shuffle
             currentUserName = HttpContext.User.Identity?.Name;
         }
 
@@ -100,7 +99,6 @@ public class CheckoutController : ControllerBase
             .FirstOrDefault(c => c.Type.Contains("nameidentifier") || c.Type == "sub" || c.Type == "nameid")?.Value;
         Guid issuedToUserIdGuid = Guid.Empty;
         
-        // Safely parse the extracted token string value into a valid structural Guid token type
         if (!string.IsNullOrEmpty(userIdClaimString) && Guid.TryParse(userIdClaimString, out Guid parsedGuid))
         {
             issuedToUserIdGuid = parsedGuid;
@@ -110,7 +108,7 @@ public class CheckoutController : ControllerBase
             return Unauthorized(new { Message = "Security Obstacle: User identity claim string (id) was not detected inside the active session token." });
         }
         
-        var isDirector = User.IsInRole("AcademyDirector");
+        var isDirector = User.IsInRole("AcademyDirector") || User.IsInRole("GlobalAdmin");
 
         var query = _dbContext.Invoices.Where(i => i.AcademyId == currentAcademyId);
 
@@ -120,16 +118,16 @@ public class CheckoutController : ControllerBase
             query = query.Where(i => i.IssuedToUserId == issuedToUserIdGuid.ToString());
         }
 
-        // 2. Execute optimal projected query mapping directly from physical PostgreSQL tables
+                // 2. Execute optimal projected query mapping directly from physical PostgreSQL tables
         var statements = await query
             .Include(i => i.LineItems)
-            .Include(i => i.Transactions)
+            .Include(i => i.AssociatedTransaction)
             .OrderByDescending(i => i.CreatedAtUtc)
             .Select(i => new BillingStatementDto(
                 i.CustomerName,
                 i.InvoiceId,
                 i.CreatedAtUtc,
-                i.Status.ToString(), // Converts enum to clean display text string
+                i.Status.ToString(), 
                 i.TotalAmount,
                 i.LineItems.Select(li => new InvoiceLineItemDto(
                     li.ItemDescription,
@@ -137,18 +135,39 @@ public class CheckoutController : ControllerBase
                     li.UnitPrice,
                     li.LineTotal
                 )).ToList(),
-                i.Transactions.Select(t => new TransactionReceiptDto(
-                    t.ProcessedByGateway,
-                    t.GatewayReferenceId,
-                    t.Amount,
-                    t.TimestampUtc,
-                    t.IsSuccess
-                )).ToList()
+                
+                // =========================================================================
+                // FIXED TRANSACTION RECEIPT ARRAY PROJECTION
+                // =========================================================================
+                // Generates a type-safe single-item list or an empty list if the invoice is unpaid
+                i.AssociatedTransaction != null && i.AssociatedTransaction.IsSuccess
+                    ? new List<TransactionReceiptDto>
+                      {
+                          new TransactionReceiptDto(
+                              i.AssociatedTransaction.ProcessedByGateway,
+                              i.AssociatedTransaction.GatewayReferenceId,
+                              i.AssociatedTransaction.Amount,
+                              i.AssociatedTransaction.TimestampUtc,
+                              i.AssociatedTransaction.IsSuccess
+                          )
+                      }
+                    : new List<TransactionReceiptDto>(),
+
+                // Subquery Reversal Telemetry Extractions remain completely untouched
+                _dbContext.Bookings
+                    .Where(b => _dbContext.InvoiceLineItems.Any(li => li.InvoiceId == i.InvoiceId && li.AssociatedBookingId == b.Id))
+                    .Select(b => (DateTime?)b.StartTimeUtc)
+                    .FirstOrDefault(),
+
+                _dbContext.Bookings
+                    .Any(b => _dbContext.InvoiceLineItems.Any(li => li.InvoiceId == i.InvoiceId && li.AssociatedBookingId == b.Id) 
+                           && b.StartTimeUtc < DateTime.UtcNow)
             ))
             .ToListAsync();
 
         return Ok(statements);
-    }    
+
+    }
     
     /// <summary>
     /// GET api/Checkout/braintree-token
@@ -177,6 +196,98 @@ public class CheckoutController : ControllerBase
             return StatusCode(500, new { success = false, message = $"Failed to synchronize handshake context with gateway server. {ex.Message}" });
         }
     }
+        /// <summary>
+    /// POST api/Checkout/director-refund/{invoiceId}
+    /// Secure Director-Only terminal pipeline to issue gateway reverse charges.
+    /// </summary>
+    [HttpPost("director-refund/{invoiceId}")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")] // ◄--- HIGH SECURITY ENDPOINT FIREWALL
+    public async Task<IActionResult> IssueDirectorRefund(Guid invoiceId)
+    {
+        // 1. Isolate the strict multi-tenant claim token parameters
+        var academyIdClaim = User.FindFirst("AcademyId")?.Value;
+        if (string.IsNullOrEmpty(academyIdClaim) || !Guid.TryParse(academyIdClaim, out var academyId))
+        {
+            return BadRequest(new { success = false, message = "Access Denied: Missing multi-tenant partition context keys." });
+        }
+
+        // 2. Dispatch down into your newly designed chronological guard service node loop
+        var result = await _checkoutService.ExecuteDirectorRefundAsync(academyId, invoiceId);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { success = false, message = result.ErrorMessage });
+        }
+
+        return Ok(new { 
+            success = true, 
+            message = $"Success! Invoice balance sheet updated and gateway reversal completed.",
+            referenceId = result.ReferenceId 
+        });
+    }
+    /// <summary>
+    /// GET api/Checkout/statement-manifest/{invoiceId}
+    /// Harvests all invoices matching a shared transaction group to print a unified statement.
+    /// </summary>
+    [HttpGet("statement-manifest/{invoiceId}")]
+    [Authorize]
+    public async Task<IActionResult> GetStatementManifest(Guid invoiceId)
+    {
+        var currentAcademyId = _tenantProvider.GetTenantId();
+
+        // 1. Locate the anchor invoice under multi-tenant constraints
+        var anchorInvoice = await _dbContext.Invoices
+            .Include(i => i.AssociatedTransaction)
+            .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId && i.AcademyId == currentAcademyId);
+
+        if (anchorInvoice == null) return NotFound("Target statement data could not be located.");
+
+        List<Invoice> targetInvoices;
+
+        // 2. POLYMORPHIC TRACK: If paid & grouped, gather all sister invoices sharing the Transaction ID
+        if (anchorInvoice.AssociatedTransactionId != null)
+        {
+            targetInvoices = await _dbContext.Invoices
+                .Include(i => i.LineItems)
+                .Where(i => i.AssociatedTransactionId == anchorInvoice.AssociatedTransactionId && i.AcademyId == currentAcademyId)
+                .ToListAsync();
+        }
+        else
+        {
+            // If Unpaid, it stands alone as a single isolated document layout list
+            await _dbContext.Entry(anchorInvoice).Collection(i => i.LineItems).LoadAsync();
+            targetInvoices = new List<Invoice> { anchorInvoice };
+        }
+
+        // 3. Assemble unified ledger payment details strings
+        string referenceId = anchorInvoice.AssociatedTransaction?.GatewayReferenceId ?? "PENDING-DUE";
+        string methodDisplay = anchorInvoice.AssociatedTransaction?.Method.ToString() ?? "None / Unsettled";
+        DateTime processedDate = anchorInvoice.AssociatedTransaction?.TimestampUtc ?? anchorInvoice.CreatedAtUtc;
+        decimal grandTotal = targetInvoices.Sum(i => i.TotalAmount);
+
+        var payload = new ConsolidatedStatementDto(
+            CustomerName: anchorInvoice.CustomerName,
+            GatewayReferenceId: referenceId,
+            PaymentMethodDisplay: methodDisplay,
+            DateProcessedUtc: processedDate,
+            GrandTotalAmount: grandTotal,
+            Invoices: targetInvoices.Select(inv => new StatementInvoiceDetailsDto(
+                InvoiceId: inv.InvoiceId,
+                CreatedAtUtc: inv.CreatedAtUtc,
+                Status: inv.Status.ToString(),
+                TotalAmount: inv.TotalAmount,
+                LineItems: inv.LineItems.Select(li => new InvoiceLineItemDto(
+                    li.ItemDescription,
+                    li.Quantity,
+                    li.UnitPrice,
+                    li.LineTotal
+                )).ToList()
+            )).ToList()
+        );
+
+        return Ok(payload);
+    }
+
 }
 
 public record InvoiceLineItemDto(
@@ -193,7 +304,6 @@ public record TransactionReceiptDto(
     DateTime TimestampUtc,
     bool IsSuccess
 );
-
 public record BillingStatementDto(
     string? CustomerName,
     Guid InvoiceId,
@@ -201,5 +311,23 @@ public record BillingStatementDto(
     string Status,
     decimal TotalAmount,
     List<InvoiceLineItemDto> LineItems,
-    List<TransactionReceiptDto> Receipts
+    List<TransactionReceiptDto> Transactions,
+    DateTime? BookingStartTimeUtc,
+    bool IsExpired
+);
+public record ConsolidatedStatementDto(
+    string CustomerName,
+    string GatewayReferenceId,
+    string PaymentMethodDisplay,
+    DateTime DateProcessedUtc,
+    decimal GrandTotalAmount,
+    List<StatementInvoiceDetailsDto> Invoices
+);
+
+public record StatementInvoiceDetailsDto(
+    Guid InvoiceId,
+    DateTime CreatedAtUtc,
+    string Status,
+    decimal TotalAmount,
+    List<InvoiceLineItemDto> LineItems
 );
