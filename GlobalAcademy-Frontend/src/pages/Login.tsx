@@ -59,25 +59,25 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
             activeAuthMode={authMode} 
             onSetAuthMode={(mode) => setAuthMode(mode)} 
           />
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
-      <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-md border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md bg-white border border-gray-200 p-8 shadow-lg space-y-6">
         
         {/* Core Application Logo Identity Anchor */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-black text-xl tracking-tight shadow-inner shadow-emerald-500/10">
+          <div className="inline-flex items-center justify-center h-12 w-12 bg-purple-100 border border-purple-300 text-purple-600 font-black text-xl tracking-tight">
             🎾
           </div>
-          <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">
             Global Academy Portal
           </h1>
-          <p className="text-slate-400 text-xs">
+          <p className="text-slate-500 text-xs">
             Enter enterprise credentials to unlock your multi-tenant workspace matrix.
           </p>
         </div>
 
         {/* Dynamic Context Validation Error Alert Panel */}
         {errorMessage && (
-          <div className="p-3.5 bg-rose-950/40 border border-rose-900/60 rounded-xl text-rose-300 text-xs font-medium animate-shake flex items-start space-x-2">
+          <div className="p-3.5 bg-rose-100 border border-rose-300 text-rose-700 text-xs font-medium animate-shake flex items-start space-x-2">
             <span className="pt-0.5">⚠️</span>
             <span className="flex-1 leading-normal">{errorMessage}</span>
           </div>
@@ -86,7 +86,7 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
         {/* Secure Credential Input Form Container */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
               Identity User Email Address
             </label>
             <input
@@ -96,12 +96,12 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="director@clubdomain.com"
-              className="w-full bg-slate-950/80 border border-slate-800 disabled:opacity-50 p-3 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition font-medium shadow-inner"
+              className="w-full bg-gray-50 border border-gray-300 disabled:opacity-50 p-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 transition font-medium"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
               Security Account Password
             </label>
             <input
@@ -111,7 +111,7 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full bg-slate-950/80 border border-slate-800 disabled:opacity-50 p-3 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition font-medium shadow-inner"
+              className="w-full bg-gray-50 border border-gray-300 disabled:opacity-50 p-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 transition font-medium"
             />
           </div>
 
@@ -119,10 +119,10 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed font-bold text-slate-900 p-3 rounded-xl text-sm transition shadow-xl shadow-emerald-950/20 flex items-center justify-center space-x-2"
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed font-bold text-white p-3 text-sm transition flex items-center justify-center space-x-2"
             >
               {isSubmitting ? (
-                <div className="h-4 w-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <span>Access Protected Environment Dashboard</span>
               )}
@@ -131,18 +131,18 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
         </form>
 
         <div className="text-center">
-          {/* <button type="button" onClick={() => setIsConversationalMode(true)} className="text-emerald-400 font-bold underline decoration-dotted text-[10px]">
+          {/* <button type="button" onClick={() => setIsConversationalMode(true)} className="text-purple-600 font-bold underline decoration-dotted text-[10px]">
             🤖 Open State-Machine Conversational Terminal
           </button> */}
           <button type="button" onClick={() => setIsSemanticMode(true)} 
-            className="mt-2 text-purple-400 hover:text-purple-300 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
+            className="mt-2 text-purple-600 hover:text-purple-500 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
           >
             🧠 OR, Open Agentic Conversational Interface
           </button>
         </div>
 
-        <div className="text-center pt-2 border-t border-slate-800/60">
-          <p className="text-[10px] font-mono text-slate-500 tracking-normal uppercase">
+        <div className="text-center pt-2 border-t border-gray-200">
+          <p className="text-[10px] text-slate-500 tracking-normal uppercase">
             Secured Layer // Multi-Tenant Data Firewall Enforced Natively
           </p>
         </div>

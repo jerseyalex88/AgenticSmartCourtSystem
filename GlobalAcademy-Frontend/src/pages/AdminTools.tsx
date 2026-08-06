@@ -231,9 +231,11 @@ export default function AdminTools() {
                     <span className={`h-2 w-2 inline-block rounded-full mr-1.5 ${user.isActive ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : 'bg-slate-400'}`} />
                     <span className="font-medium text-slate-700">{user.isActive ? 'Active' : 'Suspended'}</span>
                   </td>
-                  <td className="p-4 text-right space-x-2">
+                  <td className="p-4 text-left space-x-2">
                     <button onClick={() => handleBeginEditUser(user)} className="text-slate-600 hover:text-slate-800 font-bold border border-slate-300 bg-white px-2.5 py-1.5 transition">📝 Edit</button>
-                    <button onClick={() => handleDeleteIdentityUser(user.id, user.email)} className="text-slate-600 hover:text-rose-600 px-2.5 py-1.5 transition font-bold">🗑️ Delete</button>
+                    {user.role !== 'AcademyDirector' && (
+                      <button onClick={() => handleDeleteIdentityUser(user.id, user.email)} className="text-slate-600 hover:text-rose-600 px-2.5 py-1.5 transition font-bold">🗑️ Delete</button>
+                    )}
                   </td>
                 </tr>
               ))}

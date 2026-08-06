@@ -63,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Synchronize authentication context on initial component mount cycles
   useEffect(() => {
     const cachedToken = localStorage.getItem('global_academy_jwt_token');
+    // console.log(`[DEBUG] Cached JWT Token Retrieved: ${cachedToken}`);
     if (cachedToken) {
       const claims = decodeJwtClaims(cachedToken);
       if (claims.email) {

@@ -56,6 +56,12 @@ builder.Services.AddAuthentication(options => {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
+.AddCookie(IdentityConstants.ExternalScheme, options => {
+    options.Cookie.Name = "SmartCourt.Identity.External";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+})
 .AddJwtBearer(options => {
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -67,6 +73,17 @@ builder.Services.AddAuthentication(options => {
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
+})
+.AddGoogle(googleOptions => {
+    // This safely pulls from your appsettings.json structure matching the path above
+    googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"] 
+        ?? throw new InvalidOperationException("Google Client ID is missing from configurations.");
+    googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] 
+        ?? throw new InvalidOperationException("Google Client Secret is missing from configurations.");
+    
+    googleOptions.SignInScheme = IdentityConstants.ExternalScheme;
+    googleOptions.Scope.Add("email");
+    googleOptions.Scope.Add("profile");
 });
 
 builder.Services.AddAuthorization(options => {

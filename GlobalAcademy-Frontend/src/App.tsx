@@ -85,7 +85,7 @@ export default function App() {
   }
 
   // 3. PUBLIC HOMEPAGE GATEWAY: Render landing screen for unauthenticated users first
-  if (!isAuthenticated && showPublicLanding) {
+  if (!isAuthenticated && showPublicLanding && !isPlayerEntrancePath) {
     return (
       <LandingPage 
         onNavigate={(route) => {

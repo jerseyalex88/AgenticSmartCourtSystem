@@ -316,7 +316,7 @@ public record BillingStatementDto(
     bool IsExpired
 );
 public record ConsolidatedStatementDto(
-    string CustomerName,
+    string? CustomerName,
     string GatewayReferenceId,
     string PaymentMethodDisplay,
     DateTime DateProcessedUtc,

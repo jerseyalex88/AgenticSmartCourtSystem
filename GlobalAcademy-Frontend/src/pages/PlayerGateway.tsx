@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAlert } from '../context/AlertContext';
 import { apiClient } from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +28,55 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
   const queryParams = new URLSearchParams(window.location.search);
   const academyIdFromUrl = queryParams.get('academyId') || '';
 
+  // =========================================================================
+  // TARGETED ADDITION: INTERCEPT GOOGLE REDIRECT URL TOKENS & ERRORS
+  // =========================================================================
+  useEffect(() => {
+    const tokenFromUrl = queryParams.get('token');
+    const errorFromUrl = queryParams.get('error');
+
+    if (tokenFromUrl) {
+      localStorage.setItem('global_academy_jwt_token', tokenFromUrl);
+      localStorage.setItem('token', tokenFromUrl); 
+      if (typeof saveSession === 'function') {
+        saveSession(tokenFromUrl);
+        window.location.href = '/';
+      }
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 150);
+    } else if (errorFromUrl) {
+      showAlert({
+        title: 'OAuth Handshake Intercept',
+        message: errorFromUrl,
+        type: 'error'
+      });
+    }
+  }, []);
+
+  const handleGoogleAuthRedirect = () => {
+    if (!academyIdFromUrl) {
+      showAlert({
+        title: 'Missing Academy Link ID',
+        message: 'You cannot access the platform without an explicit invitation link key.',
+        type: 'error'
+      });
+      return;
+    }
+    
+    // 1. Strip down the base URL to prevent /api/api/ duplication if it exists
+    let baseApi = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7290/api';
+    baseApi = baseApi.endsWith('/api') ? baseApi.slice(0, -4) : baseApi;
+
+    // 2. Google requires HTTPS for OAuth redirect loops locally. 
+    // If your env file points to the http port (5162), swap it natively to your secure profile port (7290)
+    if (baseApi.includes('localhost:5162')) {
+      baseApi = 'https://localhost:7290';
+    }
+
+    window.location.href = `${baseApi}/api/Auth/external-login?provider=Google&academyId=${academyIdFromUrl}`;
+  };
+
   if (isSemanticMode) {
     if (authMode === 'register')
       return <SemanticRegister onSwitchBack={() => setIsSemanticMode(false)} />;
@@ -51,7 +100,7 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
       if (authMode === 'register' || initialAuthMode === 'register') {
         // OPTION 1. ROUTE PUBLIC REGISTRATION THROUGH THE PIPELINE WRAPPER
         // Match the text capitalization of your working endpoints (e.g. '/Auth/...' or '/auth/...')
-        const response = await apiClient.post('/Auth/register-player-public', {
+        await apiClient.post('/Auth/register-player-public', {
           email,
           password,
           phoneNumber,
@@ -122,18 +171,18 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
         activeAuthMode={authMode} 
         onSetAuthMode={(mode) => setAuthMode(mode)} 
       />
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 font-mono text-xs text-slate-300">
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-xs text-slate-600">
+      <div className="bg-white border border-gray-200 p-6 shadow-lg max-w-sm w-full">
         
         {/* UPPER VIEW CONSOLE STATUS */}
-        <div className="border-b border-slate-800 pb-3 mb-6 flex items-center justify-between">
+        <div className="border-b border-gray-200 pb-3 mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-black text-slate-100 uppercase tracking-wider">
+            <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider">
               {authMode === 'login' ? '🎾 Player Sign-In' : '🔐 Player Registration'}
             </h2>
-            <p className="text-slate-400 mt-1">Multi-Tenant Client Onboarding Entry</p>
+            <p className="text-slate-500 mt-1">Multi-Tenant Client Onboarding Entry</p>
           </div>
-          <span className="text-emerald-500 font-bold bg-emerald-950/40 border border-emerald-900 px-2 py-0.5 rounded text-[10px]">
+          <span className="text-purple-600 font-bold bg-purple-100 border border-purple-300 px-2 py-0.5 text-[10px]">
             {authMode === 'login' ? 'LOGIN' : 'SIGNUP'}
           </span>
         </div>
@@ -141,25 +190,25 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
         {/* INTERACTIVE FORM ENGINE */}
         <form onSubmit={handleAuthSubmit} className="space-y-4">
           <div>
-            <label className="block text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-1">Email Account Address</label>
+            <label className="block text-slate-600 font-bold uppercase tracking-wider text-[10px] mb-1">Email Account Address</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-slate-700 transition"
+              className="w-full bg-gray-50 border border-gray-300 p-2 text-slate-900 focus:outline-none focus:border-purple-500 transition"
               placeholder="player@tennis.com"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-1">Secure Password String</label>
+            <label className="block text-slate-600 font-bold uppercase tracking-wider text-[10px] mb-1">Secure Password String</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-slate-700 transition"
+              className="w-full bg-gray-50 border border-gray-300 p-2 text-slate-900 focus:outline-none focus:border-purple-500 transition"
               placeholder="••••••••••••"
             />
           </div>
@@ -167,13 +216,13 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
           {/* DYNAMIC FIELD CONDITIONAL INTERCEPT: Only capture digits during registration loops */}
           {authMode === 'register' && (
             <div className="animate-fade-in">
-              <label className="block text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-1">Phone Number (For SMS Dispatches)</label>
+              <label className="block text-slate-600 font-bold uppercase tracking-wider text-[10px] mb-1">Phone Number (For SMS Dispatches)</label>
               <input
                 type="tel"
                 required
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-slate-700 transition"
+                className="w-full bg-gray-50 border border-gray-300 p-2 text-slate-900 focus:outline-none focus:border-purple-500 transition"
                 placeholder="+15550123456"
               />
             </div>
@@ -182,31 +231,54 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
           <button
             type="submit"
             disabled={loading}
-            className={`w-full mt-2 font-bold py-2 px-4 rounded-lg uppercase tracking-wider transition ${
-              loading ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            className={`w-full mt-2 font-bold py-2 px-4 uppercase tracking-wider transition ${
+              loading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-500 text-white'
             }`}
           >
             {loading ? 'Processing Protocol...' : authMode === 'login' ? '🔐 Authorize Sign-In' : '🚀 Submit Profile'}
           </button>
         </form>
 
+        {/* =========================================================================
+            TARGETED ADDITION: DECOUPLED SOCIAL FEDERATED IDENTITY PROVIDER ENGINE
+           ========================================================================= */}
+        <div className="relative flex py-4 items-center">
+          <div className="flex-grow border-t border-gray-200"></div>
+          <span className="flex-shrink mx-3 text-gray-400 font-black tracking-widest text-[9px] uppercase">OR CONNECT IDENTITY</span>
+          <div className="flex-grow border-t border-gray-200"></div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleAuthRedirect}
+          className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-slate-700 font-black py-2 px-4 uppercase tracking-wider text-[10px] transition shadow-xs cursor-pointer"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+            <path fill="#EA4335" d="M12 5.04c1.62 0 3.08.56 4.22 1.65l3.15-3.15C17.45 1.68 14.93 1 12 1 7.35 1 3.39 3.67 1.39 7.56l3.74 2.9C6.01 7.22 8.79 5.04 12 5.04z"/>
+            <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.28 1.48-1.12 2.74-2.38 3.58l3.7 2.87c2.16-1.99 3.41-4.92 3.41-8.6z"/>
+            <path fill="#FBBC05" d="M5.13 14.74c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29L1.39 7.56C.5 9.34 0 11.32 0 13.4s.5 4.06 1.39 5.84l3.74-2.5z"/>
+            <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.7-2.87c-1.03.69-2.35 1.11-4.26 1.11-3.21 0-5.99-2.18-6.87-5.42l-3.74 2.9C3.39 20.33 7.35 23 12 23z"/>
+          </svg>
+          Continue with Google Profile
+        </button>
+
         <div className="mt-6 text-center">
           <button type="button" onClick={() => setIsSemanticMode(true)} 
-            className="mt-2 text-purple-400 hover:text-purple-300 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
+            className="mt-2 text-purple-600 hover:text-purple-500 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
           >
             🧠 OR, Open Agentic Conversational Interface
           </button>
         </div>
 
         {/* DUAL MODE SELECTION TOGGLE SLIDER ANCHOR */}
-        <div className="mt-6 border-t border-slate-800 pt-4 text-center">
+        <div className="mt-6 border-t border-gray-200 pt-4 text-center">
           <p className="text-slate-500 text-[11px]">
             {authMode === 'login' ? "Don't have an academy account profile yet?" : "Already registered inside this tenant database?"}
           </p>
           <button
             type="button"
             onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-            className="mt-2 text-emerald-400 hover:text-emerald-300 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
+            className="mt-2 text-purple-600 hover:text-purple-500 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
           >
             {authMode === 'login' ? '⚡ Switch to Registration Form' : '🔐 Switch to Secure Login Panel'}
           </button>

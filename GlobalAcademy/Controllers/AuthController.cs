@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication;
 
 namespace GlobalAcademy.Controllers;
 
@@ -36,6 +37,139 @@ public class AuthController : ControllerBase
         _tenantProvider = tenantProvider;
         _dbContext = dbContext; // <-- Assigned here
     }    
+
+    // =========================================================================
+    // TARGETED ADDITION: INITIATE GOOGLE CHALLENGE MATRIX
+    // =========================================================================
+    [HttpGet("external-login")]
+    [AllowAnonymous]
+    public IActionResult ExternalLogin([FromQuery] string provider, [FromQuery] string academyId)
+    {
+        if (string.IsNullOrEmpty(academyId))
+        {
+            return BadRequest("Multi-tenant organization boundary context parameter is required.");
+        }
+
+         var redirectUrl = Url.Action("ExternalLoginCallback", "Auth");
+        //var redirectUrl = "https://localhost:7290/api/Auth/external-login-callback";
+        var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+        
+        // Safely package multi-tenant key in Google's secure round-trip state payload
+        properties.Items["state"] = academyId;
+        properties.Items["LoginProvider"] = provider;
+
+        return Challenge(properties, provider);
+    }
+
+    // =========================================================================
+    // TARGETED ADDITION: OAUTH CALLBACK PROCESSING AND AUTO-PROVISIONING
+    // =========================================================================
+    [HttpGet("external-login-callback")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ExternalLoginCallback()
+    {
+        var frontendUrl = _configuration["AllowedOrigins:0"] ?? "http://localhost:5173";
+
+        // Read transient security payload flags from incoming scheme cookies
+        var authResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+        if (!authResult.Succeeded)
+        {
+            return Redirect($"{frontendUrl}/player-gateway?error=Google authentication handshake aborted or failed.");
+        }
+
+        var email = authResult.Principal.FindFirstValue(ClaimTypes.Email);
+        var academyId = authResult.Properties.Items.ContainsKey("state") ? authResult.Properties.Items["state"] : null;
+
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(academyId) || !Guid.TryParse(academyId, out Guid academyGuid))
+        {
+            return Redirect($"{frontendUrl}/player-gateway?error=Multi-tenant identity boundaries or tracking configurations are corrupted.");
+        }
+
+        // Verify the targeted academy isolation partition block exists in the database
+        var academyExists = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(_dbContext.Academies, a => a.Id == academyGuid);
+        if (!academyExists)
+        {
+            return Redirect($"{frontendUrl}/player-gateway?error=Referenced tenant academy system branch does not exist.");
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            // PROVISION EXPLICIT NEW PLAYER ROW
+            user = new IdentityUser
+            {
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(user);
+            if (!createResult.Succeeded)
+            {
+                return Redirect($"{frontendUrl}/player-gateway?error=Identity failure: Failed to construct baseline user framework.");
+            }
+
+            await _userManager.AddToRoleAsync(user, "Player");
+            await _userManager.AddClaimAsync(user, new Claim("AcademyId", academyGuid.ToString()));
+            await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, "Player"));
+        }
+        else
+        {
+            // SECURITY GUARD: Verify returning player matches current URL isolation context
+            var claimsList = await _userManager.GetClaimsAsync(user);
+            var userAcademyClaim = claimsList.FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value;
+
+            if (userAcademyClaim != academyId)
+            {
+                return Redirect($"{frontendUrl}/player-gateway?error=Security Violation: Identity registration collision found outside target tenant parameters.");
+            }
+        }
+
+        // COMPILE SYSTEM CRYPTOGRAPHIC TOKEN PASSPORT
+        var userRoles = await _userManager.GetRolesAsync(user);
+        var liveClaims = await _userManager.GetClaimsAsync(user);
+
+        var authClaims = new List<Claim>
+        {
+            new Claim("http://xmlsoap.org", user.UserName!),
+            new Claim("jti", Guid.NewGuid().ToString()),
+            new Claim("nameidentifier", user.Id),
+            new Claim("email", user.Email!),
+            new Claim("username", user.UserName!)
+        };
+
+        foreach (var claim in liveClaims)
+        {
+            if (claim.Type != ClaimTypes.Role && claim.Type != "role") authClaims.Add(claim);
+        }
+
+        foreach (var userRole in userRoles)
+        {
+            authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+        }
+
+        var academy = _dbContext.Academies.FirstOrDefault(a => a.Id == academyGuid);
+        authClaims.Add(new Claim("academyName", academy?.Name ?? "Unknown Academy"));
+
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]!));
+
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings["Issuer"],
+            audience: jwtSettings["Audience"],
+            expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryInMinutes"]!)),
+            claims: authClaims,
+            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+        );
+
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+        // Terminate transient login tracking cookies cleanly
+        await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
+        // Pass authenticated token passport back down to React SPA context safely
+        return Redirect($"{frontendUrl}/player-gateway?token={tokenString}");
+    }
 
     [HttpPost("register-academy")]
     public async Task<IActionResult> RegisterAcademy([FromBody] RegisterAcademyDto model)

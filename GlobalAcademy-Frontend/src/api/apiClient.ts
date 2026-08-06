@@ -20,7 +20,7 @@ apiClient.interceptors.request.use(
   (config) => {
     // Pull the active identity token out of local browser storage
     const token = localStorage.getItem('global_academy_jwt_token');
-    
+    // console.log(`[DEBUG] Interceptor Injecting Token: ${token}`);
     if (token && config.headers) {
       // Clean injection forces your backend query filters to identify the tenant owner automatically
       config.headers.Authorization = `Bearer ${token}`;

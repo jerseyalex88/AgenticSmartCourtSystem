@@ -484,7 +484,11 @@ $RECYCLE.BIN/
 # --- NODE WEB ENGINE BYPASSES ---
 node_modules/
 dist/
+# Enforce environment blockades
+.env
 .env.local
+.env.development
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local
