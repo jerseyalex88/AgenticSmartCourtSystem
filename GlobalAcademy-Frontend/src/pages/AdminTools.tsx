@@ -15,7 +15,7 @@ interface IdentityUser {
 export default function AdminTools() {
   const { user: loggedInUser } = useAuth();
   const isPlayer = loggedInUser?.role === 'Player';
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState<boolean>(true);
   const [actionError, setActionError] = useState<string | null>(null);
