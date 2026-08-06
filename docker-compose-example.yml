@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # =========================================================================
+  # 1. DATABASE ENGINE SERVICE CONTAINER
+  # =========================================================================
+  smartcourt_db:
+    image: postgres:16-alpine
+    container_name: ec_postgres_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: SmartCourtDb
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    volumes:
+      - smartcourt_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d SmartCourtDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =========================================================================
+  # 2. BACKEND WEB API SERVICE CONTAINER
+  # =========================================================================
+  smartcourt_api:
+    build:
+      context: ./GlobalAcademy
+      dockerfile: Dockerfile
+    container_name: ec_backend_api
+    restart: always
+    ports:
+      - "7290:8080" # Maps port 7290 on your Mac to port 8080 inside the container
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - AllowedHosts=*
+      # Connects directly to the database container using its network name
+      - ConnectionStrings__DefaultConnection=Host=smartcourt_db;Port=5432;Database=SmartCourtDb;Username=postgres_user;Password=your_password;
+      - JwtSettings__Secret=your_super_secret_jwt_key
+      - JwtSettings__Issuer=your_jwt_issuer
+      - JwtSettings__Audience=your_jwt_audience
+      - JwtSettings__ExpiryInMinutes=60
+      # INJECT GOOGLE OAUTH SECURITY PARAMS DIRECTLY INTO DESKTOP CONTEXT ENV
+      - Authentication__Google__ClientId=YOUR_ACTUAL_GOOGLE_CLIENT_ID
+      - Authentication__Google__ClientSecret=YOUR_ACTUAL_GOOGLE_CLIENT_SECRET
+      - AllowedOrigins__0=http://localhost:5173
+      # External Provider Authentication Credentials
+      - Authentication__Google__ClientId=your_client_id
+      - Authentication__Google__ClientSecret=your_client_secret
+      - JwtSettings__Audience=GlobalAcademyApps
+      - JwtSettings__ExpiryInMinutes=60
+      # INJECT GOOGLE OAUTH SECURITY PARAMS DIRECTLY INTO DESKTOP CONTEXT ENV
+      - Authentication__Google__ClientId=YOUR_ACTUAL_GOOGLE_CLIENT_ID
+      - Authentication__Google__ClientSecret=YOUR_ACTUAL_GOOGLE_CLIENT_SECRET
+      - AllowedOrigins__0=http://localhost:5173
+      
+      # Braintree Payment Gateway Credentials
+      - PaymentGateways__Braintree__MerchantId=your_braintree_merchant_id
+      - PaymentGateways__Braintree__PublicKey=your_braintree_public_key
+      - PaymentGateways__Braintree__PrivateKey=your_braintree_private_key
+      - PaymentGateways__Braintree__Environment=Braintree.Environment.SANDBOX
+      
+      # Square Payment Gateway Credentials
+      - PaymentGateways__Square__ApplicationId=your_square_application_id
+      - PaymentGateways__Square__AccessToken=your_square_access_token
+      - PaymentGateways__Square__Environment=Square.Environment.SANDBOX
+      
+      # IoT & Hardware Webhook Tracking Keys
+      - IotSettings__WebhookSecret=your_iot_webhook_secret
+      
+      # OpenAI / Semantic Kernel Runtime Configurations
+      - AI__ModelId=gpt-5.4-mini
+      - AI__ApiKey=your_openai_api_key
+      
+      # Logging Configuration Engine Rules
+      - Logging__LogLevel__Default=Information
+      - Logging__LogLevel__Microsoft.AspNetCore=Warning
+    depends_on:
+      smartcourt_db:
+        condition: service_healthy
+
+  # =========================================================================
+  # 3. FRONTEND UI WEB CONTAINER (NGINX SPA ENGINE) - INDENTATION FIXED
+  # =========================================================================
+  smartcourt_ui:
+    build:
+      context: ./GlobalAcademy-Frontend
+      dockerfile: Dockerfile
+      # 🚀 FIXED: Indented 'args' by 2 extra spaces so it sits inside 'build'
+      args:
+        - VITE_API_BASE_URL=http://localhost:7290/api
+        - VITE_DEFAULT_ACADEMY_ID=60186569-a432-4375-9bee-485c69f086d5
+    container_name: ec_frontend_ui
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - smartcourt_api
+
+volumes:
+  smartcourt_pgdata:
+    driver: local
