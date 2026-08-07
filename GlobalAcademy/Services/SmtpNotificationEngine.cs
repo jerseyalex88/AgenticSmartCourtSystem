@@ -133,11 +133,144 @@ public class SmtpNotificationEngine : IEmailNotificationEngine
 </body>
 </html>";
 
+        // Console.WriteLine($"[DEBUG] _smtpSettings value: fromemail {_smtpSettings.FromEmail} fromname {_smtpSettings.FromName} host {_smtpSettings.Host} port {_smtpSettings.Port} username {_smtpSettings.Username} password {_smtpSettings.Password} enablessl {_smtpSettings.EnableSsl}");
+
         // 4. Construct the standard native cross-platform MailMessage package
         using var mailMessage = new MailMessage
         {
             From = new MailAddress(_smtpSettings.FromEmail, _smtpSettings.FromName),
             Subject = $"🎾 Booking Confirmation: {academyName}",
+            Body = htmlBody,
+            IsBodyHtml = true,
+            BodyEncoding = Encoding.UTF8
+        };
+        
+        mailMessage.To.Add(new MailAddress(recipientEmail, recipientName));
+
+        // 5. Initialize the atomic SMTP client configuration bridge rules
+        using var smtpClient = new SmtpClient(_smtpSettings.Host, _smtpSettings.Port)
+        {
+            Credentials = new NetworkCredential(_smtpSettings.Username, _smtpSettings.Password),
+            EnableSsl = _smtpSettings.EnableSsl
+        };
+
+        // 6. Asynchronously execute the network mail delivery pass thread
+        await smtpClient.SendMailAsync(mailMessage);
+    }
+    public async Task SendPaymentReceiptAsync(
+    string recipientEmail,
+    string recipientName,
+    Invoice invoice,
+    List<InvoiceLineItem> lineItems,
+    decimal amountPaid,
+    string transactionReference,
+    string gatewayName,
+    Guid academyId)
+    {
+        // 1. Asynchronously fetch Academy isolation parameters to safely inject branding data
+        string academyName = "Smart Court OS Partner Academy";
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var academy = await dbContext.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
+            if (academy != null)
+            {
+                academyName = academy.Name;
+            }
+        }
+
+        // 2. Build the structural table rows detailing item allocations
+        var itemsBuilder = new StringBuilder();
+        foreach (var item in lineItems)
+        {
+            itemsBuilder.Append($@"
+                <tr>
+                    <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-size: 13px; color: #334155;'>{item.ItemDescription}</td>
+                    <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-size: 13px; color: #334155; text-align: center;'>{item.Quantity}</td>
+                    <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-size: 13px; color: #1e293b; text-align: right; font-weight: bold;'>${item.UnitPrice:F2}</td>
+                </tr>");
+        }
+
+        // 3. Compile the structured, green-accented (Successful Payment) inline CSS HTML layout
+        string htmlBody = $@"
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='utf-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>Payment Receipt</title>
+    </head>
+    <body style='margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif;'>
+        <table width='100%' border='0' cellspacing='0' cellpadding='0' style='background-color: #f8fafc; padding: 24px 12px;'>
+            <tr>
+                <td align='center'>
+                    <table width='100%' max-width='600px' border='0' cellspacing='0' cellpadding='0' style='max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: left;'>
+                        <!-- Financial Accent Header Block -->
+                        <tr>
+                            <td style='background-color: #10b981; padding: 24px; text-align: center;'>
+                                <h1 style='margin: 0; font-size: 20px; font-weight: 900; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em;'>💳 {academyName}</h1>
+                                <p style='margin: 4px 0 0 0; font-size: 12px; color: #d1fae5;'>Payment Transaction Receipt</p>
+                            </td>
+                        </tr>
+                        <!-- Narrative Body Section -->
+                        <tr>
+                            <td style='padding: 24px;'>
+                                <h2 style='margin: 0 0 12px 0; font-size: 16px; font-weight: 800; color: #0f172a; text-transform: uppercase;'>Thank you for your payment!</h2>
+                                <p style='margin: 0 0 20px 0; font-size: 13px; color: #475569; line-height: 1.6;'>
+                                    Hello <strong>{recipientName}</strong>,<br>
+                                    Your electronic checkout transaction completed successfully. The associated invoice balance has been credited, and your reservation status is fully confirmed.
+                                </p>
+                                
+                                <!-- Transaction Details Block -->
+                                <div style='background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 12px; margin-bottom: 20px; font-size: 12px; color: #14532d;'>
+                                    <strong>Invoice Reference:</strong> {invoice.InvoiceId}<br>
+                                    <strong>Transaction ID:</strong> <span style='font-family: monospace;'>{transactionReference}</span><br>
+                                    <strong>Payment Method:</strong> {gatewayName}<br>
+                                    <strong>Date Settled:</strong> {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC<br>
+                                    <strong>Status:</strong> <span style='color: #166534; font-weight: bold;'>PAID / SETTLED</span>
+                                </div>
+
+                                <!-- Settled Items Table Matrix -->
+                                <table width='100%' border='0' cellspacing='0' cellpadding='0' style='margin-bottom: 24px; border-collapse: collapse;'>
+                                    <thead>
+                                        <tr style='background-color: #f8fafc;'>
+                                            <th style='padding: 10px; border-bottom: 2px solid #e2e8f0; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; text-align: left;'>Item Settled</th>
+                                            <th style='padding: 10px; border-bottom: 2px solid #e2e8f0; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; text-align: center; width: 60px;'>Qty</th>
+                                            <th style='padding: 10px; border-bottom: 2px solid #e2e8f0; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; text-align: right; width: 90px;'>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {itemsBuilder}
+                                        <tr>
+                                            <td colspan='2' style='padding: 16px 12px 12px 12px; text-align: right; font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Amount Paid:</td>
+                                            <td style='padding: 16px 12px 12px 12px; text-align: right; font-size: 16px; font-weight: 900; color: #10b981;'>${amountPaid:F2}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <!-- Footer Node Container -->
+                        <tr>
+                            <td style='background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.4;'>
+                                This transaction documentation confirms financial settlement within Smart Court OS.<br>
+                                &copy; {DateTime.UtcNow.Year} {academyName}. All entity rights reserved.
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>";
+
+        // 4. Construct and configure the native MailMessage package
+        // string cleanFromEmail = string.IsNullOrEmpty(_smtpSettings.FromEmail) ? "billing@smartcourtos.com" : _smtpSettings.FromEmail;
+        // string cleanToEmail = string.IsNullOrEmpty(recipientEmail) ? "player-billing-diagnostic@gmail.com" : recipientEmail;
+
+        using var mailMessage = new MailMessage
+        {
+            From = new MailAddress(_smtpSettings.FromEmail, _smtpSettings.FromName),
+            Subject = $"🧾 Payment Receipt: {academyName}",
             Body = htmlBody,
             IsBodyHtml = true,
             BodyEncoding = Encoding.UTF8

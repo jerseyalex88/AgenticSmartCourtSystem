@@ -391,6 +391,8 @@ public class PlayerBookingController : ControllerBase
             AssociatedBookingId = freshBooking.Id
         };
 
+        bool transactionSuccess = false;
+
         using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
             try
@@ -401,20 +403,40 @@ public class PlayerBookingController : ControllerBase
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync(); // Physical data flush straight to disk
 
-                // =========================================================================
-                // TARGETED DISPATCH ADDITION: FIRE ASYNC CONFIRMATION TRANSACTIONAL MAIL
-                // =========================================================================
-                await _emailEngine.SendCourtReservationConfirmationAsync(
-                    recipientEmail: currentUserName,
-                    recipientName: currentUserName,
-                    invoice: newInvoice,
-                    lineItems: new List<InvoiceLineItem> { lineItem },
-                    academyId: currentAcademyId);
+                transactionSuccess = true;
+
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 return StatusCode(500, $"Database collision abort: {ex.Message}");
+            }
+        }
+
+        if (transactionSuccess)
+        {
+            try
+            {
+                var userEmailClaimString = HttpContext.User.Claims
+                    .FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+
+                if (!string.IsNullOrEmpty(userEmailClaimString)) 
+                {
+                    // =========================================================================
+                    // TARGETED DISPATCH ADDITION: FIRE ASYNC CONFIRMATION TRANSACTIONAL MAIL
+                    // =========================================================================
+                    await _emailEngine.SendCourtReservationConfirmationAsync(
+                        recipientEmail: userEmailClaimString,
+                        recipientName: currentUserName,
+                        invoice: newInvoice,
+                        lineItems: new System.Collections.Generic.List<InvoiceLineItem> { lineItem },
+                        academyId: currentAcademyId);
+                }
+            }
+            catch (Exception emailEx)
+            {
+                // Log the email sending failure but do not block the booking confirmation
+                Console.WriteLine($"Email dispatch failure: {emailEx.Message} {emailEx.StackTrace} {emailEx.InnerException}");
             }
         }
 

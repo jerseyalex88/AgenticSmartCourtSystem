@@ -316,6 +316,8 @@ public class PlayerBookingPlugin
             AssociatedBookingId = newBooking.Id
         };
 
+        bool transactionSuccess = false;
+
         using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
             try
@@ -326,15 +328,7 @@ public class PlayerBookingPlugin
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                await _emailEngine.SendCourtReservationConfirmationAsync(
-                    recipientEmail: playerName,
-                    recipientName: playerName,
-                    invoice: newInvoice,
-                    lineItems: new List<InvoiceLineItem> { lineItem },
-                    academyId: academyId);
-                
-                return $"Success: Confirmed booking for {courtName} on {targetDate} at {startHour}. " +
-               $"An outstanding balance invoice has been issued. [FRONTEND_ACTION:LAUNCH_CHECKOUT:{invoiceId}:${invoicePrice.ToString("F2")}]";
+                transactionSuccess = true;
             }
             catch (Exception ex)
             {
@@ -343,8 +337,33 @@ public class PlayerBookingPlugin
             }
         }
 
+        if (transactionSuccess)
+        {
+            try
+            {
+                if (kernel.Data.TryGetValue("userEmail", out var userEmailClaimObj) && userEmailClaimObj is string userEmailClaimString)
+                {
+                    // =========================================================================
+                    // TARGETED DISPATCH ADDITION: FIRE ASYNC CONFIRMATION TRANSACTIONAL MAIL
+                    // =========================================================================
+
+                    await _emailEngine.SendCourtReservationConfirmationAsync(
+                        recipientEmail: userEmailClaimString,
+                        recipientName: playerName,
+                        invoice: newInvoice,
+                        lineItems: new List<InvoiceLineItem> { lineItem },
+                        academyId: academyId);
+                }
+            }
+            catch (Exception emailEx)
+            {
+                // Log the email sending failure but do not block the booking confirmation
+                Console.WriteLine($"Email dispatch failure: {emailEx.Message} {emailEx.StackTrace} {emailEx.InnerException}");
+            }
+        }
+
         // 9. Dispatch success string along with the unified token boundary to trigger frontend grid synchronization
-        //return $"Success! I have successfully secured your reservation for {court.Name} on {targetDate} starting at {startHour}. [FRONTEND_ACTION:SET_DATE:{targetDate}]";
+        return $"Success! I have successfully secured your reservation for {court.Name} on {targetDate} starting at {startHour}. [FRONTEND_ACTION:SET_DATE:{targetDate}]";
     }
 
     [KernelFunction, Description("Queries the database for any active open unpaid invoices belonging strictly to the currently logged in user context.")]

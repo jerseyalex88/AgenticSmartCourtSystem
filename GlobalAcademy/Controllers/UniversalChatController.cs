@@ -43,6 +43,7 @@ public class UniversalChatController : ControllerBase
             var tenantIdClaim = HttpContext.User.FindFirst("AcademyId")?.Value;
             var userRole = HttpContext.User.FindFirst(ClaimTypes.Role)?.Value ?? "Player";
             var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userEmail = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
 
             if (string.IsNullOrEmpty(currentUserName) || !Guid.TryParse(tenantIdClaim, out Guid academyGuid))
             {
@@ -136,6 +137,7 @@ public class UniversalChatController : ControllerBase
             _kernel.Data["academyId"] = academyGuid;
             _kernel.Data["userRole"] = userRole;
             _kernel.Data["userId"] = userId;
+            _kernel.Data["userEmail"] = userEmail;
 
             var agentResponseContent = await chatCompletionService.GetChatMessageContentAsync(
                 chatHistory: chatHistory,

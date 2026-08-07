@@ -5,6 +5,8 @@ namespace GlobalAcademy.Payment.Services
     using Microsoft.EntityFrameworkCore;
     using GlobalAcademy.Data;
     using GlobalAcademy.Models;
+    using Microsoft.AspNetCore.Http;
+    using GlobalAcademy.Services;
 
     public record CheckoutRequestPayload(
         Guid InvoiceId, 
@@ -37,11 +39,15 @@ namespace GlobalAcademy.Payment.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly PaymentGatewayFactory _gatewayFactory;
+        private readonly IEmailNotificationEngine _emailEngine;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CheckoutService(ApplicationDbContext context, PaymentGatewayFactory gatewayFactory)
+        public CheckoutService(ApplicationDbContext context, PaymentGatewayFactory gatewayFactory, IEmailNotificationEngine emailEngine, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _gatewayFactory = gatewayFactory;
+            _emailEngine = emailEngine;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CheckoutResult> ExecuteCheckoutAsync(Guid academyId, CheckoutRequestPayload payload)
@@ -89,10 +95,61 @@ namespace GlobalAcademy.Payment.Services
                 return new CheckoutResult(false, null, gatewayResult.ErrorMessage);
             }
 
-            // 5. Update invoice state parameters on clear gateway authorization confirmation
-            invoice.Status = InvoiceStatus.Paid;
-            invoice.AssociatedTransactionId = transactionLog.TransactionId;
-            await _context.SaveChangesAsync();
+            bool transactionSuccess = false;
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // 5. Update invoice state parameters on clear gateway authorization confirmation
+                    invoice.Status = InvoiceStatus.Paid;
+                    invoice.AssociatedTransactionId = transactionLog.TransactionId;
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    transactionSuccess = true;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return new CheckoutResult(false, null, $"Database commit exception: {ex.Message} {ex.StackTrace} {ex.InnerException}");
+                }
+            }
+
+            if (transactionSuccess)
+            {
+                try
+                {
+                    // Scrape active HTTP token contexts to pull player parameters safely
+                    var user = _httpContextAccessor.HttpContext?.User;
+                    string? userEmail = user?.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+                    string? userName = user?.Claims.FirstOrDefault(c => c.Type.Contains("username"))?.Value 
+                                    ?? user?.Identity?.Name 
+                                    ?? invoice.CustomerName ?? "Valued Player";
+
+                    if (!string.IsNullOrEmpty(userEmail))
+                    {
+                        // Fetch the line items associated with this specific invoice row canvas
+                        var lineItems = await _context.InvoiceLineItems
+                            .Where(li => li.InvoiceId == invoice.InvoiceId)
+                            .ToListAsync();
+
+                        // Dispatch the emerald green HTML statement async directly into their inbox
+                        await _emailEngine.SendPaymentReceiptAsync(
+                            recipientEmail: userEmail,
+                            recipientName: userName,
+                            invoice: invoice,
+                            lineItems: lineItems,
+                            amountPaid: invoice.TotalAmount,
+                            transactionReference: transactionLog.GatewayReferenceId,
+                            gatewayName: payload.Provider.ToString(),
+                            academyId: academyId);                
+                    }
+                }
+                catch (Exception emailEx)
+                {
+                    // Log the email dispatch failure but do not block the checkout success path
+                    Console.WriteLine($"Email dispatch failure: {emailEx.Message} {emailEx.StackTrace} {emailEx.InnerException}");
+                }
+            }
 
             return new CheckoutResult(true, gatewayResult.ReferenceId, null);
         }
@@ -146,15 +203,73 @@ namespace GlobalAcademy.Payment.Services
                 return new CheckoutResult(false, null, gatewayResult.ErrorMessage);
             }
 
-            // 6. Loop through and flip all invoice status states to Paid in memory safely
-            foreach (var inv in invoices)
+            bool transactionSuccess = false;
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                inv.Status = InvoiceStatus.Paid;
-                inv.AssociatedTransactionId = transactionLog.TransactionId;
+                try
+                {
+                    // 6. Loop through and flip all invoice status states to Paid in memory safely
+                    foreach (var inv in invoices)
+                    {
+                        inv.Status = InvoiceStatus.Paid;
+                        inv.AssociatedTransactionId = transactionLog.TransactionId;
+                    }
+
+                    // 7. Save both the single log line and multiple status changes atomically to PostgreSQL
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    transactionSuccess = true;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return new CheckoutResult(false, null, $"Database commit exception: {ex.Message} {ex.StackTrace} {ex.InnerException}");
+                }
             }
 
-            // 7. Save both the single log line and multiple status changes atomically to PostgreSQL
-            await _context.SaveChangesAsync();
+            if (transactionSuccess)
+            {
+                try
+                {
+                    var user = _httpContextAccessor.HttpContext?.User;
+                    string? userEmail = user?.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+                    string userName = user?.Claims.FirstOrDefault(c => c.Type.Contains("username"))?.Value 
+                                    ?? user?.Identity?.Name 
+                                    ?? invoices.First().CustomerName ?? "Valued Player";
+
+                    if (!string.IsNullOrEmpty(userEmail))
+                    {
+                        // Pull ALL combined line items belonging to this entire invoice list collection loop
+                        var consolidatedLineItems = await _context.InvoiceLineItems
+                            .Where(li => payload.InvoiceIds.Contains(li.InvoiceId))
+                            .ToListAsync();
+
+                        // Build a singular master visual template wrapper for the user's records
+                        var dummyMasterInvoice = new Invoice
+                        {
+                            InvoiceId = Guid.NewGuid(), // Synthesize a master layout tracking key
+                            CreatedAtUtc = DateTime.UtcNow,
+                            TotalAmount = totalConsolidatedAmount
+                        };
+
+                        await _emailEngine.SendPaymentReceiptAsync(
+                            recipientEmail: userEmail,
+                            recipientName: userName,
+                            invoice: dummyMasterInvoice,
+                            lineItems: consolidatedLineItems,
+                            amountPaid: totalConsolidatedAmount,
+                            transactionReference: transactionLog.GatewayReferenceId,
+                            gatewayName: payload.Provider.ToString(),
+                            academyId: academyId);
+                    }
+                    
+                }
+                catch (Exception emailEx)
+                {
+                    // Log the email dispatch failure but do not block the checkout success path
+                    Console.WriteLine($"Email dispatch failure: {emailEx.Message} {emailEx.StackTrace} {emailEx.InnerException}");
+                }
+            }
 
             return new CheckoutResult(true, gatewayResult.ReferenceId, null);
         }
