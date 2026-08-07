@@ -7,6 +7,7 @@ using Microsoft.SemanticKernel;
 using GlobalAcademy.Data;
 using GlobalAcademy.Context;
 using GlobalAcademy.Models;
+using GlobalAcademy.Services;
 
 namespace GlobalAcademy.Plugins;
 
@@ -14,11 +15,13 @@ public class PlayerBookingPlugin
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly PlayerBookingContext _playerBookingContext;
+    private readonly IEmailNotificationEngine _emailEngine;
 
-    public PlayerBookingPlugin(ApplicationDbContext dbContext, PlayerBookingContext playerBookingContext)
+    public PlayerBookingPlugin(ApplicationDbContext dbContext, PlayerBookingContext playerBookingContext, IEmailNotificationEngine emailEngine)
     {
         _dbContext = dbContext;
         _playerBookingContext = playerBookingContext;
+        _emailEngine = emailEngine;
     }
 
     // =========================================================================
@@ -323,6 +326,13 @@ public class PlayerBookingPlugin
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                await _emailEngine.SendCourtReservationConfirmationAsync(
+                    recipientEmail: playerName,
+                    recipientName: playerName,
+                    invoice: newInvoice,
+                    lineItems: new List<InvoiceLineItem> { lineItem },
+                    academyId: academyId);
+                
                 return $"Success: Confirmed booking for {courtName} on {targetDate} at {startHour}. " +
                $"An outstanding balance invoice has been issued. [FRONTEND_ACTION:LAUNCH_CHECKOUT:{invoiceId}:${invoicePrice.ToString("F2")}]";
             }

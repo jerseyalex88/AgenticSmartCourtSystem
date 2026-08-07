@@ -191,6 +191,12 @@ builder.Services.AddSingleton<SquareGatewayService>();
 // Register the factory engine to handle dynamic routing lookups at runtime
 builder.Services.AddSingleton<PaymentGatewayFactory>();
 
+// =========================================================================
+// REGISTER TRANSACTIONAL EMAIL NOTIFICATION SERVICES MATRIX
+// =========================================================================
+builder.Services.Configure<GlobalAcademy.Models.SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddScoped<GlobalAcademy.Services.IEmailNotificationEngine, GlobalAcademy.Services.SmtpNotificationEngine>();
+
 var app = builder.Build();
 
 // =========================================================================

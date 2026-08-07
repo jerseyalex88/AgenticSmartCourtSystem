@@ -10,6 +10,7 @@ using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using GlobalAcademy.Security;
 using GlobalAcademy.Payment.Services;
+using GlobalAcademy.Services;
 
 namespace GlobalAcademy.Controllers;
 
@@ -20,13 +21,16 @@ public class PlayerBookingController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ITenantProvider _tenantProvider;
+    private readonly IEmailNotificationEngine _emailEngine;
 
     public PlayerBookingController(
         ApplicationDbContext dbContext,
-        ITenantProvider tenantProvider)
+        ITenantProvider tenantProvider,
+        IEmailNotificationEngine emailEngine)
     {
         _dbContext = dbContext;
         _tenantProvider = tenantProvider;
+        _emailEngine = emailEngine;
     }
 
     // =========================================================================
@@ -396,6 +400,16 @@ public class PlayerBookingController : ControllerBase
                 _dbContext.InvoiceLineItems.Add(lineItem);
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync(); // Physical data flush straight to disk
+
+                // =========================================================================
+                // TARGETED DISPATCH ADDITION: FIRE ASYNC CONFIRMATION TRANSACTIONAL MAIL
+                // =========================================================================
+                await _emailEngine.SendCourtReservationConfirmationAsync(
+                    recipientEmail: currentUserName,
+                    recipientName: currentUserName,
+                    invoice: newInvoice,
+                    lineItems: new List<InvoiceLineItem> { lineItem },
+                    academyId: currentAcademyId);
             }
             catch (Exception ex)
             {
