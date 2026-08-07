@@ -288,4 +288,186 @@ public class SmtpNotificationEngine : IEmailNotificationEngine
         // 6. Asynchronously execute the network mail delivery pass thread
         await smtpClient.SendMailAsync(mailMessage);
     }
+    public async Task SendWelcomeOnboardingEmailAsync(
+    string recipientEmail,
+    string recipientName,
+    Guid academyId)
+    {
+        // 1. Asynchronously fetch Academy parameters to inject custom multi-tenant branding
+        string academyName = "Smart Court OS Partner Academy";
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var academy = await dbContext.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
+            if (academy != null)
+            {
+                academyName = academy.Name;
+            }
+        }
+
+        // 2. Compile the high-fidelity, cross-client compatible HTML layout
+        string htmlBody = $@"
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='utf-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>Welcome to the Academy</title>
+    </head>
+    <body style='margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif;'>
+        <table width='100%' border='0' cellspacing='0' cellpadding='0' style='background-color: #f8fafc; padding: 24px 12px;'>
+            <tr>
+                <td align='center'>
+                    <table width='100%' max-width='600px' border='0' cellspacing='0' cellpadding='0' style='max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: left;'>
+                        <!-- Brand Accent Header Block -->
+                        <tr>
+                            <td style='background-color: #7c3aed; padding: 32px 24px; text-align: center;'>
+                                <h1 style='margin: 0; font-size: 24px; font-weight: 900; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em;'>✨ Welcome to {academyName}</h1>
+                                <p style='margin: 6px 0 0 0; font-size: 13px; color: #ddd6fe;'>Your Player Account Passport is Active</p>
+                            </td>
+                        </tr>
+                        <!-- Core Narrative Body Section -->
+                        <tr>
+                            <td style='padding: 32px 24px;'>
+                                <h2 style='margin: 0 0 12px 0; font-size: 18px; font-weight: 800; color: #0f172a; text-transform: uppercase;'>Your Profile is Provisioned!</h2>
+                                <p style='margin: 0 0 24px 0; font-size: 14px; color: #475569; line-height: 1.6;'>
+                                    Hello <strong>{recipientName}</strong>,<br><br>
+                                    We are thrilled to welcome you to <strong>{academyName}</strong>. Your account has been securely verified and linked to our digital facility gateway interface. 
+                                </p>
+                                
+                                <p style='margin: 0 0 20px 0; font-size: 14px; color: #0f172a; font-weight: bold;'>
+                                    Here is what you can unlock right now using Smart Court OS:
+                                </p>
+
+                                <!-- Onboarding Feature Grid -->
+                                <table width='100%' border='0' cellspacing='0' cellpadding='0' style='margin-bottom: 28px;'>
+                                    <tr>
+                                        <td style='padding: 0 0 16px 0; vertical-align: top;'>
+                                            <span style='font-size: 18px; margin-right: 8px;'>📅</span>
+                                        </td>
+                                        <td style='padding: 0 0 16px 0;'>
+                                            <strong style='font-size: 13px; color: #0f172a;'>Real-Time Court Booking Matrix</strong><br>
+                                            <span style='font-size: 12px; color: #64748b;'>Instantly view court slot vacancies and claim dynamic allocations instantly.</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 0 0 16px 0; vertical-align: top;'>
+                                            <span style='font-size: 18px; margin-right: 8px;'>🤖</span>
+                                        </td>
+                                        <td style='padding: 0 0 16px 0;'>
+                                            <strong style='font-size: 13px; color: #0f172a;'>Conversational AI Assistant</strong><br>
+                                            <span style='font-size: 12px; color: #64748b;'>Chat naturally with our built-in scheduler agent to secure court times using semantic plugins.</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 0 0 16px 0; vertical-align: top;'>
+                                            <span style='font-size: 18px; margin-right: 8px;'>💳</span>
+                                        </td>
+                                        <td style='padding: 0 0 16px 0;'>
+                                            <strong style='font-size: 13px; color: #0f172a;'>Unified Financial Ledger</strong><br>
+                                            <span style='font-size: 12px; color: #64748b;'>Track statement balances, view open invoices, and settle fees via encrypted Braintree/Square checkouts.</span>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- Interactive Button Interface Link -->
+                                <table width='100%' border='0' cellspacing='0' cellpadding='0'>
+                                    <tr>
+                                        <td align='center' style='padding: 12px 0;'>
+                                            <a href='http://localhost:5173/player-gateway?academyId={academyId}' style='display: inline-block; background-color: #7c3aed; color: #ffffff; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; padding: 14px 28px; text-decoration: none; border-radius: 4px; box-shadow: 0 4px 6px rgba(124,58,237,0.25);'>Access Player Dashboard</a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <!-- System Footer Node Container -->
+                        <tr>
+                            <td style='background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.5;'>
+                                You received this email because an account was registered with your address under our tenant configuration boundaries.<br>
+                                &copy; {DateTime.UtcNow.Year} {academyName}. All entity rights reserved.
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>";
+
+        using var mailMessage = new MailMessage
+        {
+            From = new MailAddress(_smtpSettings.FromEmail, _smtpSettings.FromName),
+            Subject = $"✨ Account Activated: Welcome to {academyName}!",
+            Body = htmlBody,
+            IsBodyHtml = true,
+            BodyEncoding = Encoding.UTF8
+        };
+        
+        mailMessage.To.Add(new MailAddress(recipientEmail, recipientName));
+
+        // 5. Initialize the atomic SMTP client configuration bridge rules
+        using var smtpClient = new SmtpClient(_smtpSettings.Host, _smtpSettings.Port)
+        {
+            Credentials = new NetworkCredential(_smtpSettings.Username, _smtpSettings.Password),
+            EnableSsl = _smtpSettings.EnableSsl
+        };
+
+        // 6. Asynchronously execute the network mail delivery pass thread
+        await smtpClient.SendMailAsync(mailMessage);
+    }
+
+    public async Task DBUSendWelcomeOnboardingEmailAsync(
+        string recipientEmail,
+        string recipientName,
+        Guid academyId)
+    {
+        // 1. Asynchronously fetch Academy parameters to inject custom multi-tenant branding
+        string academyName = "Smart Court OS Partner Academy";
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var academy = await dbContext.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
+            if (academy != null)
+            {
+                academyName = academy.Name;
+            }
+        }
+
+        // 2. Compile the high-fidelity, cross-client compatible HTML layout
+            // =========================================================================
+    string htmlBody = $@"
+Test Only Email: Welcome to {academyName}!";
+
+
+        Console.WriteLine($"[DEBUG] SendWelcomeOnboardingEmailAsync - _smtpSettings value: fromemail {_smtpSettings.FromEmail} fromname {_smtpSettings.FromName} host {_smtpSettings.Host} port {_smtpSettings.Port} username {_smtpSettings.Username} password {_smtpSettings.Password} enablessl {_smtpSettings.EnableSsl} recipientEmail {recipientEmail} recipientName {recipientName} academyName {academyName}");
+        
+        try
+        {
+            using var mailMessage = new MailMessage
+            {
+                From = new MailAddress(_smtpSettings.FromEmail, _smtpSettings.FromName),
+                Subject = $"✨ Account Activated: Welcome to {academyName}!",
+                Body = htmlBody,
+                IsBodyHtml = true,
+                BodyEncoding = Encoding.UTF8
+            };
+            
+            mailMessage.To.Add(new MailAddress(recipientEmail, recipientName));
+
+            // 5. Initialize the atomic SMTP client configuration bridge rules
+            using var smtpClient = new SmtpClient(_smtpSettings.Host, _smtpSettings.Port)
+            {
+                Credentials = new NetworkCredential(_smtpSettings.Username, _smtpSettings.Password),
+                EnableSsl = _smtpSettings.EnableSsl
+            };
+
+            // 6. Asynchronously execute the network mail delivery pass thread
+            await smtpClient.SendMailAsync(mailMessage);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] SendWelcomeOnboardingEmailAsync - Exception occurred while sending email: {ex.Message} {ex.StackTrace} {ex.InnerException}");
+        }
+    }
+
 }

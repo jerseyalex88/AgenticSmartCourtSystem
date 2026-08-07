@@ -20,4 +20,8 @@ public interface IEmailNotificationEngine
         string transactionReference,
         string gatewayName,
         Guid academyId);
+    Task SendWelcomeOnboardingEmailAsync(
+        string recipientEmail,
+        string recipientName,
+        Guid academyId);
 }

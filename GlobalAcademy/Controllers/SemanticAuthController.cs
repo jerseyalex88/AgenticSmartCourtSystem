@@ -14,6 +14,7 @@ using GlobalAcademy.Data;
 using GlobalAcademy.Security;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
+using GlobalAcademy.Services;
 
 namespace GlobalAcademy.Controllers;
 
@@ -27,6 +28,7 @@ public class SemanticAuthController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly Kernel _kernel; // Underneath architecture property tracking anchor
     private readonly Data.ApplicationDbContext _dbContext;
+    private readonly IEmailNotificationEngine _emailEngine;
 
     // FIXED: Request 'Kernel' directly via Dependency Injection! 
     // This cleanly inherits your pre-configured customHttpClient and gpt-5.4-mini models!
@@ -35,13 +37,15 @@ public class SemanticAuthController : ControllerBase
         SignInManager<IdentityUser> signInManager,
         IConfiguration configuration,
         Kernel kernel,
-        Data.ApplicationDbContext dbContext) // <-- INJECT THE PRE-CONFIGURED KERNEL ENGINE AND DB CONTEXT RIGHT HERE
+        Data.ApplicationDbContext dbContext,
+        IEmailNotificationEngine emailEngine)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _configuration = configuration;
         _kernel = kernel; // Lock it straight to your central program configurations
         _dbContext = dbContext; // Inject the database context for multi-tenant isolation
+        _emailEngine = emailEngine; // Inject the email notification engine
     }
 
     [HttpPost("ai/conversational-auth")]
@@ -197,6 +201,18 @@ public class SemanticAuthController : ControllerBase
                 await _userManager.AddToRoleAsync(freshUser, "Player");
                 await _userManager.AddClaimAsync(freshUser, new Claim("AcademyId", academyGuid.ToString()));
                 await _userManager.AddClaimAsync(freshUser, new Claim(ClaimTypes.Role, "Player"));
+
+                // =========================================================================
+                // 🚀 WELCOME ONBOARDING TOUCHPOINT: CONVERSATIONAL SEMANTIC REGISTRATION
+                // =========================================================================
+                try
+                {
+                    await _emailEngine.SendWelcomeOnboardingEmailAsync(
+                        recipientEmail: freshUser.Email!,
+                        recipientName: freshUser.UserName ?? freshUser.Email!,
+                        academyId: academyGuid);
+                }
+                catch { /* Safeguards your semantic kernel chat dialogue interface against connection exceptions */ }
 
                 return Ok(new SemanticRegisterResponseDto(
                     nextStage: "Completed",

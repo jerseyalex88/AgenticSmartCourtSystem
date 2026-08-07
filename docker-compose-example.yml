@@ -78,6 +78,18 @@ services:
       # Logging Configuration Engine Rules
       - Logging__LogLevel__Default=Information
       - Logging__LogLevel__Microsoft.AspNetCore=Warning
+
+      # =========================================================================
+      # LIVE ROUTING MATRIX: ROUTE TRAFFIC DIRECTLY TO THE WORLDWIDE WEB
+      # =========================================================================
+      - SmtpSettings__Host=smtp.yourdomain.com
+      - SmtpSettings__Port=1234
+      # 🚀 INPUT YOUR RECOVERY EMAIL STRINGS AND SECURE 16-CHARACTER KEY BELOW:
+      - SmtpSettings__Username=name@yourdomain.com
+      - SmtpSettings__Password=yourpassword
+      - SmtpSettings__FromEmail=name@yourdomain.com
+      - SmtpSettings__FromName=High Frequency Tennis Academy
+      - SmtpSettings__EnableSsl=true # Google strictly requires secure encryption tunnels
     depends_on:
       smartcourt_db:
         condition: service_healthy

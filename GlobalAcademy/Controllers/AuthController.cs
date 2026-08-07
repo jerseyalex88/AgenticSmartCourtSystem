@@ -22,6 +22,7 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ITenantProvider _tenantProvider;
     private readonly Data.ApplicationDbContext _dbContext;
+    private readonly IEmailNotificationEngine _emailEngine;
 
     // 2. UPDATE THE CONSTRUCTOR TO ACCEPT APPLICATIONDBCONTEXT
     public AuthController(
@@ -29,13 +30,15 @@ public class AuthController : ControllerBase
         RoleManager<IdentityRole> roleManager, 
         IConfiguration configuration,
         ITenantProvider tenantProvider,
-        Data.ApplicationDbContext dbContext) // <-- Injected here
+        Data.ApplicationDbContext dbContext,
+        IEmailNotificationEngine emailEngine)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _configuration = configuration;
         _tenantProvider = tenantProvider;
-        _dbContext = dbContext; // <-- Assigned here
+        _dbContext = dbContext;
+        _emailEngine = emailEngine;
     }    
 
     // =========================================================================
@@ -112,6 +115,18 @@ public class AuthController : ControllerBase
             await _userManager.AddToRoleAsync(user, "Player");
             await _userManager.AddClaimAsync(user, new Claim("AcademyId", academyGuid.ToString()));
             await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Role, "Player"));
+
+            // =========================================================================
+            // 🚀 WELCOME ONBOARDING TOUCHPOINT: GOOGLE FEDERATED REGISTRATION
+            // =========================================================================
+            try
+            {
+                await _emailEngine.SendWelcomeOnboardingEmailAsync(
+                    recipientEmail: user.Email!,
+                    recipientName: user.UserName ?? user.Email!,
+                    academyId: academyGuid);
+            }
+            catch { /* Fault-tolerant catch block handles mail delivery failures gracefully */ }
         }
         else
         {
@@ -366,6 +381,18 @@ public class AuthController : ControllerBase
         await _userManager.AddClaimAsync(freshUser, new Claim(ClaimTypes.Role, model.Role));
         await _userManager.AddToRoleAsync(freshUser, model.Role);
 
+        // =========================================================================
+        // 🚀 WELCOME ONBOARDING TOUCHPOINT: MANUAL DIRECTOR CREATION
+        // =========================================================================
+        try
+        {
+            await _emailEngine.SendWelcomeOnboardingEmailAsync(
+                recipientEmail: freshUser.Email!,
+                recipientName: freshUser.UserName ?? freshUser.Email!,
+                academyId: activeTenantGuid);
+        }
+        catch { /* Maintain dashboard stability if the email channel slips */ }
+
         return Ok(new
         {
             id = freshUser.Id,
@@ -541,6 +568,19 @@ public class AuthController : ControllerBase
         await _userManager.AddToRoleAsync(freshUser, "Player");
         await _userManager.AddClaimAsync(freshUser, new Claim("AcademyId", academyGuid.ToString()));
         await _userManager.AddClaimAsync(freshUser, new Claim(ClaimTypes.Role, "Player"));
+
+        try
+        {
+            await _emailEngine.SendWelcomeOnboardingEmailAsync(
+                recipientEmail: freshUser.Email!,
+                recipientName: freshUser.UserName ?? freshUser.Email!,
+                academyId: academyGuid);
+        }
+        catch (Exception emailEx)
+        {
+            // Log the email sending failure but do not block the booking confirmation
+            Console.WriteLine($"Email dispatch failure: {emailEx.Message} {emailEx.StackTrace} {emailEx.InnerException}");
+        }
 
         return Ok(new { Message = "Player account initialized cleanly." });
     }
