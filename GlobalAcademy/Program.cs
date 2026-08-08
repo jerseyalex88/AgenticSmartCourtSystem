@@ -196,6 +196,7 @@ builder.Services.AddSingleton<PaymentGatewayFactory>();
 // =========================================================================
 builder.Services.Configure<GlobalAcademy.Models.SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddScoped<GlobalAcademy.Services.IEmailNotificationEngine, GlobalAcademy.Services.SmtpNotificationEngine>();
+builder.Services.AddHttpClient<GlobalAcademy.Services.ITurnstileValidator, GlobalAcademy.Services.TurnstileValidator>();
 
 var app = builder.Build();
 

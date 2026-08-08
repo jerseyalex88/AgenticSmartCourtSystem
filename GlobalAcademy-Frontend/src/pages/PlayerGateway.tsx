@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAlert } from '../context/AlertContext';
 import { apiClient } from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'; // 🚀 INJECTED
 import SemanticLogin from '../components/SemanticLogin';
 import SemanticRegister from '../components/SemanticRegister';
 import PublicHeader from '../components/PublicHeader';
 
 interface PlayerGatewayProps {
   onNavigate: (route: string) => void;
-  initialAuthMode?: 'login' | 'register'; // 👈 ADD THIS OPTIONAL PROP
+  initialAuthMode?: 'login' | 'register';
 }
 
 export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }: PlayerGatewayProps) {
-  // Toggle state: 'login' or 'register'
   const [authMode, setAuthMode] = useState<'login' | 'register'>(initialAuthMode);
   
   // Form input bindings
@@ -20,17 +20,20 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
   const [password, setPassword] = useState(authMode === 'register' ? '' : 'Password123!');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // 🚀 TURNSTILE STATE & DOM REF ANCHORS
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
+
   const { showAlert } = useAlert();
   const { saveSession } = useAuth();
   const [isSemanticMode, setIsSemanticMode] = useState(false);
 
-  // Extract the multi-tenant Academy partition key straight out of the active URL string parameters
   const queryParams = new URLSearchParams(window.location.search);
   const academyIdFromUrl = queryParams.get('academyId') || '';
 
-  // =========================================================================
-  // TARGETED ADDITION: INTERCEPT GOOGLE REDIRECT URL TOKENS & ERRORS
-  // =========================================================================
+  // Grab the site key baked into your Vite compilation bundle variables
+  const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string) || '1x00000000000000000000AA';
   useEffect(() => {
     const tokenFromUrl = queryParams.get('token');
     const errorFromUrl = queryParams.get('error');
@@ -64,12 +67,9 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
       return;
     }
     
-    // 1. Strip down the base URL to prevent /api/api/ duplication if it exists
     let baseApi = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7290/api';
     baseApi = baseApi.endsWith('/api') ? baseApi.slice(0, -4) : baseApi;
 
-    // 2. Google requires HTTPS for OAuth redirect loops locally. 
-    // If your env file points to the http port (5162), swap it natively to your secure profile port (7290)
     if (baseApi.includes('localhost:5162')) {
       baseApi = 'https://localhost:7290';
     }
@@ -77,12 +77,6 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
     window.location.href = `${baseApi}/api/Auth/external-login?provider=Google&academyId=${academyIdFromUrl}`;
   };
 
-  if (isSemanticMode) {
-    if (authMode === 'register')
-      return <SemanticRegister onSwitchBack={() => setIsSemanticMode(false)} />;
-    else
-      return <SemanticLogin onSwitchBack={() => setIsSemanticMode(false)} />;
-  }
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -95,16 +89,26 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
       return;
     }
 
+    // 🚀 ANTI-BOT PASS GATE INTERCEPT
+    if (!turnstileToken) {
+      showAlert({
+        title: 'Security Verification Missing',
+        message: 'Please wait for Cloudflare verification checks to resolve before attempting authentication entries.',
+        type: 'error'
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       if (authMode === 'register' || initialAuthMode === 'register') {
-        // OPTION 1. ROUTE PUBLIC REGISTRATION THROUGH THE PIPELINE WRAPPER
-        // Match the text capitalization of your working endpoints (e.g. '/Auth/...' or '/auth/...')
+        // APPEND TURNSTILE TOKEN TO SIGNUP DTO PAYLOAD
         await apiClient.post('/Auth/register-player-public', {
           email,
           password,
           phoneNumber,
-          academyId: academyIdFromUrl
+          academyId: academyIdFromUrl,
+          turnstileToken: turnstileToken // 🚀 SENT TO .NET BACKEND
         });
 
         showAlert({
@@ -112,15 +116,20 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
           message: 'Your player profile passport has been securely stamped into this academy partition. You can now toggle to the login screen and sign in!',
           type: 'success',
           onConfirm: () => {
-            setAuthMode('login'); // Flip view straight to sign-in matrix
-            setPassword('');      // Clear security inputs
+            setAuthMode('login');
+            setPassword('');
+            setTurnstileToken(null);
+            turnstileRef.current?.reset(); // Clear old validation tokens
           }
         });
       } else {
-        // OPTION 2: CALL THE EXISTING CENTRAL LOGIN LOGIC MIDDLEWARE
-        const response = await apiClient.post('/Auth/login', { email, password });
+        // APPEND TURNSTILE TOKEN TO LOGIN DTO PAYLOAD
+        const response = await apiClient.post('/Auth/login', { 
+          email, 
+          password,
+          turnstileToken: turnstileToken // 🚀 SENT TO .NET BACKEND
+        });
 
-        // Extracting data fields from your standard Axios/Fetch envelope mapping structure
         const token = response.data?.token || response.data?.Token;
         if (!token) throw new Error('Backend authorization payload returned an empty token signature.');
         
@@ -130,32 +139,15 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
             saveSession(token);
             window.location.href = '/';
         }
-
-        // console.log('Role claim extracted from backend response:', response.data);
-
-        // const userRole = 'Player'; 
-
-        // showAlert({
-        //   title: 'Handshake Validated',
-        //   message: `Security flags confirmed. Authenticated as a ${userRole}. Syncing platform core layout grids...`,
-        //   type: 'success',
-        //   onConfirm: () => {
-        //     // EXECUTE REDIRECTION OR FORCED LAYOUT RELOAD
-        //     // If the user is a player, we force the active tab configuration state or refresh 
-        //     // the boot-tree so the top-level App hook routes them directly onto 'bookings'! [2]
-        //     if (userRole === 'Player') {
-        //       // Reloading the page clears memory caches and lets App.tsx catch the fresh player state
-        //       window.location.href = '/'; 
-        //     } else {
-        //       window.location.href = '/'; // Directors go straight to main executive matrix
-        //     }
-        //   }
-        // });
       }
     } catch (err: any) {
+      // Security Failure: Force reset Turnstile widget to generate a fresh dynamic validation challenge
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
+      
       showAlert({
         title: 'Security Boundary Intercept',
-        message: err.message || 'The authorization handshake failed.',
+        message: err.response?.data?.message || err.message || 'The authorization handshake failed.',
         type: 'error'
       });
     } finally {
@@ -163,9 +155,14 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
     }
   };
 
+  if (isSemanticMode) {
+    if (authMode === 'register')
+      return <SemanticRegister onSwitchBack={() => setIsSemanticMode(false)} />;
+    else
+      return <SemanticLogin onSwitchBack={() => setIsSemanticMode(false)} />;
+  }
   return (    
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-teal-500 selection:text-slate-950 overflow-x-hidden">      
-      {/* SHARED PUBLIC LINK HEADER BAR */}
       <PublicHeader 
         onNavigate={onNavigate} 
         activeAuthMode={authMode} 
@@ -174,7 +171,6 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans text-xs text-slate-600">
       <div className="bg-white border border-gray-200 p-6 shadow-lg max-w-sm w-full">
         
-        {/* UPPER VIEW CONSOLE STATUS */}
         <div className="border-b border-gray-200 pb-3 mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider">
@@ -187,7 +183,6 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
           </span>
         </div>
 
-        {/* INTERACTIVE FORM ENGINE */}
         <form onSubmit={handleAuthSubmit} className="space-y-4">
           <div>
             <label className="block text-slate-600 font-bold uppercase tracking-wider text-[10px] mb-1">Email Account Address</label>
@@ -213,7 +208,6 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
             />
           </div>
 
-          {/* DYNAMIC FIELD CONDITIONAL INTERCEPT: Only capture digits during registration loops */}
           {authMode === 'register' && (
             <div className="animate-fade-in">
               <label className="block text-slate-600 font-bold uppercase tracking-wider text-[10px] mb-1">Phone Number (For SMS Dispatches)</label>
@@ -228,20 +222,36 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
             </div>
           )}
 
+          {/* =========================================================================
+              🚀 CLOUDFLARE TURNSTILE WIDGET EMBED LOCATION
+             ========================================================================= */}
+          <div className="flex justify-center pt-2">
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+              options={{
+                theme: 'light',
+                size: 'normal'
+              }}
+            />
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !turnstileToken}
             className={`w-full mt-2 font-bold py-2 px-4 uppercase tracking-wider transition ${
-              loading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-500 text-white'
+              loading || !turnstileToken
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
+                : 'bg-purple-600 hover:bg-purple-500 text-white'
             }`}
           >
             {loading ? 'Processing Protocol...' : authMode === 'login' ? '🔐 Authorize Sign-In' : '🚀 Submit Profile'}
           </button>
         </form>
 
-        {/* =========================================================================
-            TARGETED ADDITION: DECOUPLED SOCIAL FEDERATED IDENTITY PROVIDER ENGINE
-           ========================================================================= */}
         <div className="relative flex py-4 items-center">
           <div className="flex-grow border-t border-gray-200"></div>
           <span className="flex-shrink mx-3 text-gray-400 font-black tracking-widest text-[9px] uppercase">OR CONNECT IDENTITY</span>
@@ -270,14 +280,17 @@ export default function PlayerGateway({ onNavigate, initialAuthMode = 'login' }:
           </button>
         </div>
 
-        {/* DUAL MODE SELECTION TOGGLE SLIDER ANCHOR */}
         <div className="mt-6 border-t border-gray-200 pt-4 text-center">
           <p className="text-slate-500 text-[11px]">
             {authMode === 'login' ? "Don't have an academy account profile yet?" : "Already registered inside this tenant database?"}
           </p>
           <button
             type="button"
-            onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+            onClick={() => {
+              setAuthMode(authMode === 'login' ? 'register' : 'login');
+              setTurnstileToken(null);
+              turnstileRef.current?.reset();
+            }}
             className="mt-2 text-purple-600 hover:text-purple-500 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
           >
             {authMode === 'login' ? '⚡ Switch to Registration Form' : '🔐 Switch to Secure Login Panel'}

@@ -23,6 +23,7 @@ public class AuthController : ControllerBase
     private readonly ITenantProvider _tenantProvider;
     private readonly Data.ApplicationDbContext _dbContext;
     private readonly IEmailNotificationEngine _emailEngine;
+    private readonly ITurnstileValidator _turnstileValidator;
 
     // 2. UPDATE THE CONSTRUCTOR TO ACCEPT APPLICATIONDBCONTEXT
     public AuthController(
@@ -31,7 +32,8 @@ public class AuthController : ControllerBase
         IConfiguration configuration,
         ITenantProvider tenantProvider,
         Data.ApplicationDbContext dbContext,
-        IEmailNotificationEngine emailEngine)
+        IEmailNotificationEngine emailEngine,
+        ITurnstileValidator turnstileValidator)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -39,6 +41,7 @@ public class AuthController : ControllerBase
         _tenantProvider = tenantProvider;
         _dbContext = dbContext;
         _emailEngine = emailEngine;
+        _turnstileValidator = turnstileValidator;
     }    
 
     // =========================================================================
@@ -216,6 +219,12 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto model)
     {
+        if (!await _turnstileValidator.IsHumanAsync(model.TurnstileToken))
+        {
+            Console.WriteLine($"Turnstile validation failed: Bot signature detected or challenge token expired. {model.TurnstileToken}");
+            return BadRequest(new { message = "Security Intercept: Automated bot signature detected or challenge token expired." });
+        }
+
         var user = await _userManager.FindByEmailAsync(model.Email);
         if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
         {
@@ -526,6 +535,11 @@ public class AuthController : ControllerBase
     [AllowAnonymous] // Open publicly to the open internet so new players can reach it!
     public async Task<IActionResult> RegisterPlayerPublicly([FromBody] PublicPlayerRegisterDto model)
     {
+        if (!await _turnstileValidator.IsHumanAsync(model.TurnstileToken))
+        {
+            return BadRequest(new { message = "Security Intercept: Automated bot signature detected or challenge token expired." });
+        }
+
         if (!Guid.TryParse(model.AcademyId, out Guid academyGuid))
         {
             return BadRequest(new { Message = "Identity Exception: The targeted Academy invitation link format is invalid." });
@@ -586,10 +600,10 @@ public class AuthController : ControllerBase
     }
 }
 
+public record LoginDto(string Email, string Password, string TurnstileToken = "");
+public record PublicPlayerRegisterDto(string Email, string Password, string PhoneNumber, string AcademyId, string TurnstileToken = "");
 public record RegisterAcademyDto(string Email, string Password, string AcademyName);
-public record LoginDto(string Email, string Password);
 public record UpdateUserRoleDto(string Email, string NewRole);
 public record ProvisionUserDto(string Email, string UserName, string Password, string Role, string PhoneNumber);
 public record UpdateUserPayloadDto(string Email, string UserName, string Role, string PhoneNumber, bool IsActive);
 // Data Transfer Object definition model record
-public record PublicPlayerRegisterDto(string Email, string Password, string PhoneNumber, string AcademyId);

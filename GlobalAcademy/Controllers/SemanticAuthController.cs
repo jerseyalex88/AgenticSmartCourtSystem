@@ -29,6 +29,7 @@ public class SemanticAuthController : ControllerBase
     private readonly Kernel _kernel; // Underneath architecture property tracking anchor
     private readonly Data.ApplicationDbContext _dbContext;
     private readonly IEmailNotificationEngine _emailEngine;
+    private readonly ITurnstileValidator _turnstileValidator;
 
     // FIXED: Request 'Kernel' directly via Dependency Injection! 
     // This cleanly inherits your pre-configured customHttpClient and gpt-5.4-mini models!
@@ -38,7 +39,8 @@ public class SemanticAuthController : ControllerBase
         IConfiguration configuration,
         Kernel kernel,
         Data.ApplicationDbContext dbContext,
-        IEmailNotificationEngine emailEngine)
+        IEmailNotificationEngine emailEngine,
+        ITurnstileValidator turnstileValidator)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -46,12 +48,18 @@ public class SemanticAuthController : ControllerBase
         _kernel = kernel; // Lock it straight to your central program configurations
         _dbContext = dbContext; // Inject the database context for multi-tenant isolation
         _emailEngine = emailEngine; // Inject the email notification engine
+        _turnstileValidator = turnstileValidator; // Inject the Turnstile validator
     }
 
     [HttpPost("ai/conversational-auth")]
     [AllowAnonymous] // Open publicly so unauthenticated users can chat to log in!
     public async Task<IActionResult> ProcessConversationalAuth([FromBody] SemanticAuthRequestDto model)
     {
+        if (model.CurrentStage == "AwaitingEmail" && !await _turnstileValidator.IsHumanAsync(model.TurnstileToken))
+        {
+            return BadRequest(new { message = "Security Intercept: AI integration denied due to invalid bot signature." });
+        }
+
         string userInput = model.UserInput.Trim();
         string chatStage = model.CurrentStage; // "AwaitingEmail", "AwaitingPassword", "Completed"
         string cachedEmail = model.CachedEmail ?? "";
@@ -162,6 +170,11 @@ public class SemanticAuthController : ControllerBase
     [AllowAnonymous] // Open publicly so new players can execute onboarding queries
     public async Task<IActionResult> ProcessConversationalRegister([FromBody] SemanticRegisterRequestDto model)
     {
+        if (model.currentStage == "ExtractingDetails" && !await _turnstileValidator.IsHumanAsync(model.turnstileToken))
+        {
+            return BadRequest(new { message = "Security Intercept: AI onboarding denied due to invalid bot signature." });
+        }
+        
         try
         {
             string userInput = model.userInput.Trim();
@@ -287,8 +300,8 @@ public class SemanticAuthController : ControllerBase
 
 }
 
-public record SemanticAuthRequestDto(string UserInput, string CurrentStage, string? CachedEmail);
+public record SemanticAuthRequestDto(string UserInput, string CurrentStage, string? CachedEmail, string TurnstileToken = "");
+public record SemanticRegisterRequestDto(string userInput, string currentStage, string? cachedEmail, string? cachedPhone, string? cachedAcademyId, string turnstileToken = "");
 public record SemanticAuthResponseDto(string NextStage, string CachedEmail, string AgentResponse, string? Token);
 // Data Transfer Records enforcing camelCase property serialization natively
-public record SemanticRegisterRequestDto(string userInput, string currentStage, string? cachedEmail, string? cachedPhone, string? cachedAcademyId);
 public record SemanticRegisterResponseDto(string nextStage, string cachedEmail, string cachedPhone, string cachedAcademyId, string agentResponse);
