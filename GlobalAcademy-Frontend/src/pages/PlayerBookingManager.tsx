@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
 import { useAlert } from '../context/AlertContext';
+import BookingSmsModal from '../components/BookingSmsModal';
 
 interface ActiveBooking {
   id: string;
@@ -45,6 +46,12 @@ export function PlayerBookingManager() {
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { showAlert } = useAlert();
+
+  // 🚀 ANTI-SCALPER SMS MATRIX TRACKING STATES
+  const [isSmsOpen, setIsSmsOpen] = useState<boolean>(false);
+  const [smsPhone, setSmsPhone] = useState<string>('');
+  const [pendingModel, setPendingModel] = useState<any>(null); // Preserves active cell context details
+
   const fetchPlayerDashboardTelemetry = async () => {
     setLoading(true);
     try {
@@ -83,34 +90,107 @@ export function PlayerBookingManager() {
       (window as any).setDashboardGlobalDate = undefined;
     };
   }, []);
+
+  // const handleClaimDynamicSlotClick = (slot: MatrixSlot) => {
+  //   showAlert({
+  //     title: 'Lock In Court Booking?',
+  //     message: `Would you like to reserve ${slot.courtName} for a standard 60-minute interval starting at ${slot.branchLocalTimeDisplay}?`,
+  //     type: 'success',
+  //     onConfirm: async () => {
+  //       try {
+  //         await apiClient.post('/playerbooking/claim-dynamic', {
+  //           courtId: slot.courtId,
+  //           courtName: slot.courtName,
+  //           startTimeUtc: slot.startTimeUtc
+  //         });
+
+  //         showAlert({
+  //           title: 'Reservation Secured!',
+  //           message: 'Your match row has been committed live to PostgreSQL transaction logs.',
+  //           type: 'success'
+  //         });
+  //         await fetchPlayerDashboardTelemetry();
+  //       } catch (err: any) {
+  //         const errMsg = err.response?.data?.message || 'This slot was just claimed or is no longer available.';
+  //         showAlert({ title: 'Booking Intercepted', message: errMsg, type: 'error' });
+  //       }
+  //     }
+  //   });
+  // };
+    // =========================================================================
+  // 🚀 FIXED: ANTI-SCALPER INTELLIGENT INTERCEPT BOOKING LOGIC
+  // =========================================================================
   const handleClaimDynamicSlotClick = (slot: MatrixSlot) => {
     showAlert({
       title: 'Lock In Court Booking?',
       message: `Would you like to reserve ${slot.courtName} for a standard 60-minute interval starting at ${slot.branchLocalTimeDisplay}?`,
       type: 'success',
-      onConfirm: async () => {
-        try {
-          await apiClient.post('/playerbooking/claim-dynamic', {
-            courtId: slot.courtId,
-            courtName: slot.courtName,
-            startTimeUtc: slot.startTimeUtc
-          });
-
-          showAlert({
-            title: 'Reservation Secured!',
-            message: 'Your match row has been committed live to PostgreSQL transaction logs.',
-            type: 'success'
-          });
-          await fetchPlayerDashboardTelemetry();
-        } catch (err: any) {
-          const errMsg = err.response?.data?.message || 'This slot was just claimed or is no longer available.';
-          showAlert({ title: 'Booking Intercepted', message: errMsg, type: 'error' });
-        }
+      onConfirm: () => {
+        // Invoke our unified execution pipeline, passing no SMS PIN on the first attempt
+        executeSlotAllocation(slot.courtId, slot.courtName, slot.startTimeUtc, "");
       }
     });
   };
 
-    const handleReleaseSlotClick = (bookingId: string, courtName: string, slotTime: string) => {
+  // 🚀 CORE HANDSHAKE ENGINE: RUNS BOTH INITIAL ATTEMPTS AND PIN VERIFICATIONS
+  const executeSlotAllocation = async (courtId: string, courtName: string, startTimeUtc: string, smsCode: string = "") => {
+    try {
+      setLoading(true); // Engages loading spinner animations safely
+
+      const payload = {
+        courtId: courtId,
+        courtName: courtName,
+        startTimeUtc: startTimeUtc,
+        smsCode: smsCode // 🚀 SENT TO C# BACKEND (Blank initially, populated on Step 2)
+      };
+
+      // Match the precise route configuration layer of your working endpoint
+      const response = await apiClient.post('/playerbooking/claim-dynamic', payload);
+
+      // STEP A INTERCEPT: Detect if the backend system feature-flag halts execution
+      const responseStatus = response.data?.status || response.data?.Status;
+      if (responseStatus === "SMS_VERIFICATION_REQUIRED") {
+        const fallbackPhone = response.data.targetPhone || response.data.TargetPhone || "+1(555) XXX-XXXX";
+        
+        setSmsPhone(fallbackPhone);
+        setPendingModel({ courtId, courtName, startTimeUtc }); // Store cell context variables for Step B
+        setIsSmsOpen(true);                         // Pop open the visual verification modal canvas layout
+        setLoading(false);
+        return;
+      }
+
+      // SUCCESS PATHWAY: Clears old state scopes and renders the final transaction confirmation
+      setIsSmsOpen(false);
+      setPendingModel(null);
+
+      showAlert({
+        title: 'Reservation Secured!',
+        message: 'Your match row has been committed live to PostgreSQL transaction logs.',
+        type: 'success'
+      });
+
+      // Synchronize dashboard analytics and force schedule grid re-renders instantly
+      await fetchPlayerDashboardTelemetry();
+    } catch (err: any) {
+      // Security Failure Catch: Force reset state boundaries to handle fresh attempts cleanly
+      setIsSmsOpen(false);
+      setPendingModel(null);
+
+      const errMsg = err.response?.data?.message || err.response?.data?.Message || 'This slot was just claimed or is no longer available.';
+      showAlert({ title: 'Booking Intercepted', message: errMsg, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CALLBACK TRIGGER FIRED DIRECTLY INSIDE THE OK/CONFIRM MODAL SUBMIT DRAWER
+  const handleSmsConfirmation = async (pinCode: string) => {
+    if (!pendingModel) return;
+    // Re-trigger the same method runner, but this time pass the 4-digit code string directly into the channel matrix
+    await executeSlotAllocation(pendingModel.courtId, pendingModel.courtName, pendingModel.startTimeUtc, pinCode);
+  };
+
+  const handleReleaseSlotClick = (bookingId: string, courtName: string, slotTime: string) => {
     showAlert({
       title: 'Release Booking Slot?',
       message: `Are you absolutely certain you want to cancel your reservation for ${courtName} on ${slotTime}?`,
@@ -314,6 +394,16 @@ export function PlayerBookingManager() {
           </div>
         )}
       </div>
+      <BookingSmsModal
+        isOpen={isSmsOpen}
+        targetPhone={smsPhone}
+        isSubmitting={loading}
+        onConfirm={handleSmsConfirmation}
+        onCancel={() => {
+          setIsSmsOpen(false);
+          setPendingModel(null);
+        }}
+      />
     </div>
   );
 }

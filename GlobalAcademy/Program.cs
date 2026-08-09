@@ -206,6 +206,11 @@ builder.Services.Configure<GlobalAcademy.Models.SmtpSettings>(builder.Configurat
 builder.Services.AddScoped<GlobalAcademy.Services.IEmailNotificationEngine, GlobalAcademy.Services.SmtpNotificationEngine>();
 builder.Services.AddHttpClient<GlobalAcademy.Services.ITurnstileValidator, GlobalAcademy.Services.TurnstileValidator>();
 
+builder.Services.Configure<GlobalAcademy.Models.BookingSecuritySettings>(
+    builder.Configuration.GetSection("BookingSecuritySettings"));
+// Registering as a Singleton ensures that your memory cache collections persist cleanly across web requests
+builder.Services.AddSingleton<GlobalAcademy.Services.ISmsVerificationEngine, GlobalAcademy.Services.SandboxSmsVerificationEngine>();
+
 var app = builder.Build();
 
 // =========================================================================

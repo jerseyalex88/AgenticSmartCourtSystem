@@ -11,6 +11,7 @@ using GlobalAcademy.Models;
 using GlobalAcademy.Security;
 using GlobalAcademy.Payment.Services;
 using GlobalAcademy.Services;
+using Microsoft.Extensions.Options;
 
 namespace GlobalAcademy.Controllers;
 
@@ -22,15 +23,24 @@ public class PlayerBookingController : ControllerBase
     private readonly ApplicationDbContext _dbContext;
     private readonly ITenantProvider _tenantProvider;
     private readonly IEmailNotificationEngine _emailEngine;
+    private readonly IOptions<BookingSecuritySettings> _securitySettings;
+    private readonly ISmsVerificationEngine _smsEngine;
+    private readonly UserManager<IdentityUser> _userManager;
 
     public PlayerBookingController(
         ApplicationDbContext dbContext,
         ITenantProvider tenantProvider,
-        IEmailNotificationEngine emailEngine)
+        IEmailNotificationEngine emailEngine,
+        IOptions<BookingSecuritySettings> securitySettings,
+        ISmsVerificationEngine smsEngine,
+        UserManager<IdentityUser> userManager)
     {
         _dbContext = dbContext;
         _tenantProvider = tenantProvider;
         _emailEngine = emailEngine;
+        _securitySettings = securitySettings;
+        _smsEngine = smsEngine;
+        _userManager = userManager;
     }
 
     // =========================================================================
@@ -321,6 +331,34 @@ public class PlayerBookingController : ControllerBase
             return Unauthorized(new { Message = "Security Obstacle: User identity claim string (id) was not detected inside the active session token." });
         }
 
+        // =========================================================================
+        // 🚀 TIER 3 INTERCEPT GATE: EVALUATE SMS VERIFICATION FEATURE SWITCH FLAGS
+        // =========================================================================
+        if (_securitySettings.Value.EnableSmsVerification && string.IsNullOrEmpty(model.SmsCode))
+        {
+            // Fetch the user out of disk memory to cleanly locate their verified phone context numbers
+            var userProfile = await _userManager.FindByIdAsync(userIdClaimString);
+            string playerPhone = userProfile?.PhoneNumber ?? "+15550123456"; // Fallback to prototype placeholder if empty
+
+            // Fire up our modular singleton abstraction layer engine (Prints seed out to your VS Code logs console!)
+            await _smsEngine.GenerateAndRecordVerificationPinAsync(userIdClaimString, playerPhone);
+
+            // Halt transaction processing execution immediately and return a specialized step intercept token response
+            return Ok(new { status = "SMS_VERIFICATION_REQUIRED", targetPhone = playerPhone, message = "Two-step SMS verification required to claim court slots." });
+        }
+
+        // =========================================================================
+        // LAYER B VALIDATION: IF A CODE IS PROVIDED, ENFORCE CRYPTOGRAPHIC PIN MATCHES
+        // =========================================================================
+        if (_securitySettings.Value.EnableSmsVerification && !string.IsNullOrEmpty(model.SmsCode))
+        {
+            bool isCodeValid = await _smsEngine.ValidateActivePinAsync(userIdClaimString, model.SmsCode);
+            if (!isCodeValid)
+            {
+                return BadRequest(new { Message = "Security Intercept: The provided booking verification PIN is invalid or has expired." });
+            }
+        }
+
         var startUtc = model.StartTimeUtc.ToUniversalTime();
         var endUtc = startUtc.AddHours(1); // Forcing strict 60 minutes intervals
 
@@ -566,4 +604,4 @@ public class PlayerBookingController : ControllerBase
 }
 
 // Data Transfer Object definition record model
-public record ClaimPayloadDto(Guid CourtId, string CourtName, DateTime StartTimeUtc);
+public record ClaimPayloadDto(Guid CourtId, string CourtName, DateTime StartTimeUtc, string SmsCode = "");
