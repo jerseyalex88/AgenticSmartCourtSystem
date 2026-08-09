@@ -46,8 +46,8 @@ public class TurnstileValidator : ITurnstileValidator
             var rawContent =
                 await response.Content.ReadAsStringAsync();
 
-            Console.WriteLine(
-                $"[DEBUG] Turnstile response: {rawContent}");
+            // Console.WriteLine(
+            //     $"[DEBUG] Turnstile response: {rawContent}");
 
             if (!response.IsSuccessStatusCode)
                 return false;

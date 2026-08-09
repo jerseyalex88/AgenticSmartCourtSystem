@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/apiClient';
-import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'; // 🚀 FIXED: Standardized Import
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import ConversationalLogin from '../components/ConversationalLogin'; 
 import SemanticLogin from '../components/SemanticLogin';
 import PublicHeader from '../components/PublicHeader';
@@ -10,7 +10,8 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   const { saveSession } = useAuth();
-  const [email, setEmail] = useState('director@londonvanguard.com');
+  // const [email, setEmail] = useState('director@londonvanguard.com');
+  const [email, setEmail] = useState('areyesbiz@hotmail.com');
   const [password, setPassword] = useState('LondonPass123!');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -19,11 +20,12 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
   const [isConversationalMode, setIsConversationalMode] = useState(false);
   const [isSemanticMode, setIsSemanticMode] = useState(false);
   
-  // 🚀 TURNSTILE STATE & DOM REF ANCHORS
+  // 🚀 PHASE 2: TWO-FACTOR LAYER STATE HOOKS & REF ANCHORS
+  const [isTwoFactorChallenge, setIsTwoFactorChallenge] = useState<boolean>(false);
+  const [twoFactorCode, setTwoFactorCode] = useState<string>('');
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
 
-  // Grab the site key baked into your Vite compilation bundle variables
   const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string) || '1x00000000000000000000AA';
 
   if (isConversationalMode) {
@@ -39,7 +41,6 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
     setErrorMessage(null);
     setIsSubmitting(true);
 
-    // 🚀 ANTI-BOT PASS GATE INTERCEPT
     if (!turnstileToken) {
       setErrorMessage("Security Verification Missing: Please complete Cloudflare checks to authorize entry.");
       setIsSubmitting(false);
@@ -47,35 +48,53 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
     }
 
     try {
-      // Execute network handshake over your dynamic Axios base client route, passing the Turnstile token
-      const response = await apiClient.post('/Auth/login', { 
-        email, 
-        password,
-        turnstileToken: turnstileToken // 🚀 SENT TO .NET BACKEND
-      });
-      
-      const token = response.data?.token || response.data?.Token;
-      if (!token) throw new Error('Backend authorization payload returned an empty token signature.');
+      if (isTwoFactorChallenge) {
+        // 🚀 LAYER B INTERCEPT: DISPATCH THE ROLLING AUTHENTICATOR PIN TO THE BACKEND
+        const response = await apiClient.post('/Auth/verify-2fa', { 
+          email, 
+          code: twoFactorCode,
+          turnstileToken: turnstileToken 
+        });
+        
+        const token = response.data?.token || response.data?.Token;
+        if (!token) throw new Error('Backend authentication payload failed to issue a token signature.');
+        saveSession(token);
+      } else {
+        // 🚀 LAYER A INITIAL ENTRY: SEND EMAIL/PASSWORD CHECK
+        const response = await apiClient.post('/Auth/login', { 
+          email, 
+          password,
+          turnstileToken: turnstileToken 
+        });
 
-      // Save token directly into the AuthContext memory stream loop
-      saveSession(token);
+        // Detect if high-privilege user account hits the C# security partition roadblock
+        const responseStatus = response.data?.status || response.data?.Status;
+        if (responseStatus === "2FA_CHALLENGE_REQUIRED") {
+          setIsTwoFactorChallenge(true);
+          setTwoFactorCode('');
+          setTurnstileToken(null);
+          turnstileRef.current?.reset(); // Force clear old token strings to trigger a fresh challenge block
+          setIsSubmitting(false);
+          return;
+        }
+
+        const token = response.data?.token || response.data?.Token;
+        if (!token) throw new Error('Backend authorization payload returned an empty token signature.');
+        saveSession(token);
+      }
     } catch (err: any) {
       console.error("Authentication capture exception caught:", err);
-      
-      // Security Failure: Force reset Turnstile widget to generate a fresh dynamic token validation challenge
       setTurnstileToken(null);
       turnstileRef.current?.reset();
 
-      // Clean fallback reads explicit error messages returned natively from your C# identity controller
-      const errorText = err.response?.data?.message || err.response?.data || "Cryptographic handshake failed. Ensure server connection is live.";
-      setErrorMessage(typeof errorText === 'string' ? errorText : "Invalid email or password parameters.");
+      const errorText = err.response?.data?.message || err.response?.data || "Handshake verification fault.";
+      setErrorMessage(typeof errorText === 'string' ? errorText : "Invalid email parameters or validation code exception.");
     } finally {
       setIsSubmitting(false);
     }
   };
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-teal-500 selection:text-slate-950 overflow-x-hidden">      
-      {/* SHARED PUBLIC LINK HEADER BAR */}
       <PublicHeader 
         onNavigate={onNavigate} 
         activeAuthMode={authMode} 
@@ -84,20 +103,20 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md bg-white border border-gray-200 p-8 shadow-lg space-y-6">
           
-          {/* Core Application Logo Identity Anchor */}
           <div className="text-center space-y-2">
             <div className="inline-flex items-center justify-center h-12 w-12 bg-purple-100 border border-purple-300 text-purple-600 font-black text-xl tracking-tight">
-              🎾
+              {isTwoFactorChallenge ? '🔒' : '🎾'}
             </div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900">
-              Global Academy Portal
+              {isTwoFactorChallenge ? 'Two-Factor Challenge' : 'Global Academy Portal'}
             </h1>
             <p className="text-slate-500 text-xs">
-              Enter enterprise credentials to unlock your multi-tenant workspace matrix.
+              {isTwoFactorChallenge 
+                ? 'Multi-factor verification required for high-privilege management nodes.' 
+                : 'Enter enterprise credentials to unlock your multi-tenant workspace matrix.'}
             </p>
           </div>
 
-          {/* Dynamic Context Validation Error Alert Panel */}
           {errorMessage && (
             <div className="p-3.5 bg-rose-100 border border-rose-300 text-rose-700 text-xs font-medium animate-shake flex items-start space-x-2">
               <span className="pt-0.5">⚠️</span>
@@ -105,42 +124,61 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
             </div>
           )}
 
-          {/* Secure Credential Input Form Container */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                Identity User Email Address
-              </label>
-              <input
-                type="email"
-                required
-                disabled={isSubmitting}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="director@clubdomain.com"
-                className="w-full bg-gray-50 border border-gray-300 disabled:opacity-50 p-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 transition font-medium"
-              />
-            </div>
+            {!isTwoFactorChallenge ? (
+              /* PANEL STAGE A: BASELINE PASSPORT FORMS (EMAIL & PASSWORD) */
+              <>
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                    Identity User Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    disabled={isSubmitting}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="director@clubdomain.com"
+                    className="w-full bg-gray-50 border border-gray-300 disabled:opacity-50 p-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 transition font-medium"
+                  />
+                </div>
 
-            <div className="space-y-1">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                Security Account Password
-              </label>
-              <input
-                type="password"
-                required
-                disabled={isSubmitting}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-gray-50 border border-gray-300 disabled:opacity-50 p-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 transition font-medium"
-              />
-            </div>
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                    Security Account Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    disabled={isSubmitting}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full bg-gray-50 border border-gray-300 disabled:opacity-50 p-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 transition font-medium"
+                  />
+                </div>
+              </>
+            ) : (
+              /* PANEL STAGE B: VAULT ENTRANCE (6-DIGIT ROLLING TOTP FIELD) */
+              <div className="space-y-2 animate-fade-in">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-purple-600">
+                  Verification PIN String Code
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  disabled={isSubmitting}
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))} // Strips text inputs to maintain numeric strings
+                  placeholder="000000"
+                  className="w-full bg-purple-50 border border-purple-300 tracking-widest text-center text-xl p-3 text-purple-950 font-black focus:outline-none focus:border-purple-600 transition"
+                />
+              </div>
+            )}
 
-            {/* =========================================================================
-                🚀 FIXED: OFFICIAL COMPONENT MOUNT TO MATCH PLAYER GATEWAY EXACTLY
-               ========================================================================= */}
-            <div className="flex justify-center pt-2">
+            {/* CLOUDFLARE ANTI-BOT PROTECTION CANVAS (Forcing fresh lifecycle rendering across view flips) */}
+            <div className="flex justify-center pt-2" key={isTwoFactorChallenge ? "2fa_stage" : "auth_stage"}>
               <Turnstile
                 ref={turnstileRef}
                 siteKey={TURNSTILE_SITE_KEY}
@@ -167,23 +205,27 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
                 {isSubmitting ? (
                   <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <span>Access Protected Environment Dashboard</span>
+                  <span>
+                    {isTwoFactorChallenge ? '🔒 Authorize Management Vault' : 'Access Protected Environment Dashboard'}
+                  </span>
                 )}
               </button>
             </div>
           </form>
 
-          <div className="text-center">
-            <button type="button" onClick={() => setIsSemanticMode(true)} 
-              className="mt-2 text-purple-600 hover:text-purple-500 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
-            >
-              🧠 OR, Open Agentic Conversational Interface
-            </button>
-          </div>
+          {!isTwoFactorChallenge && (
+            <div className="text-center">
+              <button type="button" onClick={() => setIsSemanticMode(true)} 
+                className="mt-2 text-purple-600 hover:text-purple-500 font-black uppercase text-[10px] tracking-widest underline decoration-dotted transition"
+              >
+                🧠 OR, Open Agentic Conversational Interface
+              </button>
+            </div>
+          )}
 
           <div className="text-center pt-2 border-t border-gray-200">
             <p className="text-[10px] text-slate-500 tracking-normal uppercase">
-              Secured Layer // Multi-Tenant Data Firewall Enforced Natively
+              {isTwoFactorChallenge ? 'Verification Gateway Channel' : 'Secured Layer // Multi-Tenant Data Firewall Enforced Natively'}
             </p>
           </div>
 

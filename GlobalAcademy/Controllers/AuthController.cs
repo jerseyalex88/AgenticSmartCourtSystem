@@ -24,6 +24,7 @@ public class AuthController : ControllerBase
     private readonly Data.ApplicationDbContext _dbContext;
     private readonly IEmailNotificationEngine _emailEngine;
     private readonly ITurnstileValidator _turnstileValidator;
+    private readonly SignInManager<IdentityUser> _signInManager;
 
     // 2. UPDATE THE CONSTRUCTOR TO ACCEPT APPLICATIONDBCONTEXT
     public AuthController(
@@ -33,7 +34,8 @@ public class AuthController : ControllerBase
         ITenantProvider tenantProvider,
         Data.ApplicationDbContext dbContext,
         IEmailNotificationEngine emailEngine,
-        ITurnstileValidator turnstileValidator)
+        ITurnstileValidator turnstileValidator,
+        SignInManager<IdentityUser> signInManager)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -42,7 +44,8 @@ public class AuthController : ControllerBase
         _dbContext = dbContext;
         _emailEngine = emailEngine;
         _turnstileValidator = turnstileValidator;
-    }    
+        _signInManager = signInManager;
+    }
 
     // =========================================================================
     // TARGETED ADDITION: INITIATE GOOGLE CHALLENGE MATRIX
@@ -216,12 +219,12 @@ public class AuthController : ControllerBase
         return Ok(new { Message = "Academy registered successfully!", AcademyId = newAcademyId });
     }
     
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto model)
+    [HttpPost("dnulogin")]
+    public async Task<IActionResult> DnuLogin([FromBody] LoginDto model)
     {
         if (!await _turnstileValidator.IsHumanAsync(model.TurnstileToken))
         {
-            Console.WriteLine($"Turnstile validation failed: Bot signature detected or challenge token expired. {model.TurnstileToken}");
+            // Console.WriteLine($"Turnstile validation failed: Bot signature detected or challenge token expired. {model.TurnstileToken}");
             return BadRequest(new { message = "Security Intercept: Automated bot signature detected or challenge token expired." });
         }
 
@@ -299,6 +302,267 @@ public class AuthController : ControllerBase
 
         return Unauthorized("Cryptographic handshake failed: Invalid email or password credentials.");
     }
+    private async Task<(string Token, DateTime Expiration)> GenerateJwtTokenAsync(IdentityUser user)
+    {
+        var userRoles = await _userManager.GetRolesAsync(user);
+        var userClaims = await _userManager.GetClaimsAsync(user);
+
+        var authClaims = new List<Claim>
+        {
+            new Claim("http://xmlsoap.org", user.UserName!),
+            new Claim("jti", Guid.NewGuid().ToString()),
+            new Claim("nameidentifier", user.Id),
+            new Claim("email", user.Email!),
+            new Claim("username", user.UserName!)
+        };
+
+        foreach (var claim in userClaims)
+        {
+            if (claim.Type != ClaimTypes.Role && claim.Type != "role") authClaims.Add(claim);
+        }
+
+        foreach (var userRole in userRoles)
+        {
+            authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+        }
+
+        var academyClaimValue = userClaims.FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value;
+        if (!string.IsNullOrEmpty(academyClaimValue) && Guid.TryParse(academyClaimValue, out Guid academyClaim))
+        {
+            var academy = _dbContext.Academies.FirstOrDefault(a => a.Id == academyClaim);
+            if (academy != null) authClaims.Add(new Claim("academyName", academy.Name));
+        }
+
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]!));
+
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings["Issuer"],
+            audience: jwtSettings["Audience"],
+            expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryInMinutes"]!)),
+            claims: authClaims,
+            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+        );
+
+        // 🚀 FIXED: Returns both parameters simultaneously back to the execution caller loops
+        string encodedToken = new JwtSecurityTokenHandler().WriteToken(token);
+        return (encodedToken, token.ValidTo);
+    }
+
+        // =========================================================================
+    // 🚀 STEP 1: REFACTORED SECURE LOGIN HANDSHAKE (DIRECTOR INTERCEPT GATE)
+    // =========================================================================
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginDto model)
+    {
+        // Turnstile Anti-Bot Security Gate Intercept Wall
+        if (!await _turnstileValidator.IsHumanAsync(model.TurnstileToken))
+        {
+            return BadRequest(new { message = "Security Intercept: Automated bot signature detected or challenge token expired." });
+        }
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+        {
+            var userRoles = await _userManager.GetRolesAsync(user);
+
+            // Check if the authenticating account profile contains high-privilege management boundaries
+            if (userRoles.Contains("AcademyDirector") || userRoles.Contains("GlobalAdmin"))
+            {
+                // Verify if the Director has already finalized their app-based 2FA pairing lifecycle
+                var isTwoFactorEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
+
+                // 🚀 AUTO-PAIRING CAPTURE LOGIC: Force native initialization if token key metadata is blank
+                //var internalKey = await _userManager.GetAuthenticatorKeyAsync(user);
+                
+                // if (string.IsNullOrEmpty(internalKey))
+                // {
+                //     // Triggers the official Microsoft core configuration pipeline to instantiate the token
+                //     await _userManager.ResetAuthenticatorKeyAsync(user);
+                //     internalKey = await _userManager.GetAuthenticatorKeyAsync(user);
+                    
+                //     Console.WriteLine("\n=========================================================================");
+                //     Console.WriteLine($"🚀 [SMARTCOURT 2FA AUTO-PAIRING ACTIVATED]");
+                //     Console.WriteLine($"DIRECTOR ACCOUNT: {user.Email}");
+                //     Console.WriteLine($"YOUR NEW SETUP SEED KEY: {internalKey}");
+                //     Console.WriteLine("=========================================================================\n");
+                // }
+
+                if (isTwoFactorEnabled)
+                {
+                    // 🔒 INTERCEPT HANDSHAKE: Halt standard token compilation and require step-two validation
+                    return Ok(new { status = "2FA_CHALLENGE_REQUIRED", message = "Multi-Factor Authentication Required." });
+                }
+            }
+
+            // Standard Pathway: Player or un-enrolled manager passes straight through to JWT compilation
+            var (tokenString, expirationTime) = await GenerateJwtTokenAsync(user);
+            return Ok(new
+            {
+                token = tokenString,
+                expiration = expirationTime
+            });
+        }
+
+        return Unauthorized("Cryptographic handshake failed: Invalid email or password credentials.");
+    }
+
+    // =========================================================================
+    // 🚀 STEP 2: APP-BASED TOTP CODE VALIDATION GATEWAY CONTROLLER
+    // =========================================================================
+    [HttpPost("verify-2fa")]
+    public async Task<IActionResult> VerifyTwoFactorLogin([FromBody] Verify2FactorDto model)
+    {
+        // Enforce anti-bot Turnstile safety checks on step-two verification forms as well
+        if (!await _turnstileValidator.IsHumanAsync(model.TurnstileToken))
+        {
+            return BadRequest(new { message = "Security Intercept: Invalid bot signature." });
+        }
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null) return BadRequest(new { message = "Authentication Denied: User coordinates unmatched." });
+
+        // Cleanly execute Microsoft's native cryptographic Time-Based One-Time Password verification matrix
+        var validToken = await _userManager.VerifyTwoFactorTokenAsync(
+            user, 
+            _userManager.Options.Tokens.AuthenticatorTokenProvider, 
+            model.Code.Trim());
+
+        if (!validToken)
+        {
+            return BadRequest(new { message = "Security Intercept: The provided 6-digit passcode is invalid or has expired." });
+        }
+
+        // Vault verified completely! Unlock access passport boundaries and sign their production JWT token
+        var (tokenString, expirationTime) = await GenerateJwtTokenAsync(user);
+        return Ok(new
+        {
+            token = tokenString,
+            expiration = expirationTime
+        });
+    }
+
+    // =========================================================================
+    // 🚀 STEP 3: ENROLLMENT & SECRET SEED PROVISIONING CONTROLLER (AUTHORIZED)
+    // =========================================================================
+    [HttpPost("setup-2fa")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    public async Task<IActionResult> SetupTwoFactor()
+    {
+        // var currentUserName = User.Identity?.Name;
+        // var user2FClaims = User.Claims.Select(c => $"{c.Type}: {c.Value}").ToList();
+        
+        // Console.WriteLine("\n=========================================================================");
+        // Console.WriteLine($"🔍 [DEBUG 2FA SERVICE ACCESS HANDSHAKE]");
+        // Console.WriteLine($"Active User Name parsed out of HTTP context: {currentUserName}");
+        // Console.WriteLine("All Inbound JWT Claims:");
+        // foreach (var claim in user2FClaims) Console.WriteLine($"  -> {claim}");
+        // Console.WriteLine("=========================================================================\n");
+
+        // Extract the user identity claim string matching active request contexts safely
+        var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return NotFound("User context missing.");
+
+        // Fetch or dynamically instantiate a unique 160-bit cryptographic tracking secret seed string
+        var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+        if (string.IsNullOrEmpty(unformattedKey))
+        {
+            await _userManager.ResetAuthenticatorKeyAsync(user);
+            unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+        }
+
+        // Fetch custom tenant information parameters from disk to brand their smartphone app display
+        var userClaims = await _userManager.GetClaimsAsync(user);
+        var academyClaim = userClaims.FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value;
+        string academyName = "Smart Court Partner Club";
+
+        if (!string.IsNullOrEmpty(academyClaim) && Guid.TryParse(academyClaim, out Guid acadGuid))
+        {
+            var academy = _dbContext.Academies.FirstOrDefault(a => a.Id == acadGuid);
+            if (academy != null) academyName = academy.Name;
+        }
+
+        // Standardized otpauth URI specification layout allowing cross-platform scans
+        string encoderEmail = Uri.EscapeDataString(user.Email!);
+        string encoderLabel = Uri.EscapeDataString($"{academyName}:{user.Email}");
+        string authenticatorUri = $"otpauth://totp/{encoderLabel}?secret={unformattedKey}&issuer={Uri.EscapeDataString(academyName)}&digits=6&period=30";
+
+        return Ok(new Setup2FactorResponseDto(unformattedKey!, authenticatorUri));
+    }
+
+    [HttpPost("confirm-2fa-setup")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
+    public async Task<IActionResult> ConfirmTwoFactorSetup([FromBody] Confirm2FactorSetupPayload payload)
+    {
+        var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        var user = await _userManager.FindByIdAsync(userId!);
+        
+        // Extract code cleanly out of the validated inbound JSON request structure payload 
+        var verified = await _userManager.VerifyTwoFactorTokenAsync(
+            user!, 
+            _userManager.Options.Tokens.AuthenticatorTokenProvider, 
+            payload.Code.Trim());
+
+        if (!verified) return BadRequest(new { message = "Verification failed. Code is invalid." });
+
+        await _userManager.SetTwoFactorEnabledAsync(user!, true);
+        return Ok(new { message = "Two-factor authenticator vault enabled successfully." });
+    }
+    // =========================================================================
+    // 🚀 STEP 1: QUERY SECURE ACCOUNT METRICS STATE (GET REGISTRY TRUTH)
+    // =========================================================================
+    [HttpGet("user-security-state")]
+    [Authorize] // Requires a valid JWT token passport signature context
+    public async Task<IActionResult> GetUserSecurityState()
+    {
+        // Extract the user identity claim string matching active request contexts safely
+        var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return NotFound("User coordinate mapping missing.");
+
+        // Read the absolute truth directly from the identity schema table rows
+        bool is2FaActive = await _userManager.GetTwoFactorEnabledAsync(user);
+
+        return Ok(new UserSecurityStateDto(is2FaActive, user.Email!));
+    }
+
+    // =========================================================================
+    // 🚀 STEP 2: COMPLETE MULTI-FACTOR DEACTIVATION LOOP (WIPE KEYS LEDGER)
+    // =========================================================================
+    [HttpPost("disable-2fa")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")] // Restrict to privileged manager layer rows
+    public async Task<IActionResult> DisableTwoFactor()
+    {
+        // Extract the user identity claim string matching active request contexts safely
+        var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return NotFound("Target user context missing.");
+
+        // 1. Permanently flip the table constraint column flag to false inside PostgreSQL
+        var result = await _userManager.SetTwoFactorEnabledAsync(user, false);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { message = "Identity Exception: Failed to modify multi-factor ledger states." });
+        }
+
+        // 2. SELF-HEALING REGISTRY PURGE: Explicitly remove the AuthenticatorKey row row from AspNetUserTokens
+        // This prevents stale cryptographic parameters from dangling or cluttering your database schema
+        await _userManager.RemoveAuthenticationTokenAsync(
+            user, 
+            "[IdentityConstants.TwoFactorAuthenticatorProvider]", 
+            "AuthenticatorKey");
+
+        return Ok(new { message = "Two-factor authenticator vault deactivated and keys purged cleanly." });
+    }
+
     [HttpPost("update-user-role")]
     [Authorize(Roles = "AcademyDirector,GlobalAdmin")] // Lock down strictly to executives
     public async Task<IActionResult> UpdateUserRole([FromBody] UpdateUserRoleDto model)
@@ -606,4 +870,7 @@ public record RegisterAcademyDto(string Email, string Password, string AcademyNa
 public record UpdateUserRoleDto(string Email, string NewRole);
 public record ProvisionUserDto(string Email, string UserName, string Password, string Role, string PhoneNumber);
 public record UpdateUserPayloadDto(string Email, string UserName, string Role, string PhoneNumber, bool IsActive);
-// Data Transfer Object definition model record
+public record Verify2FactorDto(string Email, string Code, string TurnstileToken = "");
+public record Setup2FactorResponseDto(string SharedKey, string AuthenticatorUri);
+public record Confirm2FactorSetupPayload(string Code);
+public record UserSecurityStateDto(bool IsTwoFactorEnabled, string Email);

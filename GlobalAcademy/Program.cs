@@ -46,11 +46,19 @@ var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JW
 builder.Services.AddIdentityCore<IdentityUser>(options => {
     options.Password.RequireDigit = true;         
     options.Password.RequiredLength = 8;
-    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+ ";         
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+ "; 
+    options.SignIn.RequireConfirmedAccount = false;        
 })
 .AddRoles<IdentityRole>()
 .AddSignInManager()
-.AddEntityFrameworkStores<ApplicationDbContext>();
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders(); // 🚀 THIS ENABLES THE TOTP TIMED PROVIDERS MATRIX NATIVELY
+
+// builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => {
+//     options.SignIn.RequireConfirmedAccount = false;
+// })
+// .AddEntityFrameworkStores<ApplicationDbContext>()
+// .AddDefaultTokenProviders(); // 🚀 THIS ENABLES THE TOTP TIMED PROVIDERS MATRIX NATIVELY
 
 builder.Services.AddAuthentication(options => {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
