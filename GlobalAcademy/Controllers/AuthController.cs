@@ -218,89 +218,40 @@ public class AuthController : ControllerBase
 
         return Ok(new { Message = "Academy registered successfully!", AcademyId = newAcademyId });
     }
-    
-    [HttpPost("dnulogin")]
-    public async Task<IActionResult> DnuLogin([FromBody] LoginDto model)
+    // =========================================================================
+    // 🚀 AUTHORIZED USER PASSWORD ROTATION GATEWAY
+    // =========================================================================
+    [HttpPost("change-password")]
+    [Authorize] // 🔐 Requires a valid active session JWT token passport signature
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
     {
-        if (!await _turnstileValidator.IsHumanAsync(model.TurnstileToken))
+        // 1. Extract the unique User ID string directly out of the active claims passport context
+        var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        if (string.IsNullOrEmpty(userId))
         {
-            // Console.WriteLine($"Turnstile validation failed: Bot signature detected or challenge token expired. {model.TurnstileToken}");
-            return BadRequest(new { message = "Security Intercept: Automated bot signature detected or challenge token expired." });
+            return Unauthorized(new { message = "Access Denied: Missing user identity claim context." });
         }
 
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+        // 2. Fetch the corresponding user row from the database
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
         {
-            // 1. Fetch your actual, live roles from AspNetUserRoles table
-            var userRoles = await _userManager.GetRolesAsync(user);
-            
-            // 2. Fetch your custom claims (like AcademyId) from disk
-            var userClaims = await _userManager.GetClaimsAsync(user);
-
-            var authClaims = new List<Claim>
-            {
-                new Claim("http://xmlsoap.org", user.UserName!),
-                new Claim("jti", Guid.NewGuid().ToString()),
-                new Claim("nameidentifier", user.Id),
-                new Claim("email", user.Email!),
-                new Claim("username", user.UserName!)
-            };
-
-            // =========================================================================
-            // FIX: FORCE LIVE ROLES TO OVERRIDE STALE CLAIM ENTRIES
-            // =========================================================================
-            // We filter out any old, stale "role" claims sitting in the claims table 
-            // to prevent them from colliding with your upgraded role state.
-            
-            foreach (var claim in userClaims)
-            {
-                if (claim.Type != ClaimTypes.Role && claim.Type != "role")
-                {
-                    authClaims.Add(claim);
-                }
-            }
-
-            // Inject your real, freshly elevated live database roles into the token!
-            foreach (var userRole in userRoles)
-            {
-                authClaims.Add(new Claim(ClaimTypes.Role, userRole));
-            }
-
-            var academyClaimValue = userClaims
-            .FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value;
-
-            if (string.IsNullOrEmpty(academyClaimValue) || !Guid.TryParse(academyClaimValue, out Guid academyClaim))
-            {
-
-                // Security Guard: Halt processing immediately to prevent cross-tenant parameter bleeding
-                return BadRequest("Access Denied: Missing or malformed multi-tenant organization context parameters.");
-            }
-
-            var academy = _dbContext.Academies.FirstOrDefault(a=> a.Id == academyClaim);
-            string academyName = academy?.Name ?? "Unknown Academy";
-            authClaims.Add(new Claim("academyName", academyName));
-
-            // --- Generate Token Signing Configurations ---
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]!));
-
-            var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"],
-                audience: jwtSettings["Audience"],
-                expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryInMinutes"]!)),
-                claims: authClaims,
-                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-            );
-
-
-            return Ok(new
-            {
-                token = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token),
-                expiration = token.ValidTo
-            });
+            return NotFound(new { message = "Identity Exception: User profile tracking reference not found." });
         }
 
-        return Unauthorized("Cryptographic handshake failed: Invalid email or password credentials.");
+        // 3. Invoke Microsoft Identity's native cryptographic password rotation manager
+        // This validates the old password first, then verifies new complexity rules atomically
+        var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            // Extract the first structural validation error message (e.g., "Password requires an uppercase letter")
+            string errorReason = result.Errors.FirstOrDefault()?.Description ?? "Failed to update account security parameters.";
+            return BadRequest(new { message = errorReason });
+        }
+
+        return Ok(new { message = "Security credentials rotated and committed cleanly to disk." });
     }
     private async Task<(string Token, DateTime Expiration)> GenerateJwtTokenAsync(IdentityUser user)
     {
@@ -874,3 +825,5 @@ public record Verify2FactorDto(string Email, string Code, string TurnstileToken 
 public record Setup2FactorResponseDto(string SharedKey, string AuthenticatorUri);
 public record Confirm2FactorSetupPayload(string Code);
 public record UserSecurityStateDto(bool IsTwoFactorEnabled, string Email);
+// 🚀 NEW ADDITION: Standardizes secure input bindings for password rotation operations
+public record ChangePasswordDto(string CurrentPassword, string NewPassword);
