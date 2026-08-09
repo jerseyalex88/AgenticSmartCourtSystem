@@ -26,6 +26,12 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // =========================================================================
+  // 🚀 RESERVATION COUNTDOWN TIMER STATE VARIABLES
+  // =========================================================================
+  const [secondsRemaining, setSecondsRemaining] = useState<number | null>(null);
+  const [hasUnpaidHold, setHasUnpaidHold] = useState<boolean>(false);
   
   const [chatHistory, setChatHistory] = useState<ChatBubbleLog[]>(() => {
     const isAdmin = user?.role === 'AcademyDirector' || user?.role === 'GlobalAdmin';
@@ -110,6 +116,79 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     
     return () => {
       // Clean up reference on unmounting to eliminate performance degradation or memory leaks
+      window.removeEventListener('GLOBAL_TRIGGER_CHECKOUT', handleGlobalCheckoutTrigger);
+    };
+  }, []);
+
+  // 🚀 AUTOMATED DATA SYNC: FETCH THE TRUE DATABASE TIMESTAMPS FROM THE API
+  useEffect(() => {
+    if (!user) return;
+
+    const syncHoldTelemetry = async () => {
+      try {
+        const response = await apiClient.get('/Auth/user-active-holds');
+        if (response.data?.hasActiveHold && response.data?.secondsLeft > 0) {
+          setSecondsRemaining(response.data.secondsLeft);
+          setHasUnpaidHold(true);
+        } else {
+          setSecondsRemaining(null);
+          setHasUnpaidHold(false);
+        }
+      } catch (err) {
+        console.error("❌ Failed to sync court reservation hold parameters:", err);
+      }
+    };
+
+    syncHoldTelemetry();
+    // Periodically re-verify state to catch background data changes
+    const dataSyncInterval = setInterval(syncHoldTelemetry, 30000);
+    return () => clearInterval(dataSyncInterval);
+  }, [user, activeTab]);
+
+  // 🚀 THE TICKING GRAPHICAL TIMER MOTOR ENGINE
+  useEffect(() => {
+    if (secondsRemaining === null || secondsRemaining <= 0) {
+      if (secondsRemaining === 0) {
+        setSecondsRemaining(null);
+        setHasUnpaidHold(false);
+        // Force refresh grid states because court holds expired
+        window.location.reload();
+      }
+      return;
+    }
+
+    const clockMotor = setTimeout(() => {
+      setSecondsRemaining(prev => (prev !== null ? prev - 1 : null));
+    }, 1000);
+
+    return () => clearTimeout(clockMotor);
+  }, [secondsRemaining]);
+
+  useEffect(() => {
+    const handleGlobalCheckoutTrigger = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail) {
+        const { invoiceId, totalAmount, isPaymentCompletion } = customEvent.detail;
+        
+        // 🚀 RULE 4: FORCE HIDING CLOCK ON BALANCE CLEARANCE
+        if (isPaymentCompletion) {
+          apiClient.get('/Auth/user-active-holds').then(res => {
+            if (!res.data?.hasActiveHold) {
+              setSecondsRemaining(null);
+              setHasUnpaidHold(false);
+            }
+          });
+          return;
+        }
+
+        setActiveInvoiceId(invoiceId);
+        setActiveInvoiceAmount(totalAmount);
+        setIsCheckoutOpen(true);
+      }
+    };
+
+    window.addEventListener('GLOBAL_TRIGGER_CHECKOUT', handleGlobalCheckoutTrigger);
+    return () => {
       window.removeEventListener('GLOBAL_TRIGGER_CHECKOUT', handleGlobalCheckoutTrigger);
     };
   }, []);
@@ -446,6 +525,21 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
 
       </div>
 
+      {hasUnpaidHold && secondsRemaining !== null && (
+        <div className="fixed top-16 right-4 h-10 px-4 bg-indigo-600 border border-indigo-700 dark:border-indigo-800 rounded-full shadow-2xl flex items-center space-x-2 text-white font-sans text-xs font-black uppercase tracking-wider z-40">
+        {/* <div className="fixed top-16 right-4 h-10 px-4 bg-amber-500 border border-amber-600 dark:border-amber-700 rounded-full shadow-2xl flex items-center space-x-2 text-white font-sans text-xs font-black uppercase tracking-wider z-40"> */}
+          <span className="text-sm">⏱️</span>
+          <span>Please pay now! Hold expires in:</span>
+          <span className="font-mono text-sm bg-amber-600 border border-amber-700 px-2 py-0.5 rounded-md shadow-xs">
+            {(() => {
+              const minutes = Math.floor(secondsRemaining / 60);
+              const seconds = secondsRemaining % 60;
+              return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            })()}
+          </span>
+        </div>
+      )}
+
       {/* PERSISTENT FIXED ORB BUTTON (Locked cleanly in the top-right corner) */}
       <button
         type="button"
@@ -482,6 +576,10 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
                 if (typeof (window as any).refreshDashboardAllocationGrid === 'function') {
                   (window as any).refreshDashboardAllocationGrid();
                 }
+                const checkoutSuccessEvent = new CustomEvent('GLOBAL_TRIGGER_CHECKOUT', {
+                  detail: { isPaymentCompletion: true }
+                });
+                window.dispatchEvent(checkoutSuccessEvent);
                 // Automatically dismiss the modal window layout after a brief visibility delay
                 setTimeout(() => setIsCheckoutOpen(false), 2500);
               }}

@@ -25,6 +25,7 @@ public class AuthController : ControllerBase
     private readonly IEmailNotificationEngine _emailEngine;
     private readonly ITurnstileValidator _turnstileValidator;
     private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly int HoldExpirationMinutes = 5; // Default expiration window for court booking holds
 
     // 2. UPDATE THE CONSTRUCTOR TO ACCEPT APPLICATIONDBCONTEXT
     public AuthController(
@@ -77,6 +78,9 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ExternalLoginCallback()
     {
+        // 🚀 ATOMIC REFRESH DETECTOR: Fire the silent cross-tenant basket cleanup sweep immediately on login
+        await SweepAllExpiredReservationHoldsAsync();
+
         var frontendUrl = _configuration["AllowedOrigins:0"] ?? "http://localhost:5173";
 
         // Read transient security payload flags from incoming scheme cookies
@@ -227,7 +231,6 @@ public class AuthController : ControllerBase
     {
         // 1. Extract the unique User ID string directly out of the active claims passport context
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId)) return Unauthorized();
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { message = "Access Denied: Missing user identity claim context." });
@@ -306,6 +309,9 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto model)
     {
+        // 🚀 ATOMIC REFRESH DETECTOR: Fire the silent cross-tenant basket cleanup sweep immediately on login
+        await SweepAllExpiredReservationHoldsAsync();
+
         // Turnstile Anti-Bot Security Gate Intercept Wall
         if (!await _turnstileValidator.IsHumanAsync(model.TurnstileToken))
         {
@@ -813,6 +819,134 @@ public class AuthController : ControllerBase
 
         return Ok(new { Message = "Player account initialized cleanly." });
     }
+
+    // =========================================================================
+    // 🚀 DYNAMIC SUITE ACCESS: ACTIVE USER HOLDS TIMER GATEWAY (RULE 2)
+    // =========================================================================
+    [HttpGet("user-active-holds")]
+    [Authorize] // Enforce strict JWT multi-tenant validation perimeters
+    public async Task<IActionResult> GetUserActiveHolds()
+    {
+        // 1. Safely extract the active player's primary tracking Guid from token claims
+        var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { message = "Access Denied: Missing user identity claim context." });
+        }
+
+        // 🚀 THE USER-ISOLATED SELF-HEALING HOOK: Force the database to sweep and purge 
+        // expired holds belonging ONLY to this specific user context loop!
+        await SweepAllExpiredReservationHoldsAsync(userId);
+
+        // 2. Query for their EARLIEST outstanding unpaid court booking invoice sitting in memory
+        // =========================================================================
+        // 🚀 FIXED: EXPLICIT NAMESPACE BINDING TO BYPASS EXTENSION METHOD COLLISIONS
+        // =========================================================================
+        var earliestUnpaidInvoice = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+            _dbContext.Invoices
+                .Where(i => i.IssuedToUserId == userId && i.Status == InvoiceStatus.Unpaid)
+                .OrderBy(i => i.CreatedAtUtc)
+        );
+
+        if (earliestUnpaidInvoice == null)
+        {
+            // No holds found: return a clean zero-balance data contract to hide the frontend ticker
+            return Ok(new UserActiveHoldsDto(HasActiveHold: false, SecondsLeft: 0));
+        }
+
+        // 3. Compute the exact remaining lifespans relative to current system time
+        var expirationTimeUtc = earliestUnpaidInvoice.CreatedAtUtc.AddMinutes(HoldExpirationMinutes);
+        var timeDifference = expirationTimeUtc - DateTime.UtcNow;
+        int secondsRemaining = (int)Math.Max(0, timeDifference.TotalSeconds);
+
+        if (secondsRemaining <= 0)
+        {
+            // Edge case: Hold expired but nobody has logged in to trigger a sweep yet. 
+            // Return zero so the frontend hides the clock or prompts an on-demand refresh
+            return Ok(new UserActiveHoldsDto(HasActiveHold: false, SecondsLeft: 0));
+        }
+
+        return Ok(new UserActiveHoldsDto(HasActiveHold: true, SecondsLeft: secondsRemaining));
+    }
+
+    // =========================================================================
+    // 🚀 FIXED: DUAL-ACTION BASKET CLEANUP DAEMON ENGINE (GLOBAL + USER ISOLATED)
+    // =========================================================================
+    private async Task SweepAllExpiredReservationHoldsAsync(string? userId = null)
+    {
+        // 1. Calculate the strict HoldExpirationMinutes-minute basket cutoff marker relative to right now
+        var expirationCutoffUtc = DateTime.UtcNow.AddMinutes(-HoldExpirationMinutes);
+
+        // 2. DYNAMIC QUERY ALIGNMENT: 
+        // If a userId is provided, isolate ONLY that user. If null, scan ALL expired unpaid invoices across the system.
+        var expiredInvoicesQuery = _dbContext.Invoices
+            .Where(i => i.Status == InvoiceStatus.Unpaid && i.CreatedAtUtc < expirationCutoffUtc);
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            expiredInvoicesQuery = expiredInvoicesQuery.Where(i => i.IssuedToUserId == userId);
+        }
+
+        var expiredInvoices = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(expiredInvoicesQuery);
+
+        if (!expiredInvoices.Any()) return; // Early exit if no targets match the criteria
+
+        // Extract the collection of unique tracking invoice IDs
+        var targetUserIds = expiredInvoices.Select(i => i.IssuedToUserId).Distinct().ToList();
+        var expiredInvoiceIds = expiredInvoices.Select(i => i.InvoiceId).ToList();
+
+        using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+        {
+            try
+            {
+                // We search the calendar table for any bookings matching the target user IDs 
+                // that were created inside the exact same HoldExpirationMinutes-minute expired timestamp boundary
+                // var bookingsToPurge = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                //     _dbContext.Bookings.Where(b => 
+                //         targetUserIds.Contains(b.BookedByUserId) && 
+                //         b.CreatedAtUtc < expirationCutoffUtc)
+                // );
+                // // A. SILENT PURGE: Remove the expired hold slots from the calendar schedule grid
+                // if (bookingsToPurge.Any())
+                // {
+                //     _dbContext.Bookings.RemoveRange(bookingsToPurge);
+                // }
+
+                // Fallback: Still attempt to wipe any bookings explicitly tracked by line items
+                var lineItems = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                    _dbContext.InvoiceLineItems.Where(li => expiredInvoiceIds.Contains(li.InvoiceId) && li.AssociatedBookingId != null)
+                );
+                var lineItemBookingIds = lineItems.Select(li => li.AssociatedBookingId!.Value).ToList();
+                
+                if (lineItemBookingIds.Any())
+                {
+                    var fallbackBookings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                        _dbContext.Bookings.Where(b => lineItemBookingIds.Contains(b.Id))
+                    );
+                    _dbContext.Bookings.RemoveRange(fallbackBookings);
+                }
+
+                // B. FLIP FINANCIAL STATES: Mark the targeted expired invoices as Voided
+                foreach (var invoice in expiredInvoices)
+                {
+                    invoice.Status = InvoiceStatus.Voided;
+                }
+
+                // Commit all changes atomically to PostgreSQL
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+                
+                string modeText = string.IsNullOrEmpty(userId) ? "GLOBAL SYSTEM" : $"USER ISOLATED ({userId})";
+                Console.WriteLine($"[SMARTCOURT CLEANUP]: {modeText} sweep complete. Purged {lineItemBookingIds.Distinct().Count()} court slots and voided {expiredInvoices.Count} invoices.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"[SMARTCOURT CLEANUP EXCEPTION]: Sweep failure: {ex.Message}");
+            }
+        }
+    }
+
 }
 
 public record LoginDto(string Email, string Password, string TurnstileToken = "");
@@ -827,3 +961,4 @@ public record Confirm2FactorSetupPayload(string Code);
 public record UserSecurityStateDto(bool IsTwoFactorEnabled, string Email);
 // 🚀 NEW ADDITION: Standardizes secure input bindings for password rotation operations
 public record ChangePasswordDto(string CurrentPassword, string NewPassword);
+public record UserActiveHoldsDto(bool HasActiveHold, int SecondsLeft);
