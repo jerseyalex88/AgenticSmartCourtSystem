@@ -867,6 +867,22 @@ public class AuthController : ControllerBase
         }
 
         return Ok(new UserActiveHoldsDto(HasActiveHold: true, SecondsLeft: secondsRemaining));
+
+    }
+    [HttpPost("execute-reservation-sweep")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")] // Secures the endpoint from unauthorized client exploitation
+    public async Task<IActionResult> ExecuteReservationSweep([FromQuery] string? userId = null)
+    {
+        try
+        {
+            // Console.WriteLine("[SMARTCOURT DEBBUGGER]: Manually invoking SweepAllExpiredReservationHoldsAsync...");
+            await SweepAllExpiredReservationHoldsAsync(userId);
+            return Ok(new { Message = "System maintenance daemon sweep executed successfully. Check console log streams for metrics." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = $"Manual execution layer fault: {ex.Message}" });
+        }
     }
 
     // =========================================================================
@@ -878,7 +894,7 @@ public class AuthController : ControllerBase
         var expirationCutoffUtc = DateTime.UtcNow.AddMinutes(-HoldExpirationMinutes);
 
         // 2. DYNAMIC QUERY ALIGNMENT: 
-        // If a userId is provided, isolate ONLY that user. If null, scan ALL expired unpaid invoices across the system.
+        // Isolate ONLY unpaid invoices that have crossed the expiration threshold
         var expiredInvoicesQuery = _dbContext.Invoices
             .Where(i => i.Status == InvoiceStatus.Unpaid && i.CreatedAtUtc < expirationCutoffUtc);
 
@@ -888,65 +904,79 @@ public class AuthController : ControllerBase
         }
 
         var expiredInvoices = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(expiredInvoicesQuery);
+        // Console.WriteLine($"Debug [SMARTCOURT CLEANUP]: Found {expiredInvoices.Count} expired unpaid invoices for processing.");
 
         if (!expiredInvoices.Any()) return; // Early exit if no targets match the criteria
 
-        // Extract the collection of unique tracking invoice IDs
-        var targetUserIds = expiredInvoices.Select(i => i.IssuedToUserId).Distinct().ToList();
         var expiredInvoiceIds = expiredInvoices.Select(i => i.InvoiceId).ToList();
 
         using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
             try
             {
-                // We search the calendar table for any bookings matching the target user IDs 
-                // that were created inside the exact same HoldExpirationMinutes-minute expired timestamp boundary
-                // var bookingsToPurge = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
-                //     _dbContext.Bookings.Where(b => 
-                //         targetUserIds.Contains(b.BookedByUserId) && 
-                //         b.CreatedAtUtc < expirationCutoffUtc)
-                // );
-                // // A. SILENT PURGE: Remove the expired hold slots from the calendar schedule grid
-                // if (bookingsToPurge.Any())
-                // {
-                //     _dbContext.Bookings.RemoveRange(bookingsToPurge);
-                // }
-
-                // Fallback: Still attempt to wipe any bookings explicitly tracked by line items
+                // 3. TARGETED SLOT EXTRACT: Fetch associated line items and map cleanly from nullable Guid? to primitive Guid list
                 var lineItems = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
-                    _dbContext.InvoiceLineItems.Where(li => expiredInvoiceIds.Contains(li.InvoiceId) && li.AssociatedBookingId != null)
+                    _dbContext.InvoiceLineItems
+                        .Where(li => expiredInvoiceIds.Contains(li.InvoiceId) && li.AssociatedBookingId != null)
                 );
-                var lineItemBookingIds = lineItems.Select(li => li.AssociatedBookingId!.Value).ToList();
-                
+
+                // lineItems.ForEach(li => Console.WriteLine($"Debug [SMARTCOURT CLEANUP]: Found line item ID: {li.LineItemId} associated with booking ID: {li.AssociatedBookingId}"));
+
+                var lineItemBookingIds = lineItems
+                    .Select(li => li.AssociatedBookingId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                // lineItemBookingIds.ForEach(id => Console.WriteLine($"Debug [SMARTCOURT CLEANUP]: Targeting booking ID for purge: {id}"));
+
+                int purgedSlotsCount = 0;
+
+                // A. ROW-BY-ROW SILENT PURGE: Bypass EF Core bulk-query translation locks by attaching and dropping explicitly
                 if (lineItemBookingIds.Any())
                 {
-                    var fallbackBookings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
-                        _dbContext.Bookings.Where(b => lineItemBookingIds.Contains(b.Id))
-                    );
-                    _dbContext.Bookings.RemoveRange(fallbackBookings);
+                    foreach (var bookingId in lineItemBookingIds)
+                    {
+                        // Console.WriteLine($"Debug [SMARTCOURT CLEANUP]: Attempting to purge booking ID: {bookingId} from the database context.");
+                        // Look up directly from the context tracker cache first, falling back to db seamlessly
+                        var bookingRow = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+                            _dbContext.Bookings.Where(b => b.Id == bookingId)
+                        );
+                        if (bookingRow != null)
+                        {
+                            // Console.WriteLine($"Debug [SMARTCOURT CLEANUP]: Purging booking ID: {bookingRow.Id} for expired invoice cleanup.");
+                            _dbContext.Bookings.Remove(bookingRow);
+                            purgedSlotsCount++;
+                        }
+                        // else
+                        // {
+                        //     Console.WriteLine($"Debug [SMARTCOURT CLEANUP]: Booking ID: {bookingId} not found in the database context. It may have already been purged or never existed.");
+                        // }
+                    }
                 }
 
                 // B. FLIP FINANCIAL STATES: Mark the targeted expired invoices as Voided
                 foreach (var invoice in expiredInvoices)
                 {
                     invoice.Status = InvoiceStatus.Voided;
+                    Console.WriteLine($"Debug [SMARTCOURT CLEANUP]: Voiding expired invoice ID: {invoice.InvoiceId}");
                 }
 
                 // Commit all changes atomically to PostgreSQL
+                // await transaction.RollbackAsync();
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
                 
                 string modeText = string.IsNullOrEmpty(userId) ? "GLOBAL SYSTEM" : $"USER ISOLATED ({userId})";
-                Console.WriteLine($"[SMARTCOURT CLEANUP]: {modeText} sweep complete. Purged {lineItemBookingIds.Distinct().Count()} court slots and voided {expiredInvoices.Count} invoices.");
+                // Console.WriteLine($"[SMARTCOURT CLEANUP]: {modeText} sweep complete. Purged {purgedSlotsCount} court slots and voided {expiredInvoices.Count} invoices.");
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                Console.WriteLine($"[SMARTCOURT CLEANUP EXCEPTION]: Sweep failure: {ex.Message}");
+                Console.WriteLine($"[SMARTCOURT CLEANUP EXCEPTION]: Sweep failure: {ex.Message} {ex.StackTrace} {ex.InnerException}");
+                throw; // Re-throw to prevent silent failure masking within the daemon loop
             }
         }
     }
-
 }
 
 public record LoginDto(string Email, string Password, string TurnstileToken = "");

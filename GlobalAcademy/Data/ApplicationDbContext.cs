@@ -58,7 +58,11 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<Court>().HasQueryFilter(c => c.AcademyId == CurrentTenantId);
         modelBuilder.Entity<Booking>().HasQueryFilter(bk => bk.AcademyId == CurrentTenantId);
         modelBuilder.Entity<ShadowQueue>().HasQueryFilter(sq => sq.AcademyId == CurrentTenantId);
-        modelBuilder.Entity<MaintenanceTicket>().HasQueryFilter(mt => mt.AcademyId == CurrentTenantId);        
+        modelBuilder.Entity<MaintenanceTicket>().HasQueryFilter(mt => mt.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<Invoice>().HasQueryFilter(i => i.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<LedgerTransaction>().HasQueryFilter(lt => lt.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<UserBranch>().HasQueryFilter(ub => ub.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<UserCourt>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
 
         // Configure precise decimal scales for financial properties
         modelBuilder.Entity<UnifiedCatalogItem>()

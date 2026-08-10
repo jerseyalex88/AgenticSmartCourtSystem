@@ -164,8 +164,8 @@ export function PlayerBookingManager() {
       setPendingModel(null);
 
       showAlert({
-        title: 'Reservation Secured!',
-        message: 'Your match row has been committed live to PostgreSQL transaction logs.',
+        title: 'Reservation On Hold!',
+        message: 'Your court has been put on hold for the selected time slot.  Please proceed to the Billings page to complete the transaction.',
         type: 'success'
       });
 

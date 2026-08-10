@@ -122,7 +122,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
 
   // 🚀 AUTOMATED DATA SYNC: FETCH THE TRUE DATABASE TIMESTAMPS FROM THE API
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.role !== 'Player') return;
 
     const syncHoldTelemetry = async () => {
       try {
@@ -135,7 +135,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
           setHasUnpaidHold(false);
         }
       } catch (err) {
-        console.error("❌ Failed to sync court reservation hold parameters:", err);
+        // console.error("❌ Failed to sync court reservation hold parameters:", err);
       }
     };
 

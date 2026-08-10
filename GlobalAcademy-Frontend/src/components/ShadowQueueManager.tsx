@@ -64,6 +64,20 @@ export default function ShadowQueueManager() {
     }
   };
 
+  // TRIGGER 3: SWEEP ALL EXPIRED RESERVATION HOLDS
+  const executeSweepAllExpiredReservationHolds = async () => {
+    setRunning(true);
+    setReport(null);
+    try {
+      const response = await apiClient.post('/Auth/execute-reservation-sweep');
+      setReport(response.data.message || 'Sweep completed successfully.');
+    } catch (err: any) {
+      setReport(`Sweep Failure: ${err.response?.data || err.message}`);
+    } finally {
+      setRunning(false);
+    }
+  };
+  
   return (
     <div className="space-y-6 text-sans">
       <div>
@@ -98,6 +112,15 @@ export default function ShadowQueueManager() {
             }`}
           >
             {running ? 'Running Agent Loop...' : '⚡ Launch AI Match-Saver'}
+          </button>
+
+          <button
+            onClick={executeSweepAllExpiredReservationHolds}
+            className={`px-4 py-2 font-bold uppercase tracking-wider transition ${
+              running ? 'bg-slate-200 text-slate-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-500 text-white'
+            }`}
+          >
+            {running ? 'Running Agent Loop...' : '⚡ Sweep-All-Expired-Reservation-Holds'}
           </button>
         </div>
       </div>
