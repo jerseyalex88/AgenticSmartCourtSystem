@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict P2SnTUsO7u3UVb9yVL6IHHTAHhZkHDPlxh8PZ7Wmq2pjJSkVlbtpNwIMDTIaJFa
+\restrict BhZ3MDBqV2S4apSigdEcKucChDbBUeaiYp0u3sQIc6mNhSyfJISShmhzc4awM6x
 
 -- Dumped from database version 18.4 (Homebrew)
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -459,6 +459,10 @@ COPY public."AspNetUserClaims" ("Id", "UserId", "ClaimType", "ClaimValue") FROM 
 64	04b6d1ab-ea0d-4c0e-b209-f1e42698d918	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
 66	510b442d-3cdf-468c-8e7f-21c50f9c638a	AcademyId	60186569-a432-4375-9bee-485c69f086d5
 67	510b442d-3cdf-468c-8e7f-21c50f9c638a	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
+88	ab48a5f1-5800-4bff-b8fe-f685330108aa	AcademyId	60186569-a432-4375-9bee-485c69f086d5
+89	ab48a5f1-5800-4bff-b8fe-f685330108aa	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
+90	123dd734-101d-4b8b-a99d-37b9e17b4d83	AcademyId	60186569-a432-4375-9bee-485c69f086d5
+91	123dd734-101d-4b8b-a99d-37b9e17b4d83	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
 \.
 
 
@@ -491,6 +495,8 @@ ebc07db1-19aa-4f74-ae64-5507224702c5	53902b9f-6602-41a3-85cc-59bfb53ad842
 d1484a49-e425-4991-ab8a-5bfe003c4fb9	723a79e6-e9ef-40e5-a120-95d0e5489555
 04b6d1ab-ea0d-4c0e-b209-f1e42698d918	53902b9f-6602-41a3-85cc-59bfb53ad842
 510b442d-3cdf-468c-8e7f-21c50f9c638a	53902b9f-6602-41a3-85cc-59bfb53ad842
+ab48a5f1-5800-4bff-b8fe-f685330108aa	53902b9f-6602-41a3-85cc-59bfb53ad842
+123dd734-101d-4b8b-a99d-37b9e17b4d83	53902b9f-6602-41a3-85cc-59bfb53ad842
 \.
 
 
@@ -499,6 +505,7 @@ d1484a49-e425-4991-ab8a-5bfe003c4fb9	723a79e6-e9ef-40e5-a120-95d0e5489555
 --
 
 COPY public."AspNetUserTokens" ("UserId", "LoginProvider", "Name", "Value") FROM stdin;
+60978d5c-8caa-4e73-8303-d13108765ea9	[AspNetUserStore]	AuthenticatorKey	ZRTORYY6KTRBQ6ICVIHUVL4FVY7EFY5X
 \.
 
 
@@ -517,12 +524,14 @@ ebc07db1-19aa-4f74-ae64-5507224702c5	self_registered_player_c30298f8-84dd-4165-9
 56910a83-16c6-4161-9eec-7a3cb83d151a	self_registered_player_32e5c064-7b71-4fbc-8df2-1a40f891612d@wimbledon.com	SELF_REGISTERED_PLAYER_32E5C064-7B71-4FBC-8DF2-1A40F891612D@WIMBLEDON.COM	self_registered_player_32e5c064-7b71-4fbc-8df2-1a40f891612d@wimbledon.com	SELF_REGISTERED_PLAYER_32E5C064-7B71-4FBC-8DF2-1A40F891612D@WIMBLEDON.COM	t	AQAAAAIAAYagAAAAEFnYc9N1ed6BYX/lVI6+7AcRZQ+HhsukF6/ylp+DciYpbBtfjtP9C9OxlseqNcE4Bg==	SCOSSZJH3B6YFV4XPULEX5W6RPPKVG53	d35ebff4-ccd9-48c8-878c-3d9141790542	+15550998877	f	f	\N	t	0
 04b6d1ab-ea0d-4c0e-b209-f1e42698d918	Chiki Happy	CHIKI HAPPY	chiki@vanguardacademy.com	CHIKI@VANGUARDACADEMY.COM	t	AQAAAAIAAYagAAAAEEbqA1eV6KYdymil3Kd+A5ab3Oy6veV1SwjhIaIa2ZLmRWlX78t3j4IruJqlNy8Lcg==	GUPPLSO5ZR2AO7YDXRFEWLZERVJHWQBU	0e50acf2-4a8e-4958-91b1-23af9fc0bf4c	+1604-123-4567	f	f	\N	t	0
 36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	JERSEYALEX88@GMAIL.COM	jerseyalex88@gmail.com	JERSEYALEX88@GMAIL.COM	t	AQAAAAIAAYagAAAAEFO9i/tnLpojaQOvirZNjSGifucW2i2NYhiHlDq7z+MXZyVCuKRH1kt/ReRHUKiLEA==	BS45WKWIFMIQHJSBNDGLBMNWSECYVV62	b440ae7a-4fb0-4904-a369-87de6c2af44f	+160412345676	f	f	\N	t	0
-7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	CHIKI REYES	chiki@wimbeldon.com	CHIKI@WIMBELDON.COM	t	AQAAAAIAAYagAAAAEL4FsWu5ZSSGGsQy1u+7CWqDR1MRcOH20xUtn24Gd47lzDJCqqYO8Y6+o1D6hfN9/g==	F7OHP22LVDU652VBX7GDBY2LJIWDV3MR	5d31e73d-4c2c-4dc7-8f22-f50b0446abf7	+16041234567	f	f	\N	t	0
 3b74733e-3a64-43a9-a3e9-c9419a6ec31d	Leo Explorer	LEO EXPLORER	leo@wimbeldon.com	LEO@WIMBELDON.COM	t	AQAAAAIAAYagAAAAEH3K2FQ83zPBjzUAYvwrs8/roXcNfS/37OtDPNH+wVqyeWNboBF8h+KTEZ+dAPEx3Q==	4BNQC7EGFWOHQRNZDLZDTQWHPA5VM7IQ	4dae8b62-6761-4b20-b10b-8a2227fcb1e6	+19051234567	f	f	\N	t	0
 293fb057-0df0-4fc2-9f69-efb3e5f22462	Leo Happy	LEO HAPPY	leo@vanguardacademy.com	LEO@VANGUARDACADEMY.COM	t	AQAAAAIAAYagAAAAEFxejwTpD69Z/OXhpWLy5R9Jd4EcHAiy52WTjVeUjCm96EHVi07eOC0fXnMBICcM4Q==	A3T6ZOLNVNUMQMH3AJ5AWXI2QJR65XJ3	82be2f18-2d55-40bf-9c57-21e1941501c7		f	f	\N	t	0
 d1484a49-e425-4991-ab8a-5bfe003c4fb9	Alex Jersey	ALEX JERSEY	jerseyalex88@vanguardacademy.com	JERSEYALEX88@VANGUARDACADEMY.COM	t	AQAAAAIAAYagAAAAEFQqzualJqLjyQwBDNRNmq4FtVOesUIgQiUi3IlJM1E7a9dLKUUu8DRYPooiGP2M9Q==	MFFH6GUIIZQG4WDYZGQCU43CI4H2L4FJ	f471ff46-2391-4189-9009-a9feb2c2e32e		f	f	\N	t	0
-60978d5c-8caa-4e73-8303-d13108765ea9	HF Director	HF DIRECTOR	director@londonvanguard.com	DIRECTOR@LONDONVANGUARD.COM	t	AQAAAAIAAYagAAAAEJRZ/jIf5qbEq7tmwZBm6Y3M0A+LU4MidhvA1QWlGsctBmTb64rI4vw5CASHk8CxZA==	EJ55P7HL3VJOPPRJTVPLQLYRDXSHRZSD	2957df01-5abe-43cc-9fd7-e9155779c8a3		f	f	\N	t	0
 510b442d-3cdf-468c-8e7f-21c50f9c638a	ashleyshella138@gmail.com	ASHLEYSHELLA138@GMAIL.COM	ashleyshella138@gmail.com	ASHLEYSHELLA138@GMAIL.COM	t	\N	TYJ66ACJ5A5YCNVIJHN25D4EYP64YILQ	783bff4d-8f21-4454-9933-7921ee743d6c	\N	f	f	\N	t	0
+123dd734-101d-4b8b-a99d-37b9e17b4d83	alexreyes88@yahoo.com	ALEXREYES88@YAHOO.COM	alexreyes88@yahoo.com	ALEXREYES88@YAHOO.COM	t	AQAAAAIAAYagAAAAEE6I6Bn3I8D3HuM23AncZfcK2zjHuH9KMnNMQQh5lM9Ho9jRjXDtQei5yMiiN7uYdw==	R6OOBYTPR7W7QQGY4EPOFXZ7T2BGPTRD	27c539f8-064c-4ff3-adcb-2f9f368801e4	+160412345457	f	f	\N	t	0
+ab48a5f1-5800-4bff-b8fe-f685330108aa	jerseychiki88@gmail.com	JERSEYCHIKI88@GMAIL.COM	jerseychiki88@gmail.com	JERSEYCHIKI88@GMAIL.COM	t	\N	URGUWJ7JAV5DQ4NDRM7UIPZTRGAX3Y3O	3198216a-6038-466b-acf3-a70f68c1887d	\N	f	f	\N	t	0
+60978d5c-8caa-4e73-8303-d13108765ea9	HF Director	HF DIRECTOR	areyesbiz@hotmail.com	AREYESBIZ@HOTMAIL.COM	t	AQAAAAIAAYagAAAAEM4e1wOnjTk62UhTwmAGCVJibMYokzTCcfF6UnHev//PZo41i4LIBEQvJSOXWJ1Dpw==	BUWNUHOXYHCQ4DTE6QNDA2RNLS5JD5JU	2068b50e-dcfe-4036-a89e-b0d6cee4af71		f	t	\N	t	0
+7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	CHIKI REYES	chiki@wimbeldon.com	CHIKI@WIMBELDON.COM	t	AQAAAAIAAYagAAAAECH9HJO23EXYR2KtvJt4uSdV8NKeBduVhACgIuuGMwqJ7V9Y7DB5uiNFqadyfSHfjQ==	LOHD3KIL37Z5CTIAQTCOEZYCOHCOAMBI	cf4ae259-754a-4d6e-bce3-ebb3aa0e94ca	+16041234567	f	f	\N	t	0
 \.
 
 
@@ -546,14 +555,9 @@ f69be446-e707-456e-93fe-d708f6268ef8	60186569-a432-4375-9bee-485c69f086d5		Live 
 9da8e401-0ece-4a40-a616-91586a6e6268	60186569-a432-4375-9bee-485c69f086d5		AI Emergency Recovery Slot	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-07-12 10:55:35.502279-07	-infinity			-infinity	\N	Indoor Center Show Court 3	t	2026-07-12 11:40:35.502375-07	4c073a7a-7864-4341-85ce-869914b3c117	90	0.00
 779ae995-47ae-47c2-9973-27dd1dfe46ee	60186569-a432-4375-9bee-485c69f086d5		AI Emergency Recovery Slot	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-07-12 12:44:20.202759-07	-infinity			-infinity	\N	Indoor Center Show Court 3	t	2026-07-12 13:29:20.202778-07	4c073a7a-7864-4341-85ce-869914b3c117	90	0.00
 3b2a653d-78b0-4dc2-9df5-538bf737351f	60186569-a432-4375-9bee-485c69f086d5		AI Emergency Recovery Slot	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-07-12 12:57:29.584995-07	-infinity			-infinity	\N	Indoor Center Show Court 3	t	2026-07-12 13:42:29.585132-07	4c073a7a-7864-4341-85ce-869914b3c117	90	0.00
-4da3a729-dfe8-46f5-89fd-9095dea85e54	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Player App Secured Reservation	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-07-14 15:15:12.237942-07	2026-07-19 02:00:00-07			2026-07-19 01:00:00-07	Chiki Reyes	Indoor Clay Court 2	f	2026-07-19 01:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 f6e91dd7-372e-48d1-a510-3d9659a3dfe1	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	Player App Secured Reservation	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-07-17 11:27:08.884271-07	2026-07-17 05:00:00-07			2026-07-17 04:00:00-07	jerseyalex88@gmail.com	Indoor Clay Court 2	f	2026-07-17 04:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 858e98da-56a9-49b3-a39f-23bb625467d0	60186569-a432-4375-9bee-485c69f086d5	60978d5c-8caa-4e73-8303-d13108765ea9	MemberBooking	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-07-18 14:39:34.783111-07	2026-07-21 03:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-21 02:00:00-07	London Vanguard Academy	Stadium Center Clay	f	2026-07-21 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 5ff69bb0-68e6-4a53-8526-d2413e86a471	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-07-18 15:14:18.447056-07	2026-07-18 12:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-18 11:00:00-07	leo@wimbeldon.com	Indoor Clay Court 2	f	2026-07-18 12:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
-9a448d0f-a5c1-4d93-8cf4-4c41e78539f8	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-07-19 09:17:56.377808-07	2026-07-27 03:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-27 02:00:00-07	Chiki Reyes	Stadium Center Clay	f	2026-07-27 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
-5b612ccd-b1d3-4f47-9ed5-6dfa11de7d8f	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-07-19 13:03:17.008392-07	2026-07-24 05:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-24 04:00:00-07	Chiki Reyes	Indoor Clay Court 2	f	2026-07-24 05:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
-cda4e48e-9ff1-467e-8dd8-af130ece5e7c	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-07-19 13:05:19.960942-07	2026-07-27 04:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-27 03:00:00-07	Chiki Reyes	Stadium Center Clay	f	2026-07-27 04:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
-e33d20b3-2f83-4156-be88-9338e4504b3a	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-07-19 13:05:19.979976-07	2026-07-27 05:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-27 04:00:00-07	Chiki Reyes	Stadium Center Clay	f	2026-07-27 05:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 9fb8ade3-bcb5-43f2-ae21-8fde558e0556	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-07-19 15:11:22.526623-07	2026-07-22 02:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-22 01:00:00-07	leo@wimbeldon.com	Stadium Center Clay	f	2026-07-22 02:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 13376b80-bbe8-4146-9ae2-6df5c9d76168	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-07-19 15:13:12.971449-07	2026-07-22 03:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-22 02:00:00-07	leo@wimbeldon.com	Indoor Clay Court 2	f	2026-07-22 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 458c9c9f-95e5-49e4-abc1-422453f45471	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-07-19 15:13:14.04274-07	2026-07-22 04:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-22 03:00:00-07	leo@wimbeldon.com	Indoor Clay Court 2	f	2026-07-22 04:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
@@ -562,10 +566,6 @@ e33d20b3-2f83-4156-be88-9338e4504b3a	60186569-a432-4375-9bee-485c69f086d5	7560e0
 7c750a97-8cd7-47e6-a4c1-78e127d75fd7	60186569-a432-4375-9bee-485c69f086d5	60978d5c-8caa-4e73-8303-d13108765ea9	MemberBooking	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-07-22 15:46:09.045248-07	2026-07-24 04:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-24 03:00:00-07	London Vanguard Academy	Grass Court 1	f	2026-07-24 04:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 5f793295-2dd2-4a4a-9d3f-fa6a98c28903	60186569-a432-4375-9bee-485c69f086d5	60978d5c-8caa-4e73-8303-d13108765ea9	MemberBooking	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-07-22 15:46:10.105611-07	2026-07-24 05:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-24 04:00:00-07	London Vanguard Academy	Grass Court 1	f	2026-07-24 05:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 d561ac8f-c32f-4adc-bdf8-0775a0aa11e2	60186569-a432-4375-9bee-485c69f086d5	60978d5c-8caa-4e73-8303-d13108765ea9	MemberBooking	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-07-22 15:46:11.132081-07	2026-07-24 06:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-24 05:00:00-07	London Vanguard Academy	Grass Court 1	f	2026-07-24 06:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
-0c77ca56-2893-46b7-90f9-c8201a130464	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	f4170bca-ce4a-4340-adc1-2ce9fcb1bdac	2026-07-26 16:24:14.418371-07	2026-07-30 12:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-30 11:00:00-07	Chiki Reyes	VAOB Court 2	f	2026-07-30 04:00:00-07	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	60	0.00
-a8eae952-6c9f-4736-8085-b5d33dd45888	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	f4170bca-ce4a-4340-adc1-2ce9fcb1bdac	2026-07-26 16:24:14.474806-07	2026-07-30 13:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-30 12:00:00-07	Chiki Reyes	VAOB Court 2	f	2026-07-30 05:00:00-07	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	60	0.00
-94e1e84b-7f04-4180-a2bb-02c60f94ea98	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-07-28 07:09:12.858493-07	2026-07-30 07:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-30 06:00:00-07	Chiki Reyes	Grass Court 1	f	2026-07-30 07:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
-5096b52e-0c49-4db8-b254-c285231fd4e2	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-07-28 07:09:12.878632-07	2026-07-30 08:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-30 07:00:00-07	Chiki Reyes	Grass Court 1	f	2026-07-30 08:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 185926cd-8c39-41a2-a30e-bbe1d78333dc	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-07-28 07:58:15.59054-07	2026-07-30 03:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-30 02:00:00-07	leo@wimbeldon.com	Grass Court 1	f	2026-07-30 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 924b5500-59c0-46e7-af46-17e6742c2370	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-07-28 07:58:16.746414-07	2026-07-30 04:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-30 03:00:00-07	leo@wimbeldon.com	Grass Court 1	f	2026-07-30 04:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 ddb97e1c-9373-4138-8114-4dd5f71b9043	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-07-28 07:58:17.873681-07	2026-07-30 05:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-07-30 04:00:00-07	leo@wimbeldon.com	Grass Court 1	f	2026-07-30 05:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
@@ -579,10 +579,18 @@ ddc1a8ac-abde-48fb-8721-ac0a7261bb27	60186569-a432-4375-9bee-485c69f086d5	3b7473
 367bbf3f-6dd9-4761-8fd1-0943ce65e6bb	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	95d67d63-8137-463a-b8cf-46761bbd3bfb	2026-07-28 15:38:57.391129-07	2026-08-02 10:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-02 09:00:00-07	Leo Explorer	VAOB Court 1	f	2026-08-02 02:00:00-07	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	60	0.00
 d79b7466-b291-4360-8200-88a5202947b4	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	95d67d63-8137-463a-b8cf-46761bbd3bfb	2026-07-28 15:38:57.40302-07	2026-08-02 11:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-02 10:00:00-07	Leo Explorer	VAOB Court 1	f	2026-08-02 03:00:00-07	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	60	0.00
 a6bcfae4-2a9f-4b43-9cad-a3d963328b0a	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	MemberBooking	95d67d63-8137-463a-b8cf-46761bbd3bfb	2026-07-28 15:38:57.406413-07	2026-08-02 12:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-02 11:00:00-07	Leo Explorer	VAOB Court 1	f	2026-08-02 04:00:00-07	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	60	0.00
-151ddd39-5486-4e0f-9c49-79b3ee7cc803	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-08-04 14:37:29.26425-07	2026-08-07 05:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-07 04:00:00-07	Chiki Reyes	Indoor Clay Court 2	f	2026-08-07 05:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
-73ba7c33-8307-4a57-a716-1f710d88800d	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-08-04 14:39:04.216252-07	2026-08-07 06:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-07 05:00:00-07	Chiki Reyes	Indoor Clay Court 2	f	2026-08-07 06:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 9044e64c-8c10-446c-8748-b6c2e6cf0ef5	60186569-a432-4375-9bee-485c69f086d5	510b442d-3cdf-468c-8e7f-21c50f9c638a	Player App Secured Reservation	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-08-05 20:32:23.990992-07	2026-08-11 04:00:00-07	Booked manually by player via Smart Court OS.		2026-08-11 03:00:00-07	ashleyshella138@gmail.com	Grass Court 1	f	2026-08-11 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 e2904395-2580-40ca-b65e-c2208102fc81	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	Player App Secured Reservation	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-08-06 07:21:53.181162-07	2026-08-07 05:00:00-07	Booked manually by player via Smart Court OS.		2026-08-07 04:00:00-07	jerseyalex88@gmail.com	Grass Court 1	f	2026-08-07 04:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+f2dd29d7-e46d-40ee-b183-8522be9385c0	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	Player App Secured Reservation	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-08-07 07:17:54.062982-07	2026-08-09 05:00:00-07	Booked manually by player via Smart Court OS.		2026-08-09 04:00:00-07	jerseyalex88@gmail.com	Grass Court 1	f	2026-08-09 04:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+8c56cbc1-f382-488f-8368-ec96c580100e	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	Player App Secured Reservation	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-08-07 07:37:42.557099-07	2026-08-09 04:00:00-07	Booked manually by player via Smart Court OS.		2026-08-09 03:00:00-07	jerseyalex88@gmail.com	Grass Court 1	f	2026-08-09 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+e0c1018a-eb92-434d-a7c3-24fefe6f0674	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	MemberBooking	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-07 08:02:59.264047-07	2026-08-10 03:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-10 02:00:00-07	jerseyalex88@gmail.com	Grass Court 2	f	2026-08-10 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+906c2ead-da42-4800-9962-d20167837095	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	MemberBooking	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-07 08:04:23.549908-07	2026-08-10 04:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-10 03:00:00-07	jerseyalex88@gmail.com	Grass Court 2	f	2026-08-10 04:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+cbfacb6e-b3c7-4b1e-a289-b52d299efce6	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	MemberBooking	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-07 08:04:24.786513-07	2026-08-10 05:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-10 04:00:00-07	jerseyalex88@gmail.com	Grass Court 2	f	2026-08-10 05:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+28b906e7-f484-4518-8554-8dccb07d304f	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	Player App Secured Reservation	505751fb-ee77-4be3-8db1-460017380b7d	2026-08-07 10:18:56.876048-07	2026-08-09 03:00:00-07	Booked manually by player via Smart Court OS.		2026-08-09 02:00:00-07	jerseyalex88@gmail.com	Grass Court 4	f	2026-08-09 02:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+8865b7a0-8f60-4fd2-ae9d-4c6b3e6482f1	60186569-a432-4375-9bee-485c69f086d5	34b7f57a-dc14-4193-9553-d0f7684aef72	Player App Secured Reservation	95d67d63-8137-463a-b8cf-46761bbd3bfb	2026-08-07 10:31:06.39945-07	2026-08-09 03:00:00-07	Booked manually by player via Smart Court OS.		2026-08-09 02:00:00-07	alexreyes88@yahoo.com	VAOB Court 1	f	2026-08-09 02:00:00-07	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	60	0.00
+ba121229-d70c-4b7d-9077-12031544345f	60186569-a432-4375-9bee-485c69f086d5	0c713a4d-fb5b-4e83-9c0b-27afc3e6f62c	Player App Secured Reservation	505751fb-ee77-4be3-8db1-460017380b7d	2026-08-07 10:33:23.710933-07	2026-08-09 04:00:00-07	Booked manually by player via Smart Court OS.		2026-08-09 03:00:00-07	jerseychiki88@gmail.com	Grass Court 4	f	2026-08-09 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+337824d0-3bb3-4f59-8976-c22fbacf5228	60186569-a432-4375-9bee-485c69f086d5	8f41d4d7-722c-4ea4-be3b-73a27d8dcade	Player App Secured Reservation	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-07 11:00:42.269807-07	2026-08-09 03:00:00-07	Booked manually by player via Smart Court OS.		2026-08-09 02:00:00-07	jerseychiki88@gmail.com	Grass Court 2	f	2026-08-09 02:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+3c66ea7d-00ef-4bae-82b1-f6db65e47c48	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Player App Secured Reservation	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-08-10 16:09:40.270088-07	2026-08-12 13:00:00-07	Booked manually by player via Smart Court OS.		2026-08-12 12:00:00-07	Chiki Reyes	Grass Court 1	f	2026-08-12 12:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 \.
 
 
@@ -604,13 +612,13 @@ COPY public."Branches" ("Id", "AcademyId", "Name", "Description", "TimeZoneId", 
 COPY public."Courts" ("Id", "AcademyId", "BranchId", "Description", "DryCoefficient", "IsIndoor", "Name", "SurfaceType", "CreatedAtUtc", "AggregateMinutesPlayed", "EstimatedReopenTimeUtc", "MaintenanceThresholdMinutes", "Status", "FloodlightState", "IsDecommissioned") FROM stdin;
 7be1c220-56b3-44ed-a30a-a5ee8c880c32	e61d1986-848f-411d-8fc1-4c0962a209d3	32b51caa-309a-412b-b615-ca7fdcc8de12	Plexicushion hardcourt featuring solar geometry floodlight triggers.	0.5	f	Grand Oasis Stadium	Hard	2026-07-10 14:00:16.651515-07	0	\N	270	Open	Off	f
 f4170bca-ce4a-4340-adc1-2ce9fcb1bdac	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	t	VAOB Court 2	Hard	2026-07-21 11:32:47.860353-07	120	\N	1200	Open	Off	f
-95d67d63-8137-463a-b8cf-46761bbd3bfb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 1	Hard	2026-07-21 11:32:44.933545-07	180	\N	1200	Open	Off	f
+95d67d63-8137-463a-b8cf-46761bbd3bfb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 1	Hard	2026-07-21 11:32:44.933545-07	240	\N	1200	Open	Off	f
+505751fb-ee77-4be3-8db1-460017380b7d	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 4	Grass	2026-07-21 11:18:48.345792-07	120	\N	700	Open	Off	f
 a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Enclosed training hall insulated from regional precipitation anomalies.	0	t	Indoor Clay Court 2	Clay	2026-07-10 14:00:16.500229-07	300	\N	270	Open	Off	f
-bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 1	Grass	2026-07-21 10:49:12.607051-07	1020	\N	700	Open	Off	f
+3628a5d6-e221-4014-8ae1-b83bd2dd78fe	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 2	Grass	2026-07-21 11:18:44.917547-07	600	\N	700	Open	Off	f
 58a3220b-15e0-4d16-97a5-2cee7a3333a0	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Premium Italian surface utilizing active microclimatic sensors.	1.5	f	Stadium Center Clay	Clay	2026-07-10 14:00:16.500229-07	300	\N	270	Open	Off	f
-3628a5d6-e221-4014-8ae1-b83bd2dd78fe	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 2	Grass	2026-07-21 11:18:44.917547-07	180	\N	700	Open	Off	f
+bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 1	Grass	2026-07-21 10:49:12.607051-07	1320	\N	700	Open	Off	f
 8f76cb8b-15bb-43b1-85a3-ccf8c4163ed5	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 3	Grass	2026-07-21 11:18:47.019877-07	0	\N	700	Open	Off	f
-505751fb-ee77-4be3-8db1-460017380b7d	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 4	Grass	2026-07-21 11:18:48.345792-07	0	\N	700	Open	Off	f
 b4c307b9-7a92-4aaa-a979-c41d592b9e78	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 3	Hard	2026-07-21 11:32:47.865512-07	0	\N	1200	Open	Off	f
 51a6e84f-1678-4f70-bb5d-b03345c3dd47	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 4	Hard	2026-07-21 11:32:47.86988-07	0	\N	1200	Open	Off	f
 6d5afcac-6b58-493e-997f-7bbdb3cd95fd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 5	Hard	2026-07-21 11:32:47.873332-07	0	\N	1200	Open	Off	f
@@ -653,6 +661,26 @@ eaa63128-6d4d-4ffc-981c-ba382ceab27c	107fe10b-4ac7-432f-8576-1d7feaa35987	\N	Cou
 bd418433-ddce-4528-83fe-210f4d4cd1b9	897e6173-4c8b-44a6-b6a1-a2e18b96c278	\N	Court Rental Fee: Indoor Clay Court 2 on 2026-08-07 @ 14:00	1	50.00	2e417c70-9470-4a73-802e-bbb470868fc0
 109c2583-3d1b-42dc-a3ba-9fb1c764732c	f7cc61b2-6d27-4b90-a702-d2117ed5b98c	\N	Court Rental Fee: Grass Court 1 on 2026-08-11 12:00:00 AM @ 10	1	50.00	9044e64c-8c10-446c-8748-b6c2e6cf0ef5
 a7379755-273a-4a42-a40c-2ecc5a2e0f9a	37ac7126-115f-4fa6-9ed3-6e222bebe362	\N	Court Rental Fee: Grass Court 1 on 2026-08-07 12:00:00 AM @ 11	1	50.00	e2904395-2580-40ca-b65e-c2208102fc81
+79473df2-8330-4136-8bf8-2d10f9751673	c5bff385-bb38-4f9f-b5af-7c54051bbdf3	\N	Court Rental Fee: Grass Court 1 on 2026-08-09 12:00:00 AM @ 8	1	50.00	1dd75e4c-aed8-4383-a72e-a6eac86949f6
+5895fd9d-14dc-4a1a-8da7-6dded3622a1f	ab67b3aa-5d7a-4dc5-ad6f-0254c6c6632b	\N	Court Rental Fee: Grass Court 1 on 2026-08-09 12:00:00 AM @ 9	1	50.00	6834f542-671c-4e1e-92e0-c9e2b95cd42a
+f484ee05-62b8-4652-9f96-bdf27a87c4a0	1ef75f8b-d1d2-401d-aee3-5d74a76b0316	\N	Court Rental Fee: Grass Court 1 on 2026-08-09 12:00:00 AM @ 10	1	50.00	170080d1-2d99-4c08-8955-a32707864c08
+acd21dec-f47c-4e51-a194-779029ec584c	c52600d0-dfe6-4997-aba9-07f08f522ae2	\N	Court Rental Fee: Grass Court 1 on 2026-08-09 12:00:00 AM @ 9	1	50.00	0f509ad0-7dd8-418f-8171-6e3dc48552f8
+af307fba-e5ab-42c5-8211-e9d1390c9b19	e4c9d954-c185-4fc9-8cc0-080127f30329	\N	Court Rental Fee: Grass Court 1 on 2026-08-09 12:00:00 AM @ 11	1	50.00	f2dd29d7-e46d-40ee-b183-8522be9385c0
+31331bf0-d28f-44b2-97b5-8b23795c82f4	0ff7dbb8-2ea0-4be2-98ac-6b03ba0d7dcf	\N	Court Rental Fee: Grass Court 1 on 2026-08-09 12:00:00 AM @ 10	1	50.00	8c56cbc1-f382-488f-8368-ec96c580100e
+fa96de08-6242-4369-8f0b-bad1f02075ca	6f2ef774-f340-4c8f-b744-c1e1607cc9d9	\N	Court Rental Fee: Grass Court 2 on 2026-08-10 @ 10:00	1	50.00	e0c1018a-eb92-434d-a7c3-24fefe6f0674
+2a23c4d2-2503-48e4-9981-f3ee4a983d6a	53d4c52e-5ad8-4bd4-bb11-3df5a6427cff	\N	Court Rental Fee: Grass Court 2 on 2026-08-10 @ 11:00	1	50.00	906c2ead-da42-4800-9962-d20167837095
+a83aebde-21a8-4b17-a483-3bb434784e5b	66a9099a-1f70-4a1f-8550-cc61219a1723	\N	Court Rental Fee: Grass Court 2 on 2026-08-10 @ 12:00	1	50.00	cbfacb6e-b3c7-4b1e-a289-b52d299efce6
+686fbc84-9d82-4ab9-899b-8742be0d821a	78c4b84c-ff77-4639-a3f0-b8bad35c1851	\N	Court Rental Fee: Grass Court 4 on 2026-08-09 12:00:00 AM @ 9	1	50.00	28b906e7-f484-4518-8554-8dccb07d304f
+191e21b3-e34a-425a-bd7c-fd42a11b8f6c	314f8956-0548-4187-adef-4bbbe79925f2	\N	Court Rental Fee: VAOB Court 1 on 2026-08-09 12:00:00 AM @ 9	1	50.00	8865b7a0-8f60-4fd2-ae9d-4c6b3e6482f1
+0cb5dccc-30cf-473f-92eb-c74c22b573fd	f5f6a1a0-0ad9-4434-9c4d-b308af3eb0f4	\N	Court Rental Fee: Grass Court 4 on 2026-08-09 12:00:00 AM @ 10	1	50.00	ba121229-d70c-4b7d-9077-12031544345f
+19f6a6ec-ecb8-45b5-93bd-1cbdb8f87fb5	4573bf12-89b9-4fe1-8748-23bee5d35e80	\N	Court Rental Fee: Grass Court 2 on 2026-08-09 12:00:00 AM @ 9	1	50.00	337824d0-3bb3-4f59-8976-c22fbacf5228
+6818d7d8-2130-456e-aa4e-4c8ad476baa5	36d7770c-7537-4cdb-af9f-a993dccf53db	\N	Court Rental Fee: Grass Court 2 on 2026-08-11 12:00:00 AM @ 14	1	50.00	8c82f06e-5463-4361-bb5d-e4f21cfaa9b2
+86871006-b8b5-40a6-9497-8ddfcee9c1d0	a86e9678-2e1c-4a4e-b338-91048ad42c77	\N	Court Rental Fee: Grass Court 2 on 2026-08-11 12:00:00 AM @ 15	1	50.00	c6f9b4a6-4337-47d8-a46a-0ad5c572ba6b
+13210ec6-7bea-4e88-ad0c-b00ad67750c8	d3394e9f-faf9-4aa3-bf19-66fb7d70eb68	\N	Court Rental Fee: Grass Court 2 on 2026-08-11 12:00:00 AM @ 15	1	50.00	64bf92a1-bc30-4e19-a755-1dac294602b8
+b797b42a-fd64-4abc-b5d3-f58d2349a5ff	f920614a-04a9-415b-afb6-2982a29381f6	\N	Court Rental Fee: Grass Court 2 on 2026-08-11 12:00:00 AM @ 19	1	50.00	470575bf-e8c7-4a7e-bcfe-d83b59f33c55
+8cd394d3-fe3a-49f1-a482-9575ebf6f03c	9473145c-5cb3-462f-8121-c83063299ca4	\N	Court Rental Fee: Grass Court 1 on 2026-08-12 12:00:00 AM @ 9	1	50.00	64d9458d-0adb-42f6-acf2-78bd3a78a989
+b022927d-3901-446c-88b3-d0a0c3e5f4f7	81196bc9-7f05-44ba-99e8-e45399c2add1	\N	Court Rental Fee: Grass Court 1 on 2026-08-12 12:00:00 AM @ 15	1	50.00	25cae1c0-3871-465c-aef6-4a141967f8c9
+056b576b-3dab-4920-8612-4582d287db95	29434c0e-8ed7-40b7-8432-23367dfd124a	\N	Court Rental Fee: Grass Court 1 on 2026-08-12 12:00:00 AM @ 19	1	50.00	3c66ea7d-00ef-4bae-82b1-f6db65e47c48
 \.
 
 
@@ -661,7 +689,9 @@ a7379755-273a-4a42-a40c-2ecc5a2e0f9a	37ac7126-115f-4fa6-9ed3-6e222bebe362	\N	Cou
 --
 
 COPY public."Invoices" ("InvoiceId", "AcademyId", "IssuedToUserId", "CustomerName", "CreatedAtUtc", "Status", "TotalAmount", "AssociatedTransactionId") FROM stdin;
+f7cc61b2-6d27-4b90-a702-d2117ed5b98c	60186569-a432-4375-9bee-485c69f086d5	510b442d-3cdf-468c-8e7f-21c50f9c638a	ashleyshella138@gmail.com	2026-08-05 20:32:23.99117-07	4	50.00	\N
 4a8e1ae4-41a4-4843-aa6f-9a1e9a760bac	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-07-26 09:06:25.415177-07	4	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
+a86e9678-2e1c-4a4e-b338-91048ad42c77	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-09 13:13:14.422084-07	4	50.00	\N
 b7a20ba2-75c3-4c50-abc0-5c59cbb7e644	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-07-26 16:24:14.474807-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 caaf629c-98da-4d17-8ab0-b52ac85b288e	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-07-26 16:24:14.418516-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 e4557a34-4f73-41d1-a595-e06f8def2946	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-04 11:46:59.780774-07	3	50.00	5b87b25a-1813-4faa-89ea-22d0d4173694
@@ -674,12 +704,15 @@ a55d61f1-24ce-4363-9ad6-f6ac6f0e2a11	60186569-a432-4375-9bee-485c69f086d5	7560e0
 a2104537-38d8-4491-aaa9-2a5da9899a6e	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	leo@wimbeldon.com	2026-07-28 07:58:15.590658-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 897e6173-4c8b-44a6-b6a1-a2e18b96c278	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-04 14:39:04.226709-07	3	50.00	5b87b25a-1813-4faa-89ea-22d0d4173694
 b298bc0a-0a25-4715-a61e-35adc51b6ffe	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	leo@wimbeldon.com	2026-07-28 08:18:30.354044-07	4	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
-f7cc61b2-6d27-4b90-a702-d2117ed5b98c	60186569-a432-4375-9bee-485c69f086d5	510b442d-3cdf-468c-8e7f-21c50f9c638a	ashleyshella138@gmail.com	2026-08-05 20:32:23.99117-07	0	50.00	\N
 1ac7c8f2-da01-4e87-8474-eff9b7d09cba	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	leo@wimbeldon.com	2026-07-28 09:34:17.922651-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 b4d0a4c4-fc37-48bf-ae7f-89f03eb2b46a	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	leo@wimbeldon.com	2026-07-28 09:34:17.853538-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
+c5bff385-bb38-4f9f-b5af-7c54051bbdf3	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 06:30:23.980833-07	4	50.00	\N
 6425d802-3f11-4129-860c-c8942ebefd07	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	leo@wimbeldon.com	2026-07-28 09:35:34.896284-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 403c296e-3367-4abc-8325-0ebe4c91c7c1	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	leo@wimbeldon.com	2026-07-28 09:35:34.892579-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 914aa908-b5c4-4d82-98b0-7e7e85feacdc	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-07-28 07:07:51.965374-07	4	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
+1ef75f8b-d1d2-401d-aee3-5d74a76b0316	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 07:01:58.601519-07	4	50.00	\N
+6f2ef774-f340-4c8f-b744-c1e1607cc9d9	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 08:02:59.264474-07	1	50.00	ef599a2e-7e0d-421a-80c9-a54ff3746d13
+e4c9d954-c185-4fc9-8cc0-080127f30329	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 07:17:54.063147-07	1	50.00	ef599a2e-7e0d-421a-80c9-a54ff3746d13
 294ef825-0322-4a7f-8e4b-6ab76d7554d0	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	Leo Explorer	2026-07-28 15:38:57.391137-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 6d9aae21-0018-4601-9867-d7fabed54b89	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	Leo Explorer	2026-07-28 15:32:55.992737-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 7053c9d0-6fe0-4e12-b5c2-e20e1d07e30c	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	leo@wimbeldon.com	2026-07-28 09:35:34.87331-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
@@ -687,8 +720,23 @@ b4d0a4c4-fc37-48bf-ae7f-89f03eb2b46a	60186569-a432-4375-9bee-485c69f086d5	3b7473
 a11ad3a7-d13d-4d5a-bd5f-f4f1183c5b12	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	Leo Explorer	2026-07-28 15:38:57.403023-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 bd3ed93c-d4dc-49eb-8580-af8793c1adb4	60186569-a432-4375-9bee-485c69f086d5	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	Leo Explorer	2026-07-28 15:32:16.298855-07	1	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 c5f8808e-4718-4df5-bd78-336210549c21	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-02 07:27:40.500437-07	4	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
+4573bf12-89b9-4fe1-8748-23bee5d35e80	60186569-a432-4375-9bee-485c69f086d5	8f41d4d7-722c-4ea4-be3b-73a27d8dcade	jerseychiki88@gmail.com	2026-08-07 11:00:42.269957-07	4	50.00	\N
+78c4b84c-ff77-4639-a3f0-b8bad35c1851	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 10:18:56.876248-07	4	50.00	\N
+f920614a-04a9-415b-afb6-2982a29381f6	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-09 14:34:01.15334-07	4	50.00	\N
+81196bc9-7f05-44ba-99e8-e45399c2add1	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-10 16:00:01.739565-07	4	50.00	\N
 1afbac4b-b80c-4a82-a9fe-de2b6199b84a	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-04 14:37:29.264636-07	1	50.00	5b87b25a-1813-4faa-89ea-22d0d4173694
-37ac7126-115f-4fa6-9ed3-6e222bebe362	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-06 07:21:53.181353-07	0	50.00	\N
+ab67b3aa-5d7a-4dc5-ad6f-0254c6c6632b	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 06:35:06.329339-07	4	50.00	\N
+c52600d0-dfe6-4997-aba9-07f08f522ae2	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 07:11:35.046147-07	4	50.00	\N
+66a9099a-1f70-4a1f-8550-cc61219a1723	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 08:04:24.786516-07	1	50.00	bc4fd7b7-9de6-4829-9b6e-a437e9283825
+0ff7dbb8-2ea0-4be2-98ac-6b03ba0d7dcf	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 07:37:42.557195-07	1	50.00	ef599a2e-7e0d-421a-80c9-a54ff3746d13
+37ac7126-115f-4fa6-9ed3-6e222bebe362	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-06 07:21:53.181353-07	1	50.00	ef599a2e-7e0d-421a-80c9-a54ff3746d13
+53d4c52e-5ad8-4bd4-bb11-3df5a6427cff	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 08:04:23.549911-07	1	50.00	ef599a2e-7e0d-421a-80c9-a54ff3746d13
+314f8956-0548-4187-adef-4bbbe79925f2	60186569-a432-4375-9bee-485c69f086d5	34b7f57a-dc14-4193-9553-d0f7684aef72	alexreyes88@yahoo.com	2026-08-07 10:31:06.399563-07	4	50.00	\N
+36d7770c-7537-4cdb-af9f-a993dccf53db	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-09 11:08:23.079945-07	4	50.00	\N
+f5f6a1a0-0ad9-4434-9c4d-b308af3eb0f4	60186569-a432-4375-9bee-485c69f086d5	0c713a4d-fb5b-4e83-9c0b-27afc3e6f62c	jerseychiki88@gmail.com	2026-08-07 10:33:23.710954-07	4	50.00	\N
+9473145c-5cb3-462f-8121-c83063299ca4	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-10 12:03:30.638274-07	4	50.00	\N
+d3394e9f-faf9-4aa3-bf19-66fb7d70eb68	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-09 13:16:51.539232-07	4	50.00	\N
+29434c0e-8ed7-40b7-8432-23367dfd124a	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-10 16:09:40.270102-07	1	50.00	f459f310-77c7-4866-9f2b-3ad2e4308c35
 \.
 
 
@@ -719,6 +767,9 @@ b750bda8-3b49-4b3d-9f7b-0b6a285e571f	60186569-a432-4375-9bee-485c69f086d5	0	1	RE
 f398477f-8aea-4eb8-8393-7d32f493e94f	60186569-a432-4375-9bee-485c69f086d5	1	0	REF-q9qze3g7	50.00	2026-08-04 14:24:07.814643-07	t
 5b87b25a-1813-4faa-89ea-22d0d4173694	60186569-a432-4375-9bee-485c69f086d5	0	1	SQ-dgtKMwAQ0ASChWTrSXt4omeu3AbZY	150.00	2026-08-04 14:40:17.171001-07	t
 27aa1dff-2688-4e11-9d06-71e2f49f97f9	60186569-a432-4375-9bee-485c69f086d5	0	1	REF-SQ-dgtKMwAQ0ASChWTrSXt4omeu3AbZY_OFi5sGpMTHDxckXvsvrNHub0iwkKHRV02tMoHx3V6Ee	50.00	2026-08-04 16:02:25.445273-07	t
+bc4fd7b7-9de6-4829-9b6e-a437e9283825	60186569-a432-4375-9bee-485c69f086d5	1	0	BT-4z5cybt7	50.00	2026-08-07 09:02:50.063675-07	t
+ef599a2e-7e0d-421a-80c9-a54ff3746d13	60186569-a432-4375-9bee-485c69f086d5	0	1	SQ-JAEx1thlBHqeXY3iFVFMT891SeFZY	250.00	2026-08-07 09:04:32.244559-07	t
+f459f310-77c7-4866-9f2b-3ad2e4308c35	60186569-a432-4375-9bee-485c69f086d5	1	0	BT-2m7vp4pp	50.00	2026-08-10 16:10:43.588923-07	t
 \.
 
 
@@ -819,7 +870,7 @@ SELECT pg_catalog.setval('public."AspNetRoleClaims_Id_seq"', 1, false);
 -- Name: AspNetUserClaims_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public."AspNetUserClaims_Id_seq"', 67, true);
+SELECT pg_catalog.setval('public."AspNetUserClaims_Id_seq"', 93, true);
 
 
 --
@@ -1166,5 +1217,5 @@ ALTER TABLE ONLY public."UserCourts"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict P2SnTUsO7u3UVb9yVL6IHHTAHhZkHDPlxh8PZ7Wmq2pjJSkVlbtpNwIMDTIaJFa
+\unrestrict BhZ3MDBqV2S4apSigdEcKucChDbBUeaiYp0u3sQIc6mNhSyfJISShmhzc4awM6x
 

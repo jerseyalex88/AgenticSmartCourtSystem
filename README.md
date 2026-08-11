@@ -28,6 +28,18 @@ Built on a modern backend framework using **.NET Core**, **Entity Framework Core
 * **The Autonomous "Match-Saver" Agent:** Dispatches webhooks to reroute matches to indoor courts or nearby sister academies instantly upon picking up real-time microclimatic rain events.
 * **Predictive Preventive-Maintenance Agent:** Processes telemetry logs and post-match player feedback through semantic analysis to trigger groundskeeper tickets during low-utilization operating hours.
 
+### 5. Special Authentication Features
+- **🛡️ Multi-Tenant Anti-Bot Gateway**: Integrates Cloudflare Turnstile directly into public registration and login workflows to block brute-force scripts and protect Semantic Kernel AI endpoints.
+- **🔐 Google OAuth Federated Sign-In**: Streamlined, secure external login loops with strict multi-tenant partition context enforcement.
+- **🔒 High-Privilege Director Vault (TOTP 2FA)**: Secures financial tools and administrative systems behind an app-based, time-based rolling code layer (Google/Microsoft Authenticator) with an interactive UI toggle.
+- **📱 Feature-Flagged SMS Verification**: Flexible, anti-scalper pass gate for court reservations that prints dynamic 4-digit PIN codes to a free developer local terminal sandbox.
+- **⏱️ Universal 5-Minute Basket Hold**: Enforces an automated ticket-checkout countdown timer. Expired holds silently release court slots back into the vacant public pool on traffic-driven system sweeps.
+
+### 6. Booking Basket Expiration Mechanics
+Smart Court OS employs a traffic-driven, on-demand cleanup strategy rather than using heavy background daemon threads:
+1. **Global Clean (On Login)**: Every time *any* user logs into the app, a broad database sweep voids all outstanding, expired unpaid invoices (`CreatedAtUtc + 5 Minutes < Now`) and cleanly releases the associated court bookings system-wide.
+2. **Targeted Shield (Active Session)**: While logged in, background synchronization requests (`GET api/Auth/user-active-holds`) execute a localized, user-isolated sweep to protect performance boundaries and completely avoid table race conditions during peak booking traffic.
+
 ---
 
 ## 🛠️ Technology Stack & Dependencies

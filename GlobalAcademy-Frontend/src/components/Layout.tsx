@@ -258,16 +258,17 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     }
   };
   const navItems = [
-    { id: 'dashboard', label: '🏟️ Core Asset Matrix', roles: ['AcademyDirector', 'Groundskeeper'] },
-    { id: 'bookings', label: '⏱️ Bookings & Intervals', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
-    { id: 'financial-ledger', label: '📊 Billing & Statements', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
-    { id: 'shadow-queue', label: '🔄 Displaced Player Queue', roles: ['AcademyDirector', 'Groundskeeper'] },
+    { id: 'academies', label: '🏟️ Academies Manager', roles: ['GlobalAdmin'] },
+    { id: 'dashboard', label: '🏟️ Core Asset Matrix', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper'] },
+    { id: 'bookings', label: '⏱️ Bookings & Intervals', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper', 'Player'] },
+    { id: 'financial-ledger', label: '📊 Billing & Statements', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper', 'Player'] },
+    { id: 'shadow-queue', label: '🔄 Displaced Player Queue', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper'] },
     { id: 'agent-dispatch', label: '⚡ AI Dispatch Center', roles: ['AcademyDirector', 'GlobalAdmin'] },
-    { id: 'maintenance', label: '🔧 Work Order Tickets', roles: ['AcademyDirector', 'Groundskeeper'] },
+    { id: 'maintenance', label: '🔧 Work Order Tickets', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper'] },
     { id: 'roster', label: '👥 Staff Roster Manager', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'admin', label: '⚙️ Profiles Administration', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'user-profile', label: '⚙️ Player Profile', roles: ['Player'] },
-    { id: 'password', label: '🔐 Security Settings', roles: ['AcademyDirector', 'Groundskeeper', 'Player'] },
+    { id: 'password', label: '🔐 Security Settings', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper', 'Player'] },
   ];
 
   const filteredNavItems = navItems.filter(item => item.roles.includes(user?.role || ''));

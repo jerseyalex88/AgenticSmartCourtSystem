@@ -13,6 +13,7 @@ import ChangePassword from './pages/ChangePassword';
 import RosterDashboard from './pages/RosterDashboard';
 import AdminTools from './pages/AdminTools'; 
 import { AlertProvider } from './context/AlertContext';
+import AcademiesDashboard from './pages/AcademiesDashboard';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -136,6 +137,8 @@ export default function App() {
   // ADMINISTRATIVE CORE WORKSPACE PANEL MOUNT ROUTER
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'academies':
+        return <AcademiesDashboard />;
       case 'dashboard':
         return <CourtsDashboard />;
       case 'bookings':

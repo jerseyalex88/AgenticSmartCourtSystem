@@ -11,7 +11,7 @@ export default function Login({ onNavigate }: { onNavigate: (route: string) => v
 
   const { saveSession } = useAuth();
   // const [email, setEmail] = useState('director@londonvanguard.com');
-  const [email, setEmail] = useState('areyesbiz@hotmail.com');
+  const [email, setEmail] = useState('globaladmin@hftennisacademy.com');
   const [password, setPassword] = useState('LondonPass123!');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
