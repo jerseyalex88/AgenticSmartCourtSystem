@@ -15,6 +15,7 @@ interface IdentityUser {
 export default function AdminTools() {
   const { user: loggedInUser } = useAuth();
   const isPlayer = loggedInUser?.role === 'Player';
+  const isLoggedInGlobalAdmin = loggedInUser?.role.toLowerCase() === 'globaladmin';
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -157,8 +158,15 @@ export default function AdminTools() {
     });
   };
 
+  const roleProtectedList = users.filter(user => {
+    if (!isLoggedInGlobalAdmin && user.role?.toLowerCase() === 'globaladmin') {
+      return false; // Safely hide GlobalAdmin accounts from AcademyDirectors
+    }
+    return true; // Keep all other standard operational users visible
+  });
+
   // compile the filtered results based on search query values
-  const baseFilteredList = users.filter(user => 
+  const baseFilteredList = roleProtectedList.filter(user => 
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.userName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -233,7 +241,7 @@ export default function AdminTools() {
                   </td>
                   <td className="p-4 text-left space-x-2">
                     <button onClick={() => handleBeginEditUser(user)} className="text-slate-600 hover:text-slate-800 font-bold border border-slate-300 bg-white px-2.5 py-1.5 transition">📝 Edit</button>
-                    {user.role !== 'AcademyDirector' && (
+                    {user.role !== 'AcademyDirector' && user.role !== 'GlobalAdmin' && (
                       <button onClick={() => handleDeleteIdentityUser(user.id, user.email)} className="text-slate-600 hover:text-rose-600 px-2.5 py-1.5 transition font-bold">🗑️ Delete</button>
                     )}
                   </td>

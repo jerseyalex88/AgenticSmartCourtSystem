@@ -48,6 +48,36 @@ public class AuthController : ControllerBase
         _signInManager = signInManager;
     }
 
+    /// <summary>
+    /// GET: api/Auth/profile
+    /// Fetches the real-time claim metadata configurations for the active authenticated user session.
+    /// </summary>
+    [HttpGet("profile")]
+    [Authorize] // Requires a valid active authentication token context
+    public async Task<IActionResult> GetUserProfileClaimsAsync()
+    {
+        var currentUserName = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("username"))?.Value ?? HttpContext.User.Identity?.Name;
+        var tenantIdClaim = HttpContext.User.FindFirst("AcademyId")?.Value;
+        var userRole = HttpContext.User.FindFirst(ClaimTypes.Role)?.Value ?? "Player";
+        var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userEmail = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+
+        if (string.IsNullOrEmpty(currentUserName) || !Guid.TryParse(tenantIdClaim, out Guid academyGuid))
+        {
+            return Unauthorized("Security Gate Failure: Active security principal session context is missing.");
+        }
+
+        // 2. Map and expose other profile metrics if your client layout needs them down the road
+        var profileMetadata = new
+        {
+            AcademyId = tenantIdClaim,
+            Username = currentUserName,
+            Role = userRole
+        };
+
+        return Ok(profileMetadata);
+    }
+
     // =========================================================================
     // TARGETED ADDITION: INITIATE GOOGLE CHALLENGE MATRIX
     // =========================================================================

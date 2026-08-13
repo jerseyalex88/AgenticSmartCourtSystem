@@ -13,7 +13,7 @@ namespace GlobalAcademy.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "AcademyDirector,Groundskeeper")]
+[Authorize(Roles = "AcademyDirector,GlobalAdmin,Groundskeeper")]
 public class FacilityController : ControllerBase
 {
     private readonly ApplicationDbContext _context;

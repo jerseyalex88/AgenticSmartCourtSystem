@@ -9,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using GlobalAcademy.Security;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace GlobalAcademy.Controllers;
 
@@ -22,11 +25,16 @@ public class AcademiesController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly IConfiguration _configuration;
 
-    public AcademiesController(ApplicationDbContext dbContext, UserManager<IdentityUser> userManager)
+    public AcademiesController(
+        ApplicationDbContext dbContext, 
+        UserManager<IdentityUser> userManager,
+        IConfiguration configuration)
     {
         _dbContext = dbContext;
         _userManager = userManager;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -155,45 +163,122 @@ public class AcademiesController : ControllerBase
     [HttpPost("{id}/set-active")]
     public async Task<IActionResult> SetActiveAcademyOverride(Guid id)
     {
-        // Verify target academy identity exists before establishing session overrides
+        // 1. Verify target academy identity exists before establishing session overrides
         var academyExists = await _dbContext.Academies.IgnoreQueryFilters().AnyAsync(a => a.Id == id);
         if (!academyExists)
-
         {
+            Console.WriteLine("Impersonation Denied: The target academy node does not exist.");
             return BadRequest(new { Message = "Impersonation Denied: The target academy node does not exist." });
         }
 
-        var user = await _userManager.GetUserAsync(User);
+        var userIdClaimString = HttpContext.User.Claims
+            .FirstOrDefault(c => c.Type.Contains("nameidentifier") || c.Type == "sub" || c.Type == "nameid")?.Value;
+
+        Guid userId = Guid.Empty;
+        
+        // Safely parse the extracted token string value into a valid structural Guid token type
+        if (!string.IsNullOrEmpty(userIdClaimString) && Guid.TryParse(userIdClaimString, out Guid parsedGuid))
+        {
+            userId = parsedGuid;
+        }
+        else
+        {
+            Console.WriteLine("Security Gate Failure: Active security principal session context is missing.");
+            return Unauthorized(new { Message = "Security Gate Failure: Active security principal session context is missing." });
+        }
+
+        // 2. Direct EF Core Table Target: Find the single exact row targeting this specific user and claim type
+        var activeClaimRow = await _dbContext.UserClaims
+            .FirstOrDefaultAsync(uc => uc.UserId == userIdClaimString && uc.ClaimType == "AcademyId");
+
+        if (activeClaimRow != null)
+        {
+            Console.WriteLine($"Update Active Claim Row: {activeClaimRow.ToString()}");
+            // 🚀 ONE-SHOT ATOMIC SWAP: Mutate the value directly on the monitored row object
+            activeClaimRow.ClaimValue = id.ToString();
+        }
+        else
+        {
+            // Fallback: If for some reason the admin row is missing, handle safe insertion tracking
+            var newClaim = new Microsoft.AspNetCore.Identity.IdentityUserClaim<string>
+            {
+                UserId = userIdClaimString,
+                ClaimType = "AcademyId",
+                ClaimValue = id.ToString()
+            };
+                        
+            Console.WriteLine($"Insert New Claim Row: {newClaim.ToString()}");
+            _dbContext.UserClaims.Add(newClaim);
+        }
+
+        // 3. Persist modifications atomically to PostgreSQL via a single transaction pipeline call
+        await _dbContext.SaveChangesAsync();
+
+        // 🚀 NEW SECURITY INJECTION STRATEGY: Re-compile a fresh production security token 
+        // carrying the brand-new, updated database claim values instantly!
+        var user = await _userManager.FindByIdAsync(userIdClaimString);
         if (user == null)
         {
             return Unauthorized(new { Message = "Security Gate Failure: Active security principal session context is missing." });
         }
 
-        // Check if an override claim row already exists in the database for this specific user identity
-        var existingClaims = await _userManager.GetClaimsAsync(user);
-        var activeOverrideClaim = existingClaims.FirstOrDefault(c => c.Type.Equals(TenantProvider.AcademyOverrideClaimType, StringComparison.OrdinalIgnoreCase));
+        var (tokenString, expirationTime) = await GenerateJwtTokenAsync(user); 
 
-        if (activeOverrideClaim != null)
-        {
-            // Remove out-of-date allocation configuration claims
-            await _userManager.RemoveClaimAsync(user, activeOverrideClaim);
-        }
-
-
-        // Inject the fresh multi-tenant mapping target claim assignment
-        var newOverrideClaim = new Claim(TenantProvider.AcademyOverrideClaimType, id.ToString());
-        var result = await _userManager.AddClaimAsync(user, newOverrideClaim);
-
-        if (!result.Succeeded)
-        {
-            var originalError = result.Errors.FirstOrDefault()?.Description ?? "Unknown injection error.";
-            return StatusCode(500, new { Error = $"Identity Layer Rejection: {originalError}" });
-        }
-
+        // Return the fresh security credentials back out to the client payload
         return Ok(new { 
-            Message = "Master tenant tracking shifted successfully.", 
-            ActiveAcademyId = id 
+            message = "Master tenant tracking updated successfully.", 
+            activeAcademyId = id,
+            token = tokenString, // ◄--- Crucial token attachment payload!
+            expiration = expirationTime
         });
+
+        return Ok(new { Message = "Master tenant tracking updated successfully.", ActiveAcademyId = id });
+    }
+    private async Task<(string Token, DateTime Expiration)> GenerateJwtTokenAsync(IdentityUser user)
+    {
+        var userRoles = await _userManager.GetRolesAsync(user);
+        var userClaims = await _userManager.GetClaimsAsync(user);
+
+        var authClaims = new List<Claim>
+        {
+            new Claim("http://xmlsoap.org", user.UserName!),
+            new Claim("jti", Guid.NewGuid().ToString()),
+            new Claim("nameidentifier", user.Id),
+            new Claim("email", user.Email!),
+            new Claim("username", user.UserName!)
+        };
+
+        foreach (var claim in userClaims)
+        {
+            if (claim.Type != ClaimTypes.Role && claim.Type != "role") authClaims.Add(claim);
+        }
+
+        foreach (var userRole in userRoles)
+        {
+            authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+        }
+
+        var academyClaimValue = userClaims.FirstOrDefault(c => c.Type.Equals("AcademyId", StringComparison.OrdinalIgnoreCase))?.Value;
+        if (!string.IsNullOrEmpty(academyClaimValue) && Guid.TryParse(academyClaimValue, out Guid academyClaim))
+        {
+            var academy = _dbContext.Academies.FirstOrDefault(a => a.Id == academyClaim);
+            if (academy != null) authClaims.Add(new Claim("academyName", academy.Name));
+        }
+
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]!));
+
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings["Issuer"],
+            audience: jwtSettings["Audience"],
+            expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryInMinutes"]!)),
+            claims: authClaims,
+            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+        );
+
+        // 🚀 FIXED: Returns both parameters simultaneously back to the execution caller loops
+        string encodedToken = new JwtSecurityTokenHandler().WriteToken(token);
+        return (encodedToken, token.ValidTo);
     }
 }
 

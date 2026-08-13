@@ -258,7 +258,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     }
   };
   const navItems = [
-    { id: 'academies', label: '🏟️ Academies Manager', roles: ['GlobalAdmin'] },
+    { id: 'academies', label: '🏢 Academies Manager', roles: ['GlobalAdmin'] },
     { id: 'dashboard', label: '🏟️ Core Asset Matrix', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper'] },
     { id: 'bookings', label: '⏱️ Bookings & Intervals', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper', 'Player'] },
     { id: 'financial-ledger', label: '📊 Billing & Statements', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper', 'Player'] },

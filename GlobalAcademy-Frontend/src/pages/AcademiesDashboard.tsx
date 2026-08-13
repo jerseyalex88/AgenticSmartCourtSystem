@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
+import { useAlert } from '../context/AlertContext';
+import { useAuth } from '../context/AuthContext';
 
 interface Academy {
   id: string;
@@ -12,6 +14,7 @@ interface AcademyFormData {
   name: string;
   description: string;
 }
+
 export default function AcademiesDashboard() {
   // --- Core State Matrix ---
   const [academies, setAcademies] = useState<Academy[]>([]);
@@ -24,21 +27,25 @@ export default function AcademiesDashboard() {
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [editingAcademy, setEditingAcademy] = useState<Academy | null>(null);
   const [formData, setFormData] = useState<AcademyFormData>({ name: '', description: '' });
+  const { showAlert } = useAlert();
+  const { saveSession } = useAuth();
 
   // --- Network API Integrations via apiClient ---
   useEffect(() => {
     fetchAcademies();
-    const cachedOverride = localStorage.getItem('smartcourt_active_tenant_override');
-    if (cachedOverride) setActiveAcademyId(cachedOverride);
   }, []);
 
   const fetchAcademies = async () => {
     try {
       setLoading(true);
-
       setActionError(null);
       const response = await apiClient.get<Academy[]>('/Academies');
       setAcademies(response.data);
+
+      const profileResponse = await apiClient.get<{ academyId: string }>('/Auth/profile'); 
+      if (profileResponse.data?.academyId) {
+        setActiveAcademyId(profileResponse.data.academyId);
+      }
     } catch (err: any) {
       setActionError(err.response?.data || 'Failed to retrieve system academies catalog matrix.');
     } finally {
@@ -77,35 +84,48 @@ export default function AcademiesDashboard() {
   };
 
 
-  const handleDeleteAcademy = async (id: string, name: string) => {
-    if (!window.confirm(`⚠️ CRITICAL WARNING: Are you absolutely sure you want to permanently decommission the academy "${name}"? This action will cascade across all branch schedules.`)) return;
-    try {
-      setActionError(null);
-      await apiClient.delete(`/Academies/${id}`);
+  // const handleDeleteAcademy = async (id: string, name: string) => {
+  //   if (!window.confirm(`⚠️ CRITICAL WARNING: Are you absolutely sure you want to permanently decommission the academy "${name}"? This action will cascade across all branch schedules.`)) return;
+  //   try {
+  //     setActionError(null);
+  //     await apiClient.delete(`/Academies/${id}`);
       
-      if (activeAcademyId === id) {
-        setActiveAcademyId(null);
-        localStorage.removeItem('smartcourt_active_tenant_override');
+  //     if (activeAcademyId === id) {
+  //       setActiveAcademyId(null);
+  //       localStorage.removeItem('smartcourt_active_tenant_override');
+  //     }
+  //     await fetchAcademies();
+  //   } catch (err: any) {
+  //     setActionError(err.response?.data || 'Purge Request Rejected: Active constraints detected.');
+  //   }
+  // };
+
+  const handleSetActiveTenantOverride = async (id: string, name: string) => {
+    showAlert({
+      title: 'Change Default Academy?',
+      message: `Are you absolutely sure you want to switch to ${name} as your default academy?`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          setActionError(null);
+
+          const response = await apiClient.post(`/Academies/${id}/set-active`, {});
+          const freshToken = response.data?.token;
+          if (!freshToken) throw new Error('Backend authorization payload returned an empty token signature.');
+          saveSession(freshToken);
+          setActiveAcademyId(id);
+          
+          showAlert({ 
+            title: 'Default Academy Reset', 
+            message: "🌟 Active Academy workspace node shifted successfully.",
+            type: 'success' 
+          });
+          window.location.reload();
+        } catch (err: any) {
+          setActionError(err.response?.data || 'Tenant Impersonation Routing Failure.');
+        }
       }
-      await fetchAcademies();
-    } catch (err: any) {
-      setActionError(err.response?.data || 'Purge Request Rejected: Active constraints detected.');
-    }
-  };
-
-  const handleSetActiveTenantOverride = async (id: string) => {
-    try {
-      setActionError(null);
-
-      await apiClient.post(`/Academies/${id}/set-active`, {});
-      
-      setActiveAcademyId(id);
-      localStorage.setItem('smartcourt_active_tenant_override', id);
-      alert('🌟 Active management workspace node shifted successfully.');
-      window.location.reload();
-    } catch (err: any) {
-      setActionError(err.response?.data || 'Tenant Impersonation Routing Failure.');
-    }
+    });
   };
 
   const openEditMode = (academy: Academy) => {
@@ -180,7 +200,7 @@ export default function AcademiesDashboard() {
 
             <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
               {academies.map((academy) => {
-                const isActive = activeAcademyId === academy.id;
+                const isActive = activeAcademyId?.toLowerCase() === academy.id.toLowerCase();
                 return (
                   <tr key={academy.id} className={`hover:bg-slate-50 transition-colors ${isActive ? 'bg-purple-50/60 font-semibold' : ''}`}>
                     <td className="p-4">
@@ -195,30 +215,30 @@ export default function AcademiesDashboard() {
                     <td className="p-4 font-mono text-slate-500 text-[11px]">{academy.id}</td>
                     <td className="p-4">
                       <span className="bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded-sm font-mono text-[10px]">
-                        {academy.branchCount} Nodes
+                        {academy.branchCount} Node{academy.branchCount > 1 ? 's':''}
                       </span>
 
                     </td>
                     <td className="p-4 font-mono text-slate-500 text-[11px]">
                       {new Date(academy.createdAtUtc).toLocaleDateString()}
                     </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button onClick={() => handleSetActiveTenantOverride(academy.id)} disabled={isActive}
+                    <td className="p-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end space-x-2 flex-nowrap">
+                        <button onClick={() => handleSetActiveTenantOverride(academy.id,academy.name)} disabled={isActive}
                           className={`px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition ${
                             isActive 
                               ? 'bg-emerald-100 border border-emerald-300 text-emerald-700 cursor-default' 
-                              : 'bg-purple-600 hover:bg-purple-500 text-white'
+                              : 'bg-purple-600 border border-purple-300 hover:bg-purple-500 text-white'
                           }`}>
                           {isActive ? 'Active Node' : 'Set Active Default'}
                         </button>
                         <button onClick={() => openEditMode(academy)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 px-3 py-1.5 font-bold transition">
                           📝 Edit
                         </button>
-                        <button onClick={() => handleDeleteAcademy(academy.id, academy.name)} className="bg-rose-100 hover:bg-rose-200 text-rose-600 border border-rose-300 px-3 py-1.5 font-bold transition">
+                        {/* <button onClick={() => handleDeleteAcademy(academy.id, academy.name)} className="bg-rose-100 hover:bg-rose-200 text-rose-600 border border-rose-300 px-3 py-1.5 font-bold transition">
                           🗑️ Purge
 
-                        </button>
+                        </button> */}
                       </div>
                     </td>
                   </tr>
