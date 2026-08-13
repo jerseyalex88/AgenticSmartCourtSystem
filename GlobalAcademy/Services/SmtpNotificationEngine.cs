@@ -14,12 +14,14 @@ public class SmtpNotificationEngine : IEmailNotificationEngine
     private readonly SmtpSettings _smtpSettings;
     private readonly ApplicationDbContext _dbContext;
     private readonly IServiceScopeFactory _scopeFactory; 
+    private readonly IConfiguration _configuration;
 
-    public SmtpNotificationEngine(IOptions<SmtpSettings> smtpSettings, ApplicationDbContext dbContext, IServiceScopeFactory scopeFactory)
+    public SmtpNotificationEngine(IOptions<SmtpSettings> smtpSettings, ApplicationDbContext dbContext, IServiceScopeFactory scopeFactory, IConfiguration configuration)
     {
         _smtpSettings = smtpSettings.Value;
         _dbContext = dbContext;
         _scopeFactory = scopeFactory;
+        _configuration = configuration;
     }
 
     public async Task SendCourtReservationConfirmationAsync(
@@ -415,59 +417,104 @@ public class SmtpNotificationEngine : IEmailNotificationEngine
         // 6. Asynchronously execute the network mail delivery pass thread
         await smtpClient.SendMailAsync(mailMessage);
     }
+    private string GetBaseUrl()
+    {
+        // =========================================================================
+        // 🚀 PRODUCTION FALLBACK: EXTRACT CLIENT BASE FROM ALLOWED ORIGINS DYNAMICALLY
+        // =========================================================================
+        string baseUrl = _smtpSettings.ClientBaseUrl;
 
-    public async Task DBUSendWelcomeOnboardingEmailAsync(
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            // Scrape your global Program.cs AllowedOrigins array directly from configuration context
+            var origins = _configuration.GetSection("AllowedOrigins").Get<string[]>();
+            
+            // Fall back safely to the first web-facing host index item if initialized, else loopback ports
+            baseUrl = (origins != null && origins.Length > 0) ? origins[0] : "http://localhost:5173";
+        }
+
+        baseUrl = baseUrl.TrimEnd('/');
+        return baseUrl;
+    }
+    public async Task SendPasswordResetLinkEmailAsync(
         string recipientEmail,
-        string recipientName,
+        string resetToken,
         Guid academyId)
     {
-        // 1. Asynchronously fetch Academy parameters to inject custom multi-tenant branding
         string academyName = "Smart Court OS Partner Academy";
         using (var scope = _scopeFactory.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var academy = await dbContext.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
-            if (academy != null)
-            {
-                academyName = academy.Name;
-            }
+            if (academy != null) academyName = academy.Name;
         }
 
-        // 2. Compile the high-fidelity, cross-client compatible HTML layout
-            // =========================================================================
-    string htmlBody = $@"
-Test Only Email: Welcome to {academyName}!";
+        // Escaping parameters safely to ensure URL query strings do not break across mail servers
+        string encodedToken = Uri.EscapeDataString(resetToken);
+        string encodedEmail = Uri.EscapeDataString(recipientEmail);
+        string dynamicUrl = $"{GetBaseUrl()}/reset-password?token={encodedToken}&email={encodedEmail}&academyId={academyId}";
 
+        string htmlBody = $@"
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset='utf-8'><title>Password Reset Request</title></head>
+    <body style='margin:0; padding:0; background-color:#ffffff; font-family:sans-serif; color:#1e293b;'>
+        <table width='100%' border='0' cellspacing='0' cellpadding='0' style='padding:20px 0;'>
+            <tr>
+                <td align='center'>
+                    <table width='100%' max-width='550px' border='0' cellspacing='0' cellpadding='0' style='max-width:550px; padding:20px; border:1px solid #e2e8f0; border-radius:8px;'>
+                        <tr>
+                            <td style='padding-bottom:20px; border-bottom:2px solid #7c3aed;'>
+                                <h2 style='margin:0; font-size:18px; color:#7c3aed; text-transform:uppercase;'>🎾 {academyName} Account Protection</h2>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='padding:20px 0;'>
+                                <p style='font-size:14px; line-height:1.5;'>Hello,</p>
+                                <p style='font-size:14px; line-height:1.5;'>
+                                    We received a request to reset the login security credentials for the profile account linked to this email address. This recovery token link is active for the next 2 hours.
+                                </p>
+                                <p style='font-size:14px; line-height:1.5;'>
+                                    If you did not initiate this security query, you can safely ignore this email notification—your current password string will remain fully encrypted and secure.
+                                </p>
+                                <div style='margin:24px 0; padding:12px; background-color:#f1f5f9; border:1px dashed #cbd5e1; border-radius:4px; text-align:center; font-family:monospace; font-size:12px; color:#334155;'>
+                                    Copy and paste this secure path link into your browser to update your credentials:<br>
+                                    <strong>{dynamicUrl}</strong>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='border-top:1px solid #e2e8f0; padding-top:16px; text-align:center; font-size:11px; color:#94a3b8;'>
+                                This is an automated operational account security update dispatched by Smart Court OS.<br>
+                                &copy; {DateTime.UtcNow.Year} {academyName}. All rights reserved.
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>";
 
-        Console.WriteLine($"[DEBUG] SendWelcomeOnboardingEmailAsync - _smtpSettings value: fromemail {_smtpSettings.FromEmail} fromname {_smtpSettings.FromName} host {_smtpSettings.Host} port {_smtpSettings.Port} username {_smtpSettings.Username} password {_smtpSettings.Password} enablessl {_smtpSettings.EnableSsl} recipientEmail {recipientEmail} recipientName {recipientName} academyName {academyName}");
+        string cleanFromEmail = string.IsNullOrEmpty(_smtpSettings.FromEmail) ? "security@smartcourtos.com" : _smtpSettings.FromEmail;
+
+        using var mailMessage = new MailMessage
+        {
+            From = new MailAddress(cleanFromEmail, string.IsNullOrEmpty(_smtpSettings.FromName) ? "SmartCourt Vault" : _smtpSettings.FromName),
+            Subject = $"🔐 Password Reset Verification: {academyName}",
+            Body = htmlBody,
+            IsBodyHtml = true,
+            BodyEncoding = Encoding.UTF8
+        };
         
-        try
-        {
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(_smtpSettings.FromEmail, _smtpSettings.FromName),
-                Subject = $"✨ Account Activated: Welcome to {academyName}!",
-                Body = htmlBody,
-                IsBodyHtml = true,
-                BodyEncoding = Encoding.UTF8
-            };
-            
-            mailMessage.To.Add(new MailAddress(recipientEmail, recipientName));
+        mailMessage.To.Add(new MailAddress(recipientEmail, "Valued Player"));
 
-            // 5. Initialize the atomic SMTP client configuration bridge rules
-            using var smtpClient = new SmtpClient(_smtpSettings.Host, _smtpSettings.Port)
-            {
-                Credentials = new NetworkCredential(_smtpSettings.Username, _smtpSettings.Password),
-                EnableSsl = _smtpSettings.EnableSsl
-            };
-
-            // 6. Asynchronously execute the network mail delivery pass thread
-            await smtpClient.SendMailAsync(mailMessage);
-        }
-        catch (Exception ex)
+        using var smtpClient = new SmtpClient(_smtpSettings.Host, _smtpSettings.Port)
         {
-            Console.WriteLine($"[ERROR] SendWelcomeOnboardingEmailAsync - Exception occurred while sending email: {ex.Message} {ex.StackTrace} {ex.InnerException}");
-        }
+            Credentials = new NetworkCredential(_smtpSettings.Username, _smtpSettings.Password),
+            EnableSsl = _smtpSettings.EnableSsl
+        };
+
+        await smtpClient.SendMailAsync(mailMessage);
     }
-
 }

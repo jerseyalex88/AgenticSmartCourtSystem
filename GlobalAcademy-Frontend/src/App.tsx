@@ -14,6 +14,7 @@ import RosterDashboard from './pages/RosterDashboard';
 import AdminTools from './pages/AdminTools'; 
 import { AlertProvider } from './context/AlertContext';
 import AcademiesDashboard from './pages/AcademiesDashboard';
+import ResetPassword from './pages/ResetPassword';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -26,6 +27,8 @@ export default function App() {
   // Check if the current browser window path matches our new player entrance routing rule
   const isPlayerEntrancePath = window.location.pathname === '/player-gateway';
   const isDirectorLoginPath = window.location.pathname === '/admin';
+  // 🚀 Hook to intercept email password reset link paths
+  const isResetPasswordPath = window.location.pathname === '/reset-password';
   const [targetAuthMode, setTargetAuthMode] = useState<'login' | 'register'>('login');
 
   // Track dynamic visibility state for the discrete checkout drawer modal
@@ -64,8 +67,32 @@ export default function App() {
       </div>
     );
   }
+  
+  // 🚀 UNAUTHENTICATED RESET PASSWORD INTERCEPT PASS-GATE
+  if (!isAuthenticated && isResetPasswordPath) {
+    return (
+      <AlertProvider>
+        <ResetPassword 
+          onNavigate={(route) => {
+            if (route === 'landing') {
+              window.history.replaceState(null, '', '/');
+              setShowPublicLanding(true);
+              setShowPlayerGateway(false);
+            } else {
+              // Redirect back to the login gateway card upon successful complete
+              const targetAcademyId = import.meta.env.VITE_DEFAULT_ACADEMY_ID;
+              window.history.replaceState(null, '', `/player-gateway?academyId=${targetAcademyId}`);
+              setTargetAuthMode('login');
+              setShowPlayerGateway(true);
+              setShowPublicLanding(false);
+            }
+          }} 
+        />
+      </AlertProvider>
+    );
+  }
 
-    if (!isAuthenticated && isDirectorLoginPath) {
+  if (!isAuthenticated && isDirectorLoginPath) {
     return (
       <AlertProvider>
         <Login 

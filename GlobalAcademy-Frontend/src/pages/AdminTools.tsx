@@ -16,6 +16,7 @@ export default function AdminTools() {
   const { user: loggedInUser } = useAuth();
   const isPlayer = loggedInUser?.role === 'Player';
   const isLoggedInGlobalAdmin = loggedInUser?.role.toLowerCase() === 'globaladmin';
+  const isLoggedInDirector = loggedInUser?.role.toLowerCase() === 'academydirector';
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -26,6 +27,10 @@ export default function AdminTools() {
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const { showAlert } = useAlert();
+
+  const [adminOverridePassword, setAdminOverridePassword] = useState<string>('');
+  const [isOverridingPassword, setIsOverridingPassword] = useState<boolean>(false);
+  const [showOverridePassword, setShowOverridePassword] = useState<boolean>(false); // For your eye visibility toggles
 
   // Input states matching your backend C# identity attributes
   const [createUserPayload, setCreateUserPayload] = useState({
@@ -158,6 +163,49 @@ export default function AdminTools() {
     });
   };
 
+  // =========================================================================
+  // 🚀 ADMINISTRATIVE FORCE-RESET CREVENTIALS OVERRIDE
+  // =========================================================================
+  const handleAdminForceResetPassword = async () => {
+    handleClearMessages();
+    
+    if (!editUserPayload.email) {
+      setActionError("Infrastructure Error: Missing target user email coordinate pointer.");
+      return;
+    }
+
+    if (!adminOverridePassword.trim() || adminOverridePassword.length < 6) {
+      setActionError("Validation Error: Administrative override passwords must be at least 6 characters in length.");
+      return;
+    }
+
+    showAlert({
+      title: 'Override Password?',
+      message: `⚠️ Security Warning: Are you completely sure you want to forcefully overwrite the secure password credentials for ${editUserPayload.email} instantly?`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          setIsOverridingPassword(true);
+
+          // Matches your compiled C# backend Data Transfer Object contracts exactly
+          await apiClient.post('/Auth/admin-override-password', {
+            targetUserEmail: editUserPayload.email,
+            newPassword: adminOverridePassword.trim()
+          });
+
+          setUiSuccessMessage(`🎉 Clean Ledger Update: Profile credentials row for ${editUserPayload.email} has been overwritten live inside database tables.`);
+          setAdminOverridePassword(''); // Erase plaintext password memory footprints
+        } catch (err: any) {
+          console.error("Administrative override exception caught:", err);
+          const serverErr = err.response?.data?.message || err.response?.data || 'Access Denied: Administrative credential manipulation protocol failed.';
+          setActionError(serverErr);
+        } finally {
+          setIsOverridingPassword(false);
+        }
+      }
+    });
+  };
+
   const roleProtectedList = users.filter(user => {
     if (!isLoggedInGlobalAdmin && user.role?.toLowerCase() === 'globaladmin') {
       return false; // Safely hide GlobalAdmin accounts from AcademyDirectors
@@ -208,7 +256,7 @@ export default function AdminTools() {
             className="w-full sm:max-w-md bg-white border border-slate-300 p-2.5 text-xs text-slate-800 focus:outline-none focus:border-purple-500"
           />
           <button onClick={() => setShowCreateModal(true)} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 text-xs font-black transition whitespace-nowrap">
-            ➕ Provision Fresh User Account
+            ➕ Provision New User Account
           </button>
         </div>
 
@@ -258,7 +306,7 @@ export default function AdminTools() {
         <div className="fixed inset-0 bg-slate-400/80 flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-slate-300 max-w-md w-full p-6 space-y-4 shadow-2xl">
             <form onSubmit={handleCreateIdentityUser} className="space-y-4">
-            <h3 className="text-base font-black text-slate-900">Provision Fresh Account Entry</h3>
+            <h3 className="text-base font-black text-slate-900">Provision New Account Entry</h3>
               <div>
                   <label className="block font-bold text-slate-600 uppercase mb-1">User Handle (Username)</label>
                   <input 
@@ -339,6 +387,55 @@ export default function AdminTools() {
                 <input type="checkbox" id="isActiveCheck" checked={editUserPayload.isActive} onChange={(e) => setEditUserPayload({...editUserPayload, isActive: e.target.checked})} className="accent-purple-500 rounded h-4 w-4" />
                 <label htmlFor="isActiveCheck" className="text-slate-700 font-semibold cursor-pointer">Account login permissions remain functional (IsActive)</label>
               </div>
+
+              {/* =========================================================================
+                  🚀 MASTER OVERRIDE VAULT PANEL (DIRECTORS ONLY)
+                 ========================================================================= */}
+              {isLoggedInDirector && 
+              <div className="pt-3 border-t border-dashed border-slate-200 mt-2 space-y-2">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-rose-600">
+                  ⚠️ Administrative Password Override
+                </label>
+                <p className="text-slate-500 text-[10px] leading-normal pb-0.5">
+                  Type a new plain text master key string below to forcefully clear their existing encrypted row and assign new login credentials instantly on the spot.
+                </p>
+                
+                {/* Width-aligned relative flex layout container with integrated visibility eyes */}
+                <div className="flex gap-2 items-center w-full">
+                  <div className="relative flex items-center w-full">
+                    <input
+                      type={showOverridePassword ? "text" : "password"}
+                      disabled={isOverridingPassword}
+                      value={adminOverridePassword}
+                      onChange={(e) => setAdminOverridePassword(e.target.value)}
+                      placeholder="Enter new master override..."
+                      className="w-full bg-slate-50 border border-slate-300 p-2 pr-10 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-rose-500 font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOverridePassword(!showOverridePassword)}
+                      className="absolute right-3 text-slate-400 hover:text-rose-600 focus:outline-none"
+                    >
+                      {showOverridePassword ? (
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
+                      ) : (
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      )}
+                    </button>
+                  </div>
+                  
+                  <button
+                    type="button" // Static button decouples execution tracking parameters from main form submits
+                    disabled={isOverridingPassword || !adminOverridePassword.trim()}
+                    onClick={handleAdminForceResetPassword}
+                    className="bg-rose-600 hover:bg-rose-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold px-3.5 py-2 uppercase tracking-wide transition whitespace-nowrap h-[38px] flex items-center justify-center"
+                  >
+                    {isOverridingPassword ? 'Resetting...' : 'Force Overwrite'}
+                  </button>
+                </div>
+              </div>
+              }
+
               <div className="flex items-center justify-end space-x-2 pt-2">
                 <button type="button" onClick={() => setEditingUserId(null)} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 text-slate-700 transition">Cancel</button>
                 <button type="submit" className="bg-purple-600 hover:bg-purple-500 text-white font-black px-4 py-2 transition">Save</button>

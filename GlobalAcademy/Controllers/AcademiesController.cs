@@ -231,8 +231,6 @@ public class AcademiesController : ControllerBase
             token = tokenString, // ◄--- Crucial token attachment payload!
             expiration = expirationTime
         });
-
-        return Ok(new { Message = "Master tenant tracking updated successfully.", ActiveAcademyId = id });
     }
     private async Task<(string Token, DateTime Expiration)> GenerateJwtTokenAsync(IdentityUser user)
     {

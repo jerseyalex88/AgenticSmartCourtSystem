@@ -24,4 +24,10 @@ public interface IEmailNotificationEngine
         string recipientEmail,
         string recipientName,
         Guid academyId);
+    // 🚀 CONTRACT FOR PASSWORD RESET ROUTING LINK PACKETS
+    Task SendPasswordResetLinkEmailAsync(
+        string recipientEmail,
+        string resetToken,
+        Guid academyId);
+
 }

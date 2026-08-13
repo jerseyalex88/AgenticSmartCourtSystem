@@ -1007,6 +1007,119 @@ public class AuthController : ControllerBase
             }
         }
     }
+    // =========================================================================
+    // 🚀 INITIATE SELF-SERVICE FORGOT PASSWORD (TOKEN DISPATCH)
+    // =========================================================================
+    [HttpPost("forgot-password-request")]
+    [AllowAnonymous] // Open publicly to permit entry loop initialization
+    public async Task<IActionResult> ForgotPasswordRequest([FromBody] ForgotPasswordDto model)
+    {
+        if (!Guid.TryParse(model.AcademyId, out Guid academyGuid))
+        {
+            return BadRequest(new { message = "Identity Exception: Malformed or un-parseable tenant link context." });
+        }
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+        {
+            // Security Guard: Return a generic success to prevent email-harvesting enumeration attacks
+            return Ok(new { message = "If the profile email coordinates match our files, a secure password recovery link has been dispatched." });
+        }
+
+        // Generate Microsoft Identity's built-in unique cryptographic single-use reset string hash token
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+        try
+        {
+            await _emailEngine.SendPasswordResetLinkEmailAsync(user.Email!, resetToken, academyGuid);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SECURITY EXCEPTION]: Failed to deliver recovery mail packet: {ex.Message}");
+            return StatusCode(500, new { message = "Downstream SMTP mail delivery pipe failure." });
+        }
+
+        return Ok(new { message = "If the profile email coordinates match our files, a secure password recovery link has been dispatched." });
+    }
+
+    // =========================================================================
+    // 🚀 PROCESS LIVE WEB-FORM PASSWORD RESET COMPLETION
+    // =========================================================================
+    [HttpPost("complete-password-reset")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CompletePasswordReset([FromBody] ResetPasswordPayloadDto model)
+    {
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null) return BadRequest(new { message = "Security Intercept: Account credentials mismatch or corrupt tokens." });
+
+        // Submit token parameters and raw password text strings atomically to the core framework validator
+        var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            string errorReason = result.Errors.FirstOrDefault()?.Description ?? "Token token validation failed or expired.";
+            return BadRequest(new { message = errorReason });
+        }
+
+        return Ok(new { message = "Security vault credentials reset live and locked successfully! You can now log into your profile gateway." });
+    }
+    // =========================================================================
+    // 🚀 ADMIN DIRECTOR PASSWORD OVERRIDE MANIPULATION GATEWAY
+    // =========================================================================
+    [HttpPost("admin-override-password")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")] // Enforce maximum security firewall perimeters
+    public async Task<IActionResult> AdminOverridePassword([FromBody] AdminOverridePasswordDto model)
+    {
+        if (string.IsNullOrWhiteSpace(model.NewPassword) || model.NewPassword.Length < 6)
+        {
+            return BadRequest(new { message = "Validation Error: Override password string fails minimum complexity parameter lengths." });
+        }
+
+        // 1. Locate target account inside database matrix
+        var targetUser = await _userManager.FindByEmailAsync(model.TargetUserEmail);
+        if (targetUser == null)
+        {
+            return NotFound(new { message = "Identity Exception: Targeted member account email coordinates not found inside system tables." });
+        }
+
+        // Security Guard: Prevent a lower Director from accidentally wiping or editing a Global Admin's profile passport
+        var targetRoles = await _userManager.GetRolesAsync(targetUser);
+        if (targetRoles.Contains("GlobalAdmin") && !User.IsInRole("GlobalAdmin"))
+        {
+            return Forbid("Security Violation Boundary: Unauthorized administrative escalation intercepted.");
+        }
+
+        // 2. ATOMIC RESET OVERWRITE: Remove existing hash blocks and stamp the fresh plain-text credentials natively
+        using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+        {
+            try
+            {
+                // Forceful deletion of previous encrypted row tokens to eliminate cryptographic lock drops
+                await _userManager.RemovePasswordAsync(targetUser);
+                
+                // Salt, hash, and bind the newly generated credentials directly to disk storage rows
+                var result = await _userManager.AddPasswordAsync(targetUser, model.NewPassword.Trim());
+
+                if (!result.Succeeded)
+                {
+                    string failReason = result.Errors.FirstOrDefault()?.Description ?? "Complexity rule mismatch.";
+                    return BadRequest(new { message = $"Override aborted: {failReason}" });
+                }
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                Console.WriteLine($"[ADMIN OVERRIDE SUCCESS]: Director user {User.Identity?.Name} forcefully reset credentials row for user {targetUser.Email}.");
+                return Ok(new { message = $"Profile credentials row for {targetUser.Email} successfully overwritten live." });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { message = $"PostgreSQL transaction error aborted layout: {ex.Message}" });
+            }
+        }
+    }
+
 }
 
 public record LoginDto(string Email, string Password, string TurnstileToken = "");
@@ -1019,6 +1132,14 @@ public record Verify2FactorDto(string Email, string Code, string TurnstileToken 
 public record Setup2FactorResponseDto(string SharedKey, string AuthenticatorUri);
 public record Confirm2FactorSetupPayload(string Code);
 public record UserSecurityStateDto(bool IsTwoFactorEnabled, string Email);
-// 🚀 NEW ADDITION: Standardizes secure input bindings for password rotation operations
+// 🚀 Standardizes secure input bindings for password rotation operations
 public record ChangePasswordDto(string CurrentPassword, string NewPassword);
 public record UserActiveHoldsDto(bool HasActiveHold, int SecondsLeft);
+// 🚀 For initiating the self-service email token dispatch
+public record ForgotPasswordDto(string Email, string AcademyId);
+
+// 🚀 For processing the final web-form reset request
+public record ResetPasswordPayloadDto(string Email, string Token, string NewPassword);
+
+// 🚀 For handling administrative Director overrides
+public record AdminOverridePasswordDto(string TargetUserEmail, string NewPassword);
