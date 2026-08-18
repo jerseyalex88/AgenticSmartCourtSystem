@@ -15,11 +15,36 @@ import AdminTools from './pages/AdminTools';
 import { AlertProvider } from './context/AlertContext';
 import AcademiesDashboard from './pages/AcademiesDashboard';
 import ResetPassword from './pages/ResetPassword';
+import { CookieConsentProvider } from './context/CookieConsentContext';
+import CookieBanner from './components/CookieBanner';
+import ThirdPartyScriptManager from './components/ThirdPartyScriptManager';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-  
+
+  // =========================================================================
+  // 🚀 MANUAL SPA SINGLE PAGE ROUTER NAVIGATION TRACKING MONITOR
+  // =========================================================================
+  useEffect(() => {
+    // Safety check: Exit quietly if Google Analytics tag instance isn't initialized yet
+    const windowObj = window as any;
+    if (typeof windowObj.gtag !== 'function') return;
+
+    // Translate your internal activeTab state identifiers into human-readable page paths
+    const resolvedPathName = '/' + activeTab;
+    const resolvedTitleName = activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Workspace Panel';
+
+    // console.log(`📡 [TELEMETRY DISPATCH]: Broadcasting SPA pageview state ➔ ${resolvedPathName}`);
+
+    // Fire explicit manual page view analytics event packet to your GA4 account ledger
+    windowObj.gtag('event', 'page_view', {
+      page_path: resolvedPathName,
+      page_title: resolvedTitleName,
+      page_location: window.location.origin + resolvedPathName
+    });
+  }, [activeTab]); // 🔥 Re-fires instantly every single time a user switches tabs inside the app!
+
   // 1. ADD STATE FOR HANDLING PUBLIC LANDING VISIBILITY OVERRIDES
   const [showPublicLanding, setShowPublicLanding] = useState(true);
   const [showPlayerGateway, setShowPlayerGateway] = useState(false);
@@ -32,9 +57,9 @@ export default function App() {
   const [targetAuthMode, setTargetAuthMode] = useState<'login' | 'register'>('login');
 
   // Track dynamic visibility state for the discrete checkout drawer modal
-    const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-    const [activeInvoiceId, setActiveInvoiceId] = useState('');
-    const [activeInvoiceAmount, setActiveInvoiceAmount] = useState(0);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [activeInvoiceId, setActiveInvoiceId] = useState('');
+  const [activeInvoiceAmount, setActiveInvoiceAmount] = useState(0);
 
   // DYNAMIC INITIALIZATION HOOK: Automatically direct players to their booking hub!
   useEffect(() => {
@@ -143,21 +168,26 @@ export default function App() {
   // FORCE GATEWAY: Intercept unauthenticated users attempting to bypass landing pages
   if (isPlayerEntrancePath || (!isAuthenticated && showPlayerGateway)) {
     return (
-      <AlertProvider>
-        <PlayerGateway 
-          initialAuthMode={targetAuthMode}
-          onNavigate={(route) => {
-            if (route === 'landing') {
-              window.history.replaceState(null, '', '/');
-              setShowPublicLanding(true);
-              setShowPlayerGateway(false);
-            } else if (route === 'login' || route === 'register') {
-              setShowPublicLanding(false);
-              setShowPlayerGateway(true);
-            }
-          }} 
-        />
-      </AlertProvider>
+      <CookieConsentProvider>
+        {/* 🚀 RUNNING BACKGROUND COMPLIANCE GATEWAY FOR GA4 */}
+        <ThirdPartyScriptManager />
+        <AlertProvider>
+          <PlayerGateway 
+            initialAuthMode={targetAuthMode}
+            onNavigate={(route) => {
+              if (route === 'landing') {
+                window.history.replaceState(null, '', '/');
+                setShowPublicLanding(true);
+                setShowPlayerGateway(false);
+              } else if (route === 'login' || route === 'register') {
+                setShowPublicLanding(false);
+                setShowPlayerGateway(true);
+              }
+            }} 
+          />
+          <CookieBanner />
+        </AlertProvider>
+      </CookieConsentProvider>
     );
   }
 
@@ -199,10 +229,15 @@ export default function App() {
   };
 
   return (
-    <AlertProvider>
-      <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
-        {renderTabContent()}
-      </Layout>
-    </AlertProvider>
+    <CookieConsentProvider>
+      {/* 🚀 RUNNING BACKGROUND COMPLIANCE GATEWAY FOR GA4 */}
+      <ThirdPartyScriptManager />
+      <AlertProvider>
+        <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+          {renderTabContent()}
+        </Layout>
+        <CookieBanner />
+      </AlertProvider>
+    </CookieConsentProvider>
   );
 }

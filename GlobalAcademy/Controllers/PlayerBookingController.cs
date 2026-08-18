@@ -190,40 +190,33 @@ public class PlayerBookingController : ControllerBase
         if (!DateTime.TryParse(startDate, out DateTime parsedStart))
             return BadRequest("Invalid starting date formatting token.");
 
-        // FIX: Force the unassigned Date structure to declare its Kind as explicit Utc
         var rangeStartUtc = DateTime.SpecifyKind(parsedStart.Date, DateTimeKind.Utc);
         var rangeEndUtc = DateTime.SpecifyKind(rangeStartUtc.AddDays(7), DateTimeKind.Utc);
 
-        // A. RELATIONAL FIX: Eager-load the court's exact parent branch configuration!
-        // This guarantees Court A maps to Branch A's timezone rules, and Court B maps to Branch B's.
         var courts = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
             .ToListAsync(_dbContext.Courts
-                .Include(c => c.Branch) // Assuming your Court model has a public virtual Branch navigation property
+                .Include(c => c.Branch) 
                 .Where(c => c.AcademyId == currentAcademyId)
                 .OrderBy(c => c.Name));
 
-        // B. Fetch all live booked event rows committed for the 7-day timeframe segment
         var overlappingBookings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
             .ToListAsync(_dbContext.Bookings.Where(b => 
                 b.AcademyId == currentAcademyId && 
                 b.StartTimeUtc >= rangeStartUtc && 
                 b.StartTimeUtc < rangeEndUtc));
 
-        // C. CONFIGURATION HOOK: Generate daily hourly slots grid (8:00 AM to 8:00 PM track list)
         int startHour = 8;
         int endHour = 20;
 
-        var matrixReport = new System.Collections.Generic.List<object>();
+        // 🚀 UPGRADE: Using a clean, strongly-typed dictionary layer instead of loose dynamic lists
+        var matrixReport = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<MatrixSlotResponse>>();
 
-        // Core 3-tier looping system: Day -> Hour -> Court
         for (int dayOffset = 0; dayOffset < 7; dayOffset++)
         {
             var targetDay = rangeStartUtc.AddDays(dayOffset);
-            var slotsInDay = new System.Collections.Generic.List<object>();
-
-            // If courts span multiple timezones, we establish a stable neutral UTC anchor for the header date
-            // or default to the first court's localized calendar string for the tab layout
-            var localHeaderDayString = targetDay.ToString("yyyy-MM-dd");
+            var slotsInDay = new System.Collections.Generic.List<MatrixSlotResponse>();
+            
+            string localHeaderDayString = targetDay.ToString("yyyy-MM-dd");
             bool headerSet = false;
 
             for (int hour = startHour; hour < endHour; hour++)
@@ -233,7 +226,6 @@ public class PlayerBookingController : ControllerBase
 
                 foreach (var court in courts)
                 {
-                    // DYNAMIC TIMEZONE RESOLUTION: Extract the specific zone code for THIS court's parent branch [1]
                     string courtTimeZoneId = court.Branch?.TimeZoneId ?? "UTC";
                     
                     TimeZoneInfo branchTimeZone;
@@ -243,13 +235,11 @@ public class PlayerBookingController : ControllerBase
                     }
                     catch
                     {
-                        branchTimeZone = TimeZoneInfo.Utc; // Safe cross-platform fallback barrier
+                        branchTimeZone = TimeZoneInfo.Utc; 
                     }
 
-                    // TRANSLATION LAYER: Convert the UTC window to this specific court campus' local time
                     DateTime branchLocalStart = TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, branchTimeZone);
 
-                    // Dynamically align the horizontal tab date text to reflect the primary court's location
                     if (!headerSet)
                     {
                         localHeaderDayString = branchLocalStart.ToString("yyyy-MM-dd");
@@ -259,41 +249,56 @@ public class PlayerBookingController : ControllerBase
                     var match = overlappingBookings.FirstOrDefault(b => 
                         b.CourtId == court.Id && b.StartTimeUtc == slotStartUtc);
 
-                    slotsInDay.Add(new
+                    // Calculate localized time zones right now at this physical court branch
+                    DateTime branchCurrentTimeNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, branchTimeZone);
+
+                    bool slotIsAvailable = (match == null);
+
+                    // 🚀 ANTI-RETROSPECTIVE GATE: Block past hours natively on the active timeline day
+                    if (slotIsAvailable && branchLocalStart <= branchCurrentTimeNow)
                     {
-                        courtId = court.Id.ToString(),
-                        courtName = court.Name,
-                        startTimeUtc = slotStartUtc, 
-                        endTimeUtc = slotEndUtc,
-                        
-                        // INDEPENDENT MAPPING DISPLAY TEXT
-                        branchLocalTimeDisplay = branchLocalStart.ToString("hh:mm tt"), // e.g., "02:00 PM"
-                        branchLocalDateDisplay = branchLocalStart.ToString("MMM dd"),    // e.g., "Jul 16"
-                        
-                        isAvailable = (match == null),
-                        bookedPlayerName = match?.BookedPlayerName
-                    });
+                        slotIsAvailable = false;
+                    }
+
+                    slotsInDay.Add(new MatrixSlotResponse(
+                        CourtId: court.Id.ToString(),
+                        CourtName: court.Name,
+                        StartTimeUtc: slotStartUtc,
+                        EndTimeUtc: slotEndUtc,
+                        BranchLocalTimeDisplay: branchLocalStart.ToString("hh:mm tt"),
+                        BranchLocalDateDisplay: branchLocalStart.ToString("MMM dd"),
+                        IsAvailable: slotIsAvailable,
+                        BookedPlayerName: match?.BookedPlayerName
+                    ));
                 }
             }
 
-            matrixReport.Add(new
+            // Append to our safe dictionary ledger using the resolved localized day string as key
+            if (!matrixReport.ContainsKey(localHeaderDayString))
             {
-                dateString = localHeaderDayString,
-                slots = slotsInDay
-            });
+                matrixReport[localHeaderDayString] = slotsInDay;
+            }
+            else
+            {
+                matrixReport[localHeaderDayString].AddRange(slotsInDay);
+            }
         }
 
-        var sortedMatrixReport = matrixReport.Select(day => new
+        // 🚀 UPGRADE: Clean sorting projection completely free from dangerous dynamic casting layers
+        var sortedMatrixReport = matrixReport.Select(kvp => new
         {
-            dateString = ((dynamic)day).dateString,
-            slots = ((System.Collections.Generic.List<object>)((dynamic)day).slots)
-                .OrderBy(s => ((dynamic)s).courtName)
-                .ThenBy(s => ((dynamic)s).startTimeUtc)
+            dateString = kvp.Key,
+            slots = kvp.Value
+                .OrderBy(s => s.CourtName)
+                .ThenBy(s => s.StartTimeUtc)
                 .ToList()
-        }).ToList();
+        })
+        .OrderBy(d => d.dateString)
+        .ToList();
 
         return Ok(sortedMatrixReport);
     }
+
     // =========================================================================
     // 4. POST: COMMIT AN ON-DEMAND BOOKING RECORD ROW (MODEL B INSERT)
     // =========================================================================
@@ -605,3 +610,16 @@ public class PlayerBookingController : ControllerBase
 
 // Data Transfer Object definition record model
 public record ClaimPayloadDto(Guid CourtId, string CourtName, DateTime StartTimeUtc, string SmsCode = "");
+
+// 🚀 NEW STRUCTURAL RECORD DATA CONTRACT BACKING THE MATRIX RESPONSE LOOP
+public record MatrixSlotResponse(
+    string CourtId,
+    string CourtName,
+    DateTime StartTimeUtc,
+    DateTime EndTimeUtc,
+    string BranchLocalTimeDisplay,
+    string BranchLocalDateDisplay,
+    bool IsAvailable,
+    string? BookedPlayerName
+);
+
