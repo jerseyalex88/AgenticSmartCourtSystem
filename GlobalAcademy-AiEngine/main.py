@@ -1,17 +1,29 @@
+# main.py
+import uvicorn
 from fastapi import FastAPI
-# 1. Import your modular router controllers
-from routers import pricing_agent, maintenance_agent
+from app.config import settings
+from app.routers import pricing, maintenance
 
+# Initialize the central application engine context using values from our config file
 app = FastAPI(
-    title="Smart Court Agentic AI Engine",
-    description="Advanced Operational Heart for Global Academy ERP Ecosystem Platforms",
-    version="1.0.0"
+    title=settings.title,
+    description=settings.description,
+    version=settings.version
 )
 
-# 🚀 2. REGISTER THE ROUTERS (Exactly like app.MapControllers() in .NET)
-app.include_router(pricing_agent.router)
-app.include_router(maintenance_agent.router)
+# 🚀 REGISTER THE MODULAR ROUTERS (Like MapControllers() in ASP.NET Core)
+app.include_router(pricing.router)
+app.include_router(maintenance.router)
 
 @app.get("/")
 def read_root():
-    return {"status": "Online", "mode": "Modular Gateway Routing Engaged"}
+    """Service baseline landing node heartbeat validator mapping indicator."""
+    return {
+        "status": "Online",
+        "service": settings.title,
+        "architecture_mode": "Domain-Driven Clean Architecture Matrix Enabled"
+    }
+
+if __name__ == "__main__":
+    # Enables script-level launch parameters matching dotnet run behaviors
+    uvicorn.run("main:app", host="127.0.0.1", port=settings.default_port, reload=True)
