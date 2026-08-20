@@ -2,7 +2,7 @@ import React from 'react';
 
 interface PublicHeaderProps {
   onNavigate: (route: string) => void;
-  activeAuthMode?: 'login' | 'register';
+  activeAuthMode?: 'login' | 'register' | "forgot";
   onSetAuthMode?: (mode: 'login' | 'register') => void;
 }
 
