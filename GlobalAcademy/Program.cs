@@ -211,6 +211,19 @@ builder.Services.Configure<GlobalAcademy.Models.BookingSecuritySettings>(
 // Registering as a Singleton ensures that your memory cache collections persist cleanly across web requests
 builder.Services.AddSingleton<GlobalAcademy.Services.ISmsVerificationEngine, GlobalAcademy.Services.SandboxSmsVerificationEngine>();
 
+// =========================================================================
+// 🚀 REGISTER TYPED AI MICROSERVICE NETWORK RELAY WITH DYNAMIC CONFIG
+// =========================================================================
+builder.Services.AddHttpClient<IAiEngineService, AiEngineService>(client =>
+{
+    // Extract the target base string url cleanly out of appsettings.json
+    var aiBaseUrl = builder.Configuration["AiEngineSettings:BaseUrl"] 
+                    ?? "http://localhost:8000/";   // throw new InvalidOperationException("AI Engine base URL configuration string is missing.");
+    
+    client.BaseAddress = new Uri(aiBaseUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
 var app = builder.Build();
 
 // =========================================================================

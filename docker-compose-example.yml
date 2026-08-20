@@ -90,6 +90,9 @@ services:
       - SmtpSettings__FromEmail=name@yourdomain.com
       - SmtpSettings__FromName=High Frequency Tennis Academy
       - SmtpSettings__EnableSsl=true # Google strictly requires secure encryption tunnels
+
+      - AiEngineSettings__BaseUrl=http://ai.engine
+      
     depends_on:
       smartcourt_db:
         condition: service_healthy
@@ -112,6 +115,27 @@ services:
     depends_on:
       - smartcourt_api
 
+  # =========================================================================
+  # 🧠 4. THE AGENTIC AI MICROSERVICE ENGINE
+  # =========================================================================
+  ai.engine:
+    container_name: global_academy_ai_engine
+    build:
+      context: ./GlobalAcademy-AiEngine
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - academy_network     # 🔗 CRITICAL: Make sure this name matches your existing network identifier exactly!
+    environment:
+      - ENV_MODE=Production
+    restart: always
+
+# Ensure your networks block at the bottom includes the shared network
+networks:
+  academy_network:
+    driver: bridge
+    
 volumes:
   smartcourt_pgdata:
     driver: local

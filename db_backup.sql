@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict BhZ3MDBqV2S4apSigdEcKucChDbBUeaiYp0u3sQIc6mNhSyfJISShmhzc4awM6x
+\restrict Ia0fWU7JC2inKpZE4UBVsJ7u6Arw08lVYM3uvbO4HbftueSnZ4XtITFlq8SS29o
 
 -- Dumped from database version 18.4 (Homebrew)
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -10,7 +10,7 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
+--SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -440,13 +440,8 @@ COPY public."AspNetUserClaims" ("Id", "UserId", "ClaimType", "ClaimValue") FROM 
 44	fa8c6ecf-e7bd-44d2-bb6f-1a4f4c4e736c	AcademyId	14a7b1ba-8562-4509-bc08-71047ed5e9c9
 45	e41d8893-2c0c-4aa2-be17-47ee321093ec	AcademyId	6f3a73bf-5230-4d3e-b4e1-fcadeb8f4129
 46	374def61-e534-4b4e-b60c-ff70989d72e4	AcademyId	060c6fe4-6ebb-44ef-bf97-60507c391e39
-47	5b650900-7b86-45f7-b542-13a97dc4d6a4	AcademyId	57a50922-75b7-487f-ac54-5b9aebfd9507
-48	ebc07db1-19aa-4f74-ae64-5507224702c5	AcademyId	60186569-a432-4375-9bee-485c69f086d5
-49	ebc07db1-19aa-4f74-ae64-5507224702c5	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
 50	7560e097-7e73-4739-abd1-8e01b3b4e8f5	AcademyId	60186569-a432-4375-9bee-485c69f086d5
 51	7560e097-7e73-4739-abd1-8e01b3b4e8f5	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
-52	56910a83-16c6-4161-9eec-7a3cb83d151a	AcademyId	60186569-a432-4375-9bee-485c69f086d5
-53	56910a83-16c6-4161-9eec-7a3cb83d151a	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
 54	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	AcademyId	60186569-a432-4375-9bee-485c69f086d5
 55	3b74733e-3a64-43a9-a3e9-c9419a6ec31d	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
 56	36626d17-a18f-4ba9-b026-bd3c873d0e7e	AcademyId	60186569-a432-4375-9bee-485c69f086d5
@@ -463,6 +458,7 @@ COPY public."AspNetUserClaims" ("Id", "UserId", "ClaimType", "ClaimValue") FROM 
 89	ab48a5f1-5800-4bff-b8fe-f685330108aa	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
 90	123dd734-101d-4b8b-a99d-37b9e17b4d83	AcademyId	60186569-a432-4375-9bee-485c69f086d5
 91	123dd734-101d-4b8b-a99d-37b9e17b4d83	http://schemas.microsoft.com/ws/2008/06/identity/claims/role	Player
+47	5b650900-7b86-45f7-b542-13a97dc4d6a4	AcademyId	60186569-a432-4375-9bee-485c69f086d5
 \.
 
 
@@ -485,10 +481,7 @@ COPY public."AspNetUserRoles" ("UserId", "RoleId") FROM stdin;
 fa8c6ecf-e7bd-44d2-bb6f-1a4f4c4e736c	4d407111-1ab1-40a6-a87e-0dd07770245c
 e41d8893-2c0c-4aa2-be17-47ee321093ec	4d407111-1ab1-40a6-a87e-0dd07770245c
 374def61-e534-4b4e-b60c-ff70989d72e4	4d407111-1ab1-40a6-a87e-0dd07770245c
-5b650900-7b86-45f7-b542-13a97dc4d6a4	4d407111-1ab1-40a6-a87e-0dd07770245c
-ebc07db1-19aa-4f74-ae64-5507224702c5	53902b9f-6602-41a3-85cc-59bfb53ad842
 7560e097-7e73-4739-abd1-8e01b3b4e8f5	53902b9f-6602-41a3-85cc-59bfb53ad842
-56910a83-16c6-4161-9eec-7a3cb83d151a	53902b9f-6602-41a3-85cc-59bfb53ad842
 3b74733e-3a64-43a9-a3e9-c9419a6ec31d	53902b9f-6602-41a3-85cc-59bfb53ad842
 36626d17-a18f-4ba9-b026-bd3c873d0e7e	53902b9f-6602-41a3-85cc-59bfb53ad842
 293fb057-0df0-4fc2-9f69-efb3e5f22462	723a79e6-e9ef-40e5-a120-95d0e5489555
@@ -497,6 +490,7 @@ d1484a49-e425-4991-ab8a-5bfe003c4fb9	723a79e6-e9ef-40e5-a120-95d0e5489555
 510b442d-3cdf-468c-8e7f-21c50f9c638a	53902b9f-6602-41a3-85cc-59bfb53ad842
 ab48a5f1-5800-4bff-b8fe-f685330108aa	53902b9f-6602-41a3-85cc-59bfb53ad842
 123dd734-101d-4b8b-a99d-37b9e17b4d83	53902b9f-6602-41a3-85cc-59bfb53ad842
+5b650900-7b86-45f7-b542-13a97dc4d6a4	0b937dcc-21f8-46f5-8c12-a46a8579bb6c
 \.
 
 
@@ -515,23 +509,21 @@ COPY public."AspNetUserTokens" ("UserId", "LoginProvider", "Name", "Value") FROM
 
 COPY public."AspNetUsers" ("Id", "UserName", "NormalizedUserName", "Email", "NormalizedEmail", "EmailConfirmed", "PasswordHash", "SecurityStamp", "ConcurrencyStamp", "PhoneNumber", "PhoneNumberConfirmed", "TwoFactorEnabled", "LockoutEnd", "LockoutEnabled", "AccessFailedCount") FROM stdin;
 39935e3c-501d-4543-9c69-ef4ac33fa9fb	keeper.tom@londonvanguard.com	KEEPER.TOM@LONDONVANGUARD.COM	keeper.tom@londonvanguard.com	KEEPER.TOM@LONDONVANGUARD.COM	t	AQAAAAIAAYagAAAAEMvRDL1AXwgBNm8TeCHCRX8XlIpv9Yic+x45yhYBDiIQ9uR/j5A3iNMWgCooL2Pi6g==	ADIX6GPWGNTQJ4XO25TSNU7JBUE2YUTS	f0efce96-4346-4029-b484-1f6bc3594ae8	\N	f	f	\N	t	0
-5b650900-7b86-45f7-b542-13a97dc4d6a4	test_director_e7d992fc-361e-4fff-8832-e3747ce7a98e@academy.com	TEST_DIRECTOR_E7D992FC-361E-4FFF-8832-E3747CE7A98E@ACADEMY.COM	test_director_e7d992fc-361e-4fff-8832-e3747ce7a98e@academy.com	TEST_DIRECTOR_E7D992FC-361E-4FFF-8832-E3747CE7A98E@ACADEMY.COM	f	AQAAAAIAAYagAAAAEOm+8ona1dUTA68x25s89p2Nu9Pr5fd5+mgU6Z11xlp64UEm9golNSypyg2o6/alug==	XCK52T7XAHCRYE7KEUCX6JLSNTP3S32I	e31a7c60-f69c-4889-9302-cf2508d3887e	\N	f	f	\N	t	0
+5b650900-7b86-45f7-b542-13a97dc4d6a4	Global Admin	GLOBAL ADMIN	globaladmin@hftennisacademy.com	GLOBALADMIN@HFTENNISACADEMY.COM	t	AQAAAAIAAYagAAAAEPQRY+xPwTHVtXiC6Dz7Ipa8/swPT7MHxbTlvtn1A3SH35JVx4SrhMR3T+lx7egtbg==	XCK52T7XAHCRYE7KEUCX6JLSNTP3S32I	e31a7c60-f69c-4889-9302-cf2508d3887e	\N	f	f	\N	t	0
 34f609cc-b0bb-4a5e-9cac-67774d76bc5c	director@dubaiapex.com	DIRECTOR@DUBAIAPEX.COM	director@dubaiapex.com	DIRECTOR@DUBAIAPEX.COM	t	AQAAAAIAAYagAAAAEB8UCbseTTm256MbfGDp3BSbn4DBkqEA47xjzUkjcBP5a80WpUUJTn/aF8E0AqfRZA==	UV6XWOUJ6ACCFBMAMEGAVTWOHAGYBNQ7	68cdc7fb-6067-447f-a335-81801a7ece8d	\N	f	f	\N	t	0
 fa8c6ecf-e7bd-44d2-bb6f-1a4f4c4e736c	test_director_35ac3652-f897-4c61-a34a-2d0711eae81f@academy.com	TEST_DIRECTOR_35AC3652-F897-4C61-A34A-2D0711EAE81F@ACADEMY.COM	test_director_35ac3652-f897-4c61-a34a-2d0711eae81f@academy.com	TEST_DIRECTOR_35AC3652-F897-4C61-A34A-2D0711EAE81F@ACADEMY.COM	f	AQAAAAIAAYagAAAAEMs7dF1C4gs6Rtgb7sJdpXfUU3IGaneDjOLQurDOABzroceUgxZMj7WHFEtbbjYrLA==	UTAN6KKM7PXUS27DKLBUB6JOIUTARHDB	4c9254b2-e121-49a1-a5e6-1f7cbdc3c82c	\N	f	f	\N	t	0
 e41d8893-2c0c-4aa2-be17-47ee321093ec	test_director_44cc9df8-5eac-4af8-886f-c85a3e4037f4@academy.com	TEST_DIRECTOR_44CC9DF8-5EAC-4AF8-886F-C85A3E4037F4@ACADEMY.COM	test_director_44cc9df8-5eac-4af8-886f-c85a3e4037f4@academy.com	TEST_DIRECTOR_44CC9DF8-5EAC-4AF8-886F-C85A3E4037F4@ACADEMY.COM	f	AQAAAAIAAYagAAAAEGT/jGvBPIwLmnBhmMu4yaMn+gaWh11c6WnhMEIIvxKsh39QxJEFBb3J5aJaOUV0OA==	TOYZD3IMC6TILZNZMMR3RN3UDPVCOT72	e61de0a7-037f-4bf9-b3bf-c0d8755399df	\N	f	f	\N	t	0
 374def61-e534-4b4e-b60c-ff70989d72e4	test_director_88107783-f3e4-405c-91c6-53f50651b9d9@academy.com	TEST_DIRECTOR_88107783-F3E4-405C-91C6-53F50651B9D9@ACADEMY.COM	test_director_88107783-f3e4-405c-91c6-53f50651b9d9@academy.com	TEST_DIRECTOR_88107783-F3E4-405C-91C6-53F50651B9D9@ACADEMY.COM	f	AQAAAAIAAYagAAAAEARuaDz/SlL/vaV4vTFKX3Utjxl5Xqel9eU42T2ciTirS40475AI+PeQY3zuiY+N6A==	2TEWX4QRP2FBDPXZCXIDC7G5LCNMQDDO	85c6c182-4ccc-4c28-b4fb-8acde9d36ce3	\N	f	f	\N	t	0
-ebc07db1-19aa-4f74-ae64-5507224702c5	self_registered_player_c30298f8-84dd-4165-9ae4-c5db298bb7a7@wimbledon.com	SELF_REGISTERED_PLAYER_C30298F8-84DD-4165-9AE4-C5DB298BB7A7@WIMBLEDON.COM	self_registered_player_c30298f8-84dd-4165-9ae4-c5db298bb7a7@wimbledon.com	SELF_REGISTERED_PLAYER_C30298F8-84DD-4165-9AE4-C5DB298BB7A7@WIMBLEDON.COM	t	AQAAAAIAAYagAAAAENylGqi9GDSqXaVqkKKSIlNGRkbb6sAqNAehnWQrHZvmAcJxeoj0uAuFfTZo9eBcWg==	CDVATBNJQEAHQWWWZVIFTT6WZLVHEVE6	91c86f14-6cf8-49ea-aa6d-ec8569ecc35b	+15550998877	f	f	\N	t	0
-56910a83-16c6-4161-9eec-7a3cb83d151a	self_registered_player_32e5c064-7b71-4fbc-8df2-1a40f891612d@wimbledon.com	SELF_REGISTERED_PLAYER_32E5C064-7B71-4FBC-8DF2-1A40F891612D@WIMBLEDON.COM	self_registered_player_32e5c064-7b71-4fbc-8df2-1a40f891612d@wimbledon.com	SELF_REGISTERED_PLAYER_32E5C064-7B71-4FBC-8DF2-1A40F891612D@WIMBLEDON.COM	t	AQAAAAIAAYagAAAAEFnYc9N1ed6BYX/lVI6+7AcRZQ+HhsukF6/ylp+DciYpbBtfjtP9C9OxlseqNcE4Bg==	SCOSSZJH3B6YFV4XPULEX5W6RPPKVG53	d35ebff4-ccd9-48c8-878c-3d9141790542	+15550998877	f	f	\N	t	0
+d1484a49-e425-4991-ab8a-5bfe003c4fb9	Alex Jersey	ALEX JERSEY	jerseyalex88@vanguardacademy.com	JERSEYALEX88@VANGUARDACADEMY.COM	t	AQAAAAIAAYagAAAAED71Geel9xD+Oq/SeMqcjiyL+Rfzp3tpO0XQ/FOujYFwSbHf0G2JkzA3GABSjqt3iw==	3EF3TU7BJF2T5GJPOT6TF3MA2KSGKQDL	df23b05d-c839-45e9-b222-8f9e369c714f		f	f	\N	t	0
+ab48a5f1-5800-4bff-b8fe-f685330108aa	jerseychiki88@gmail.com	JERSEYCHIKI88@GMAIL.COM	jerseychiki88@gmail.com	JERSEYCHIKI88@GMAIL.COM	t	AQAAAAIAAYagAAAAEPvEH0WxFC+qRkA2IOTFVOG0k4WbE2Eo6SagPAFof6emvQeM6J7htTEM7mr/VPIpPg==	NPM7SLURZDYIP342PCAQFUOA2BFZW5RP	dcf76612-9fc0-4f92-abea-2cdb7dbd04fc	\N	f	f	\N	t	0
 04b6d1ab-ea0d-4c0e-b209-f1e42698d918	Chiki Happy	CHIKI HAPPY	chiki@vanguardacademy.com	CHIKI@VANGUARDACADEMY.COM	t	AQAAAAIAAYagAAAAEEbqA1eV6KYdymil3Kd+A5ab3Oy6veV1SwjhIaIa2ZLmRWlX78t3j4IruJqlNy8Lcg==	GUPPLSO5ZR2AO7YDXRFEWLZERVJHWQBU	0e50acf2-4a8e-4958-91b1-23af9fc0bf4c	+1604-123-4567	f	f	\N	t	0
 36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	JERSEYALEX88@GMAIL.COM	jerseyalex88@gmail.com	JERSEYALEX88@GMAIL.COM	t	AQAAAAIAAYagAAAAEFO9i/tnLpojaQOvirZNjSGifucW2i2NYhiHlDq7z+MXZyVCuKRH1kt/ReRHUKiLEA==	BS45WKWIFMIQHJSBNDGLBMNWSECYVV62	b440ae7a-4fb0-4904-a369-87de6c2af44f	+160412345676	f	f	\N	t	0
 3b74733e-3a64-43a9-a3e9-c9419a6ec31d	Leo Explorer	LEO EXPLORER	leo@wimbeldon.com	LEO@WIMBELDON.COM	t	AQAAAAIAAYagAAAAEH3K2FQ83zPBjzUAYvwrs8/roXcNfS/37OtDPNH+wVqyeWNboBF8h+KTEZ+dAPEx3Q==	4BNQC7EGFWOHQRNZDLZDTQWHPA5VM7IQ	4dae8b62-6761-4b20-b10b-8a2227fcb1e6	+19051234567	f	f	\N	t	0
 293fb057-0df0-4fc2-9f69-efb3e5f22462	Leo Happy	LEO HAPPY	leo@vanguardacademy.com	LEO@VANGUARDACADEMY.COM	t	AQAAAAIAAYagAAAAEFxejwTpD69Z/OXhpWLy5R9Jd4EcHAiy52WTjVeUjCm96EHVi07eOC0fXnMBICcM4Q==	A3T6ZOLNVNUMQMH3AJ5AWXI2QJR65XJ3	82be2f18-2d55-40bf-9c57-21e1941501c7		f	f	\N	t	0
-d1484a49-e425-4991-ab8a-5bfe003c4fb9	Alex Jersey	ALEX JERSEY	jerseyalex88@vanguardacademy.com	JERSEYALEX88@VANGUARDACADEMY.COM	t	AQAAAAIAAYagAAAAEFQqzualJqLjyQwBDNRNmq4FtVOesUIgQiUi3IlJM1E7a9dLKUUu8DRYPooiGP2M9Q==	MFFH6GUIIZQG4WDYZGQCU43CI4H2L4FJ	f471ff46-2391-4189-9009-a9feb2c2e32e		f	f	\N	t	0
 510b442d-3cdf-468c-8e7f-21c50f9c638a	ashleyshella138@gmail.com	ASHLEYSHELLA138@GMAIL.COM	ashleyshella138@gmail.com	ASHLEYSHELLA138@GMAIL.COM	t	\N	TYJ66ACJ5A5YCNVIJHN25D4EYP64YILQ	783bff4d-8f21-4454-9933-7921ee743d6c	\N	f	f	\N	t	0
-123dd734-101d-4b8b-a99d-37b9e17b4d83	alexreyes88@yahoo.com	ALEXREYES88@YAHOO.COM	alexreyes88@yahoo.com	ALEXREYES88@YAHOO.COM	t	AQAAAAIAAYagAAAAEE6I6Bn3I8D3HuM23AncZfcK2zjHuH9KMnNMQQh5lM9Ho9jRjXDtQei5yMiiN7uYdw==	R6OOBYTPR7W7QQGY4EPOFXZ7T2BGPTRD	27c539f8-064c-4ff3-adcb-2f9f368801e4	+160412345457	f	f	\N	t	0
-ab48a5f1-5800-4bff-b8fe-f685330108aa	jerseychiki88@gmail.com	JERSEYCHIKI88@GMAIL.COM	jerseychiki88@gmail.com	JERSEYCHIKI88@GMAIL.COM	t	\N	URGUWJ7JAV5DQ4NDRM7UIPZTRGAX3Y3O	3198216a-6038-466b-acf3-a70f68c1887d	\N	f	f	\N	t	0
 60978d5c-8caa-4e73-8303-d13108765ea9	HF Director	HF DIRECTOR	areyesbiz@hotmail.com	AREYESBIZ@HOTMAIL.COM	t	AQAAAAIAAYagAAAAEM4e1wOnjTk62UhTwmAGCVJibMYokzTCcfF6UnHev//PZo41i4LIBEQvJSOXWJ1Dpw==	BUWNUHOXYHCQ4DTE6QNDA2RNLS5JD5JU	2068b50e-dcfe-4036-a89e-b0d6cee4af71		f	t	\N	t	0
 7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	CHIKI REYES	chiki@wimbeldon.com	CHIKI@WIMBELDON.COM	t	AQAAAAIAAYagAAAAECH9HJO23EXYR2KtvJt4uSdV8NKeBduVhACgIuuGMwqJ7V9Y7DB5uiNFqadyfSHfjQ==	LOHD3KIL37Z5CTIAQTCOEZYCOHCOAMBI	cf4ae259-754a-4d6e-bce3-ebb3aa0e94ca	+16041234567	f	f	\N	t	0
+123dd734-101d-4b8b-a99d-37b9e17b4d83	alexreyes88@yahoo.com	ALEXREYES88@YAHOO.COM	alexreyes88@yahoo.com	ALEXREYES88@YAHOO.COM	t	AQAAAAIAAYagAAAAEFoV5df3FEj+JtWacuQ+yXUOEsUQ9QNHT61ySihad7uw03c8xqtcXpPKfPqScYgfPw==	CUBRHMDOY6GIYR446U76UTHSG6332BM5	a29c7f9a-19ff-419f-a2b7-147ee07cae34	+160412345457	f	f	\N	t	0
 \.
 
 
@@ -612,7 +604,6 @@ COPY public."Branches" ("Id", "AcademyId", "Name", "Description", "TimeZoneId", 
 COPY public."Courts" ("Id", "AcademyId", "BranchId", "Description", "DryCoefficient", "IsIndoor", "Name", "SurfaceType", "CreatedAtUtc", "AggregateMinutesPlayed", "EstimatedReopenTimeUtc", "MaintenanceThresholdMinutes", "Status", "FloodlightState", "IsDecommissioned") FROM stdin;
 7be1c220-56b3-44ed-a30a-a5ee8c880c32	e61d1986-848f-411d-8fc1-4c0962a209d3	32b51caa-309a-412b-b615-ca7fdcc8de12	Plexicushion hardcourt featuring solar geometry floodlight triggers.	0.5	f	Grand Oasis Stadium	Hard	2026-07-10 14:00:16.651515-07	0	\N	270	Open	Off	f
 f4170bca-ce4a-4340-adc1-2ce9fcb1bdac	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	t	VAOB Court 2	Hard	2026-07-21 11:32:47.860353-07	120	\N	1200	Open	Off	f
-95d67d63-8137-463a-b8cf-46761bbd3bfb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 1	Hard	2026-07-21 11:32:44.933545-07	240	\N	1200	Open	Off	f
 505751fb-ee77-4be3-8db1-460017380b7d	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 4	Grass	2026-07-21 11:18:48.345792-07	120	\N	700	Open	Off	f
 a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Enclosed training hall insulated from regional precipitation anomalies.	0	t	Indoor Clay Court 2	Clay	2026-07-10 14:00:16.500229-07	300	\N	270	Open	Off	f
 3628a5d6-e221-4014-8ae1-b83bd2dd78fe	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 2	Grass	2026-07-21 11:18:44.917547-07	600	\N	700	Open	Off	f
@@ -622,6 +613,7 @@ bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	60186569-a432-4375-9bee-485c69f086d5	4c073a
 b4c307b9-7a92-4aaa-a979-c41d592b9e78	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 3	Hard	2026-07-21 11:32:47.865512-07	0	\N	1200	Open	Off	f
 51a6e84f-1678-4f70-bb5d-b03345c3dd47	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 4	Hard	2026-07-21 11:32:47.86988-07	0	\N	1200	Open	Off	f
 6d5afcac-6b58-493e-997f-7bbdb3cd95fd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 5	Hard	2026-07-21 11:32:47.873332-07	0	\N	1200	Open	Off	f
+95d67d63-8137-463a-b8cf-46761bbd3bfb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 1	Hard	2026-07-21 11:32:44.933545-07	360	\N	1200	Open	Off	f
 54825e79-02a9-47ba-a1ef-5691fe2e4a73	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 6	Hard	2026-07-21 11:32:47.877658-07	0	\N	1200	Open	Off	f
 01b9ed79-3597-4bbd-9a1b-f880d04ca6ac	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 7	Hard	2026-07-21 11:32:47.883795-07	0	\N	1200	Open	Off	f
 858a1dbe-cc50-4916-b09e-78a3dfc83aa1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 8	Hard	2026-07-21 11:32:47.887189-07	0	\N	1200	Open	Off	f
@@ -681,6 +673,8 @@ b797b42a-fd64-4abc-b5d3-f58d2349a5ff	f920614a-04a9-415b-afb6-2982a29381f6	\N	Cou
 8cd394d3-fe3a-49f1-a482-9575ebf6f03c	9473145c-5cb3-462f-8121-c83063299ca4	\N	Court Rental Fee: Grass Court 1 on 2026-08-12 12:00:00 AM @ 9	1	50.00	64d9458d-0adb-42f6-acf2-78bd3a78a989
 b022927d-3901-446c-88b3-d0a0c3e5f4f7	81196bc9-7f05-44ba-99e8-e45399c2add1	\N	Court Rental Fee: Grass Court 1 on 2026-08-12 12:00:00 AM @ 15	1	50.00	25cae1c0-3871-465c-aef6-4a141967f8c9
 056b576b-3dab-4920-8612-4582d287db95	29434c0e-8ed7-40b7-8432-23367dfd124a	\N	Court Rental Fee: Grass Court 1 on 2026-08-12 12:00:00 AM @ 19	1	50.00	3c66ea7d-00ef-4bae-82b1-f6db65e47c48
+e051628c-cb98-446d-b9b8-e4be39ccb028	bb8ded29-cefd-4fdf-8c51-e10c662b1ee3	\N	Court Rental Fee: VAOB Court 1 on 2026-08-13 @ 10:00	1	50.00	e859e632-bbcb-415e-b931-8456a2a5f7ad
+78bf46d7-08cf-4de9-9ffe-8b6527f996b0	cda0744d-83d4-4668-900b-ce303d2c3e07	\N	Court Rental Fee: VAOB Court 1 on 2026-08-13 @ 11:00	1	50.00	4e44d416-22b5-4494-aa51-4809a3b1aba3
 \.
 
 
@@ -724,6 +718,8 @@ c5f8808e-4718-4df5-bd78-336210549c21	60186569-a432-4375-9bee-485c69f086d5	7560e0
 78c4b84c-ff77-4639-a3f0-b8bad35c1851	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 10:18:56.876248-07	4	50.00	\N
 f920614a-04a9-415b-afb6-2982a29381f6	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-09 14:34:01.15334-07	4	50.00	\N
 81196bc9-7f05-44ba-99e8-e45399c2add1	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-10 16:00:01.739565-07	4	50.00	\N
+bb8ded29-cefd-4fdf-8c51-e10c662b1ee3	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-11 10:01:06.46414-07	4	50.00	\N
+cda0744d-83d4-4668-900b-ce303d2c3e07	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-11 10:01:09.1787-07	4	50.00	\N
 1afbac4b-b80c-4a82-a9fe-de2b6199b84a	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-04 14:37:29.264636-07	1	50.00	5b87b25a-1813-4faa-89ea-22d0d4173694
 ab67b3aa-5d7a-4dc5-ad6f-0254c6c6632b	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 06:35:06.329339-07	4	50.00	\N
 c52600d0-dfe6-4997-aba9-07f08f522ae2	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 07:11:35.046147-07	4	50.00	\N
@@ -1217,5 +1213,5 @@ ALTER TABLE ONLY public."UserCourts"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict BhZ3MDBqV2S4apSigdEcKucChDbBUeaiYp0u3sQIc6mNhSyfJISShmhzc4awM6x
+\unrestrict Ia0fWU7JC2inKpZE4UBVsJ7u6Arw08lVYM3uvbO4HbftueSnZ4XtITFlq8SS29o
 
