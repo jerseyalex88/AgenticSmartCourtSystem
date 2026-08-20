@@ -1,4 +1,4 @@
-# main.py
+# main.py; source venv/bin/activate
 import uvicorn
 from fastapi import FastAPI
 from app.config import settings
