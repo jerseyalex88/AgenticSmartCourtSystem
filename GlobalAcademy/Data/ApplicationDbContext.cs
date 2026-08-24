@@ -33,6 +33,8 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceLineItem> InvoiceLineItems { get; set; }
     public DbSet<LedgerTransaction> LedgerTransactions { get; set; }
+    public DbSet<CourtDiagnosticSnapshot> CourtDiagnosticSnapshots { get; set; }
+    public DbSet<CourtDiagnosticAnomaly> CourtDiagnosticAnomalies { get; set; }
 
     // 2. Append this relational configuration inside your existing OnModelCreating method:
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -63,6 +65,8 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<LedgerTransaction>().HasQueryFilter(lt => lt.AcademyId == CurrentTenantId);
         modelBuilder.Entity<UserBranch>().HasQueryFilter(ub => ub.AcademyId == CurrentTenantId);
         modelBuilder.Entity<UserCourt>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<CourtDiagnosticSnapshot>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<CourtDiagnosticAnomaly>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
 
         // Configure precise decimal scales for financial properties
         modelBuilder.Entity<UnifiedCatalogItem>()
@@ -86,6 +90,12 @@ public class ApplicationDbContext : IdentityDbContext
                 .WithMany() // A transaction can be mapped to many invoices, but has no inverse list collection
                 .HasForeignKey(i => i.AssociatedTransactionId)
                 .OnDelete(DeleteBehavior.Restrict); // Prevents accidental cascading purges of audit ledger data
+
+        modelBuilder.Entity<CourtDiagnosticAnomaly>()
+        .HasOne(a => a.Snapshot)
+        .WithMany(s => s.Anomalies)
+        .HasForeignKey(a => a.SessionId)
+        .OnDelete(DeleteBehavior.Cascade);
     }
     private System.Linq.Expressions.LambdaExpression ConvertFilterExpression(Type type)
     {

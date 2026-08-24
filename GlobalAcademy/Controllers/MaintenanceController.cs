@@ -1,5 +1,8 @@
 using GlobalAcademy.Data;
 using GlobalAcademy.Models;
+using GlobalAcademy.Models.DTOs;
+using GlobalAcademy.Security;
+using GlobalAcademy.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +18,16 @@ namespace GlobalAcademy.Controllers;
 public class MaintenanceController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly ICourtDiagnosticsService _diagnosticsService;
+    private readonly ITenantProvider _tenantProvider;
 
-    public MaintenanceController(ApplicationDbContext context)
+    public MaintenanceController(ApplicationDbContext context,
+        ICourtDiagnosticsService diagnosticsService,
+        ITenantProvider tenantProvider)
     {
         _context = context;
+        _diagnosticsService = diagnosticsService;
+        _tenantProvider = tenantProvider;
     }
 
     // =========================================================================
@@ -178,6 +187,49 @@ public class MaintenanceController : ControllerBase
         return Ok(new { 
             Message = "Surface maintenance completed successfully. Court asset aggregate usage trackers cleared and reopened.", 
             UpdatedCourtStatus = court.Status 
+        });
+    }
+
+    [HttpPost("court-diagnostics")]
+    public async Task<IActionResult> SubmitTelemetry([FromBody] CourtDiagnosticsPayloadDto payload)
+    {
+        // 1. Guard check for empty payloads
+        if (payload == null)
+        {
+            return BadRequest("Inbound telemetry payload cannot be null.");
+        }
+
+        // 2. Validate C# model states/annotations
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        if (!Guid.TryParse(payload.CourtId, out Guid verifiedCourtId))
+        {
+            return BadRequest($"The inbound CourtId '{payload.CourtId}' is not a valid GUID.");
+        }
+
+        var court = await _context.Courts.FindAsync(verifiedCourtId);
+        if (court == null) return NotFound("Target court entity configuration layout missing.");
+
+        var currentAcademyId = _tenantProvider.GetTenantId();
+
+        if (court.AcademyId != currentAcademyId)
+        {
+            return BadRequest("Inbound court telemetry payload is not valid for current tenant academy.");
+        }
+
+        // 3. Pass data to the brain (Service Layer)
+        payload.AcademyId = court.AcademyId;
+        payload.BranchId = court.BranchId;
+
+        await _diagnosticsService.ProcessTelemetryAsync(payload);
+
+        // 4. Return success state to the calling Python Engine
+        return Ok(new { 
+            status = "Success", 
+            message = "Court telemetry processed successfully." 
         });
     }
 }

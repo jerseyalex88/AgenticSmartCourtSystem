@@ -1119,7 +1119,25 @@ public class AuthController : ControllerBase
             }
         }
     }
+    [HttpPost("token")]
+    public async Task<IActionResult> Token([FromBody] LoginDto model)
+    {
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+        {
+            var userRoles = await _userManager.GetRolesAsync(user);
 
+            // Standard Pathway: Player or un-enrolled manager passes straight through to JWT compilation
+            var (tokenString, expirationTime) = await GenerateJwtTokenAsync(user);
+            return Ok(new
+            {
+                token = tokenString,
+                expiration = expirationTime
+            });
+        }
+
+        return Unauthorized("Cryptographic handshake failed: Invalid email or password credentials.");
+    }
 }
 
 public record LoginDto(string Email, string Password, string TurnstileToken = "");

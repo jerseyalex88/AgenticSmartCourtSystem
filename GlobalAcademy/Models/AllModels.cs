@@ -1,4 +1,9 @@
 
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Runtime.Serialization;
+using Microsoft.EntityFrameworkCore;
+
 namespace GlobalAcademy.Models {
     public class Academy
     {
@@ -173,5 +178,87 @@ namespace GlobalAcademy.Models {
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
         public DateTime? ResolvedAtUtc { get; set; }
         public string? ResolutionNotes { get; set; } = string.Empty;
+    }
+    public class CourtDiagnosticSnapshot : Security.IMultiTenant
+    {
+        [Key]
+        public Guid SessionId { get; set; }
+
+        // --- MULTI-TENANT BOUNDARIES ---
+        [Required]
+        public Guid AcademyId { get; set; }
+
+        [Required]
+        public Guid BranchId { get; set; }
+
+        // --- RELATIONAL LINK TO THE COURT ---
+        [Required]
+        public Guid CourtId { get; set; } // Matches the Guid type from Court class
+
+        [Required]
+        public DateTime Timestamp { get; set; }
+
+        [Required]
+        public double SurfaceFrictionIndex { get; set; }
+
+        [Required]
+        public double BounceUniformityPercentage { get; set; }
+
+        [Required]
+        public double NetTensionNewtons { get; set; }
+
+        [Required]
+        public double AmbientTemperatureCelsius { get; set; }
+
+        [Required]
+        public double HumidityPercentage { get; set; }
+
+        [Required]
+        [Column("AgentVersion", TypeName = "varchar(20)")]
+        public string AgentVersion { get; set; } = string.Empty;
+
+        // Navigation properties
+        [ForeignKey(nameof(CourtId))]
+        public Court? Court { get; set; }
+
+        public List<CourtDiagnosticAnomaly> Anomalies { get; set; } = new();
+    }
+    public class CourtDiagnosticAnomaly : Security.IMultiTenant
+    {
+        [Key]
+        public Guid AnomalyId { get; set; }
+
+        [Required]
+        public Guid SessionId { get; set; }
+
+        // --- MULTI-TENANT BOUNDARIES ---
+        [Required]
+        public Guid AcademyId { get; set; }
+
+        [Required]
+        public Guid BranchId { get; set; }
+
+        [Required]
+        [Column("Severity", TypeName = "varchar(20)")]
+        public string Severity { get; set; } = string.Empty;
+
+        [Required]
+        [Column("Category", TypeName = "varchar(100)")]
+        public string Category { get; set; } = string.Empty;
+
+        [Required]
+        [Column("Description", TypeName = "text")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required]
+        public double ConfidenceScore { get; set; }
+
+        [Required]
+        [Column("RecommendedAction", TypeName = "text")]
+        public string RecommendedAction { get; set; } = string.Empty;
+
+        // Foreign Key Navigation
+        [ForeignKey(nameof(SessionId))]
+        public CourtDiagnosticSnapshot? Snapshot { get; set; }
     }
 }

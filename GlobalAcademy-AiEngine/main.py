@@ -2,7 +2,8 @@
 import uvicorn
 from fastapi import FastAPI
 from app.config import settings
-from app.routers import pricing, maintenance
+from app.routers import pricing, maintenance, court_diagnostics
+#from app.routers import court_diagnostics
 
 # Initialize the central application engine context using values from our config file
 app = FastAPI(
@@ -14,6 +15,7 @@ app = FastAPI(
 # 🚀 REGISTER THE MODULAR ROUTERS (Like MapControllers() in ASP.NET Core)
 app.include_router(pricing.router)
 app.include_router(maintenance.router)
+app.include_router(court_diagnostics.router)
 
 @app.get("/")
 def read_root():

@@ -203,6 +203,96 @@ namespace GlobalAcademy.Migrations
                     b.ToTable("Courts");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.CourtDiagnosticAnomaly", b =>
+                {
+                    b.Property<Guid>("AnomalyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("Category");
+
+                    b.Property<double>("ConfidenceScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Description");
+
+                    b.Property<string>("RecommendedAction")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("RecommendedAction");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("Severity");
+
+                    b.HasKey("AnomalyId");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("CourtDiagnosticAnomalies");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.CourtDiagnosticSnapshot", b =>
+                {
+                    b.Property<Guid>("SessionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AgentVersion")
+                        .IsRequired()
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("AgentVersion");
+
+                    b.Property<double>("AmbientTemperatureCelsius")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("BounceUniformityPercentage")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CourtId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("HumidityPercentage")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("NetTensionNewtons")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("SurfaceFrictionIndex")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("SessionId");
+
+                    b.HasIndex("CourtId");
+
+                    b.ToTable("CourtDiagnosticSnapshots");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.Invoice", b =>
                 {
                     b.Property<Guid>("InvoiceId")
@@ -716,6 +806,28 @@ namespace GlobalAcademy.Migrations
                     b.Navigation("Branch");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.CourtDiagnosticAnomaly", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.CourtDiagnosticSnapshot", "Snapshot")
+                        .WithMany("Anomalies")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Snapshot");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.CourtDiagnosticSnapshot", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.Court", "Court")
+                        .WithMany()
+                        .HasForeignKey("CourtId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Court");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.Invoice", b =>
                 {
                     b.HasOne("GlobalAcademy.Models.LedgerTransaction", "AssociatedTransaction")
@@ -803,6 +915,11 @@ namespace GlobalAcademy.Migrations
             modelBuilder.Entity("GlobalAcademy.Models.Branch", b =>
                 {
                     b.Navigation("Courts");
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.CourtDiagnosticSnapshot", b =>
+                {
+                    b.Navigation("Anomalies");
                 });
 
             modelBuilder.Entity("GlobalAcademy.Models.Invoice", b =>

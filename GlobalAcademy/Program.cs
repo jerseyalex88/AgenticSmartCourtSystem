@@ -224,6 +224,8 @@ builder.Services.AddHttpClient<IAiEngineService, AiEngineService>(client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
+builder.Services.AddScoped<ICourtDiagnosticsService, CourtDiagnosticsService>();
+
 var app = builder.Build();
 
 // =========================================================================
