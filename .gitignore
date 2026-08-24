@@ -515,3 +515,4 @@ appsettings.Development.json
 
 # Ignore docker-compose
 docker-compose.yml
+GlobalAcademy-AiEngine/simulate_bulk_traffic.py

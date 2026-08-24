@@ -52,6 +52,8 @@ public class CourtDiagnosticsService : ICourtDiagnosticsService
             {
                 AnomalyId = a.AnomalyId,
                 SessionId = payload.SessionId,
+                AcademyId = payload.AcademyId,
+                BranchId = payload.BranchId,
                 Severity = a.Severity.ToString(),
                 Category = a.Category,
                 Description = a.Description,

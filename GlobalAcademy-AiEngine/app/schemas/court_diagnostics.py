@@ -48,3 +48,15 @@ class CourtDiagnosticsPayloadSchema(BaseModel):
         default_factory=lambda: [DiagnosticsAnomalySchema()]
     )
     agent_version: str = "v1.4.2"
+
+class RawTelemetryInputSchema(BaseModel):
+    """
+    Validates inbound raw physical telemetry streams sent directly 
+    from the hardware array or simulation coordinators.
+    """
+    court_id: str = Field(..., description="Target system Guid matching the physical court record.")
+    surface_friction_index: float = Field(..., ge=0.0, le=1.5, description="Raw frictional drag measurement.")
+    humidity_percentage: float = Field(..., ge=0.0, le=100.0, description="Ambient air humidity sensor percentage.")
+    ambient_temperature_celsius: float = Field(..., description="Ambient court sensor reading in Celsius.")
+    net_tension_newtons: float = Field(..., ge=0.0, description="Tensile force metric in Newtons.")
+    iteration_index: int = Field(0, description="Simulation tracking cycle parameter.")
