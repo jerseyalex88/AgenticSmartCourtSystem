@@ -367,6 +367,45 @@ public class MaintenanceController : ControllerBase
 
         return Ok(new { message = $"Successfully purged diagnostic session snapshot {sessionId}." });
     }
+    // File: GlobalAcademy.Controllers/MaintenanceController.cs
+
+    // --- READ TOPOLOGY TREE: GET api/maintenance/branches/topology ---
+    [HttpGet("branches/topology")]
+    public async Task<IActionResult> GetAcademyBranchTopology()
+    {
+        // 1. Resolve active multi-tenant boundary parameters
+        Guid academyId = _tenantProvider.GetTenantId();
+
+        // 2. Query structural relations directly out of PostgreSQL container memory
+        var topologyData = await _context.Branches
+            .Include(b => b.Courts)
+            .Where(b => b.AcademyId == academyId && !b.IsDecommissioned)
+            .OrderBy(b => b.Name)
+            .Select(b => new BranchTopologyMetaDto
+            {
+                Id = b.Id,
+                Name = b.Name,
+                Description = b.Description,
+                IsDecommissioned = b.IsDecommissioned,
+                
+                // Map child court rows that are actively maintained
+                Courts = b.Courts
+                    .Where(c => !c.IsDecommissioned)
+                    .OrderBy(c => c.Name)
+                    .Select(c => new MinimalCourtMetaDto
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        SurfaceType = c.SurfaceType,
+                        IsIndoor = c.IsIndoor,
+                        Status = c.Status
+                    }).ToList()
+            })
+            .ToListAsync();
+
+        return Ok(topologyData);
+    }
+
 }
 
 public record ResolveTicketDto(string Notes);
