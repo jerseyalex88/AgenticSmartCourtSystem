@@ -14,7 +14,7 @@ namespace GlobalAcademy.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "AcademyDirector,Groundskeeper")]
+[Authorize(Roles = "AcademyDirector,Groundskeeper,GlobalAdmin")]
 public class MaintenanceController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -231,6 +231,141 @@ public class MaintenanceController : ControllerBase
             status = "Success", 
             message = "Court telemetry processed successfully." 
         });
+    }
+
+    // --- READ ALL: GET api/maintenance/court-diagnostics ---
+    [HttpGet("court-diagnostics-view")]
+    public async Task<IActionResult> GetTenantDiagnostics()
+    {
+        var singleSnapshot = await _context.CourtDiagnosticSnapshots
+        .Include(s => s.Court) // Include the parent Court entity
+        .ThenInclude(c => c!.Branch)
+        .OrderByDescending(s => s.Timestamp)
+        .Select(s => new
+        {
+            sessionId = s.SessionId,
+            academyId = s.AcademyId,
+            courtId = s.CourtId,
+            courtName = s.Court != null ? s.Court.Name : "Unknown Court",
+            branchId = s.BranchId,
+            branchName = (s.Court != null && s.Court.Branch != null) ? s.Court.Branch.Name : "Unknown Branch",
+            timestamp = s.Timestamp,
+            surfaceFrictionIndex = s.SurfaceFrictionIndex,
+            bounceUniformityPercentage = s.BounceUniformityPercentage,
+            netTensionNewtons = s.NetTensionNewtons,
+            ambientTemperatureCelsius = s.AmbientTemperatureCelsius,
+            humidityPercentage = s.HumidityPercentage,
+            agentVersion = s.AgentVersion,
+            anomalies = s.Anomalies.Select(a => new
+            {
+                anomalyId = a.AnomalyId,
+                sessionId = a.SessionId,
+                academyId = a.AcademyId,
+                branchId = a.BranchId,
+                severity = a.Severity,
+                category = a.Category,
+                description = a.Description,
+                confidenceScore = a.ConfidenceScore,
+                recommendedAction = a.RecommendedAction
+            }).ToList()
+        })
+        .ToListAsync();
+
+        if (singleSnapshot == null)
+        {
+            return NotFound(new { message = "No diagnostic snapshots found for this tenant context." });
+        }
+
+        return Ok(singleSnapshot);
+
+        //Guid academyId = _tenantProvider.GetTenantId();
+
+        // Pull snapshots including their nested child anomalies mapped to this tenant
+        // var snapshots = await _context.CourtDiagnosticSnapshots
+        //     .Include(s => s.Anomalies)
+        //     // .Where(s => s.AcademyId == academyId)
+        //     .OrderByDescending(s => s.Timestamp)
+        //     .ToListAsync();
+
+        // return Ok(snapshots);
+    }
+    // --- ORCHESTRATE & CALCULATE: POST api/maintenance/court-diagnostics/calculate/{courtId} ---
+    [HttpPost("court-diagnostics/calculate/{courtId}")]
+    public async Task<IActionResult> CalculateActiveDiagnostics(Guid courtId)
+    {
+        // 1. Verify target court exists inside this tenant boundary first
+        Guid academyId = _tenantProvider.GetTenantId();
+
+        var court = await _context.Courts.FindAsync(courtId);
+        if (court == null) return NotFound($"Court ID '{courtId}' was not found within this academy branch.");
+
+        try
+        {
+            // 2. Fire cross-port server-to-server call to Python Engine on port 8000
+            CourtDiagnosticsPayloadDto computedPayload = await _diagnosticsService.RequestAgentAnalysisAsync(courtId);
+
+            // 3. Enrich payload with tenant boundaries resolved from identity context
+            computedPayload.AcademyId = academyId;
+            computedPayload.BranchId = court.BranchId;
+
+            // 4. Pass down to service layer to map and commit changes to SmartCourtDb
+            await _diagnosticsService.ProcessTelemetryAsync(computedPayload);
+
+            return Ok(new { message = $"Active structural analysis logged successfully for Court {courtId.ToString().Substring(0,8)}." });
+        }
+        catch (HttpRequestException httpEx)
+        {
+            // Traps cross-port HTTP handshake communication crashes (e.g. 404, 422 Unprocessable entity from Python)
+            // Console.WriteLine($"--- 🚨 [DEBUG] CROSS-PORT HANDSHAKE CRASH ON PORT 8000 🚨 ---");
+            // Console.WriteLine($"Message: {httpEx.Message}");
+            
+            return StatusCode(500, new { 
+                message = "Cross-Port Connection Error", 
+                detail = httpEx.Message 
+            });
+        }
+        catch (DbUpdateException dbEx)
+        {
+            // Traps unique constraints, constraint deletions or structural PostgreSQL data truncations inside Docker
+            // Console.WriteLine($"--- 🚨 [DEBUG] POSTGRESQL TRANSACTION CRASH 🚨 ---");
+            // Console.WriteLine($"Inner Exception: {dbEx.InnerException?.Message ?? dbEx.Message}");
+            
+            return StatusCode(500, new { 
+                message = "SmartCourtDb Storage Constraint Failure", 
+                detail = dbEx.InnerException?.Message ?? dbEx.Message 
+            });
+        }
+        catch (Exception generalEx)
+        {
+            // Traps runtime null references, object instance mapping failures, or property exceptions
+            // Console.WriteLine($"--- 🚨 [DEBUG] GENERC BACKEND PIPELINE CRASH 🚨 ---");
+            // Console.WriteLine($"Type: {generalEx.GetType().Name}");
+            // Console.WriteLine($"Message: {generalEx.Message}");
+            // Console.WriteLine($"Stack: {generalEx.StackTrace}");
+
+            return StatusCode(500, new { 
+                message = $"Internal Server Exception [{generalEx.GetType().Name}]", 
+                detail = generalEx.Message 
+            });
+        }
+    }
+    // --- DELETE: DELETE api/maintenance/court-diagnostics/{sessionId} ---
+    [HttpDelete("court-diagnostics/{sessionId}")]
+    public async Task<IActionResult> DeleteSnapshot(Guid sessionId)
+    {
+        Guid academyId = _tenantProvider.GetTenantId();
+
+        // Guard check by unique ID and Tenant matching
+        var snapshot = await _context.CourtDiagnosticSnapshots
+            .FirstOrDefaultAsync(s => s.SessionId == sessionId && s.AcademyId == academyId);
+
+        if (snapshot == null) return NotFound($"Diagnostic session snapshot '{sessionId}' not found.");
+
+        // Remove snapshot. EF Core cascade rules automatically drop the associated anomalies table rows.
+        _context.CourtDiagnosticSnapshots.Remove(snapshot);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = $"Successfully purged diagnostic session snapshot {sessionId}." });
     }
 }
 

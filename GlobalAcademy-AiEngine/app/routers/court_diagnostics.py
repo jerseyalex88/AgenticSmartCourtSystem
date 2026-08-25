@@ -5,13 +5,8 @@ from app.services.court_diagnostics_agent import compute_court_structural_analyt
 import uuid
 import random
 from datetime import datetime, timezone
-from app.schemas.court_diagnostics import (
-    CourtDiagnosticsPayloadSchema, 
-    DiagnosticsMetricsSchema, 
-    DiagnosticsAnomalySchema
-)
-from app.schemas.court_diagnostics import RawTelemetryInputSchema, CourtDiagnosticsPayloadSchema
 from app.services.court_diagnostics_agent import CourtDiagnosticsService
+from app.schemas.court_diagnostics import MasterOrchestrationInputSchema, CourtDiagnosticsPayloadSchema
 
 router = APIRouter(prefix="/api/ai/diagnostics", tags=["Facility Automation Agents"])
 
@@ -25,9 +20,13 @@ def evaluate_court_surface_endpoint(payload: CourtDiagnosticRequest):
     response_model=CourtDiagnosticsPayloadSchema,
     status_code=status.HTTP_200_OK
 )
-async def analyze_court_telemetry(payload: RawTelemetryInputSchema):
+async def analyze_court_telemetry(payload: MasterOrchestrationInputSchema):
     """
-    Exposes the endpoint contract to incoming web requests, directing traffic
-    straight through to the underlying decoupled analytical computation service.
+    Receives the nested master object wrapper and routes the sub-properties
+    straight into the analytic business service rule engine.
     """
-    return CourtDiagnosticsService.process_and_analyze_telemetry(payload)
+    # Unpack properties dynamically to pass to our service processor layer
+    return CourtDiagnosticsService.process_and_analyze_telemetry(
+        payload.telemetry_signals, 
+        payload.court_metadata
+    )

@@ -18,6 +18,7 @@ import ResetPassword from './pages/ResetPassword';
 import { CookieConsentProvider } from './context/CookieConsentContext';
 import CookieBanner from './components/CookieBanner';
 import ThirdPartyScriptManager from './components/ThirdPartyScriptManager';
+import CourtDiagnosticsDashboard from './pages/CourtDiagnosticsDashboard';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -219,6 +220,8 @@ export default function App() {
             </p>
           </div>
         );
+      case 'court-diagnostics':
+        return <CourtDiagnosticsDashboard />;
       case 'agent-dispatch':
         return <AgentDispatchCenter />;
       case 'user-profile':

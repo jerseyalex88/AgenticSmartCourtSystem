@@ -60,3 +60,27 @@ class RawTelemetryInputSchema(BaseModel):
     ambient_temperature_celsius: float = Field(..., description="Ambient court sensor reading in Celsius.")
     net_tension_newtons: float = Field(..., ge=0.0, description="Tensile force metric in Newtons.")
     iteration_index: int = Field(0, description="Simulation tracking cycle parameter.")
+
+class TelemetrySignalsInputSchema(BaseModel):
+    court_id: str = Field(..., description="Target system Guid matching the physical court record.")
+    surface_friction_index: float = Field(..., ge=0.0, le=1.5, description="Raw frictional drag measurement.")
+    humidity_percentage: float = Field(..., ge=0.0, le=100.0, description="Ambient air humidity sensor percentage.")
+    ambient_temperature_celsius: float = Field(..., description="Ambient court sensor reading in Celsius.")
+    net_tension_newtons: float = Field(..., ge=0.0, description="Tensile force metric in Newtons.")
+    iteration_index: int = Field(0, description="Simulation tracking cycle parameter.")
+
+class CourtMetadataInputSchema(BaseModel):
+    surface_type: str
+    is_indoor: bool
+    aggregate_minutes_played: int
+    maintenance_threshold_minutes: int
+    status: str
+    dry_coefficient: float
+
+class MasterOrchestrationInputSchema(BaseModel):
+    """
+    Matches the compiledWrapperPacket format sent directly
+    from your C# RequestAgentAnalysisAsync method body.
+    """
+    telemetry_signals: TelemetrySignalsInputSchema
+    court_metadata: CourtMetadataInputSchema

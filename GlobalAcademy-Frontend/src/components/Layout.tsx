@@ -265,6 +265,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
     { id: 'shadow-queue', label: '🔄 Displaced Player Queue', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper'] },
     { id: 'agent-dispatch', label: '⚡ AI Dispatch Center', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'maintenance', label: '🔧 Work Order Tickets', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper'] },
+    { id: 'court-diagnostics', label: '📡 Court Diagnostics', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'roster', label: '👥 Staff Roster Manager', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'admin', label: '⚙️ Profiles Administration', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'user-profile', label: '⚙️ Player Profile', roles: ['Player'] },

@@ -3,11 +3,13 @@ from app.schemas. court_diagnostics import CourtDiagnosticRequest, CourtDiagnost
 import uuid
 from datetime import datetime, timezone
 from app.schemas.court_diagnostics import (
-    RawTelemetryInputSchema,
+    TelemetrySignalsInputSchema,
+    CourtMetadataInputSchema,
     CourtDiagnosticsPayloadSchema,
     DiagnosticsMetricsSchema,
     DiagnosticsAnomalySchema
 )
+
 
 def compute_court_structural_analytics(payload: CourtDiagnosticRequest) -> CourtDiagnosticResponse:
     """Evaluates multi-variable surface degradation logs to infer scheduling urgencies."""
@@ -51,55 +53,81 @@ def compute_court_structural_analytics(payload: CourtDiagnosticRequest) -> Court
 
 class CourtDiagnosticsService:
     @staticmethod
-    def process_and_analyze_telemetry(raw_input: RawTelemetryInputSchema) -> CourtDiagnosticsPayloadSchema:
+    def process_and_analyze_telemetry(
+        signals: TelemetrySignalsInputSchema, 
+        meta: CourtMetadataInputSchema
+    ) -> CourtDiagnosticsPayloadSchema:
         """
-        Executes structural baseline calculations, checks threshold business rules,
-        and aggregates the analytics into a validated mirror DTO model.
+        Runs analytical threshold calculations based on real database parameters
+        and environmental real-time hardware signals.
         """
-        # 1. Deterministic environmental baseline degradation math
-        humidity_penalty = (raw_input.humidity_percentage - 50.0) * 0.1 if raw_input.humidity_percentage > 50.0 else 0.0
-        calculated_bounce = max(80.0, min(100.0, 98.0 - humidity_penalty))
+        # Read parameters safely from type-safe Pydantic contracts
+        surface_type = meta.surface_type
+        is_indoor = meta.is_indoor
+        minutes_played = meta.aggregate_minutes_played
+        maintenance_threshold = meta.maintenance_threshold_minutes
+        court_status = meta.status
+
+        # Environmental Degradation Penalty Calculus
+        humidity_penalty = 0.0
+        if not is_indoor and signals.humidity_percentage > 50.0:
+            humidity_penalty = (signals.humidity_percentage - 50.0) * 0.12
+
+        surface_wear_multiplier = 1.25 if surface_type == "Grass" else 0.85 if surface_type == "Clay" else  1.0
+        calculated_bounce = max(75.0, min(100.0, 99.0 - humidity_penalty - (minutes_played * 0.0001 * surface_wear_multiplier)))
 
         detected_anomalies = []
 
-        # 2. Rule Evaluation Alpha: Tensile Net Force Ceilings
-        if raw_input.net_tension_newtons < 400.0:
+        # Rule 1: Maintenance Ceiling Overruns
+        if minutes_played >= maintenance_threshold:
             detected_anomalies.append(
                 DiagnosticsAnomalySchema(
                     anomaly_id=str(uuid.uuid4()),
-                    severity="High" if raw_input.net_tension_newtons < 380.0 else "Medium",
+                    severity="Critical" if minutes_played > (maintenance_threshold * 1.2) else "High",
+                    category="Maintenance Threshold Breach",
+                    description=f"Court has exceeded safe played limits ({minutes_played}/{maintenance_threshold} mins).",
+                    confidence_score=0.99,
+                    recommended_action=f"Lock court for standard {surface_type} maintenance resets."
+                )
+            )
+
+        # Rule 2: Physical Tension Drop boundaries
+        if signals.net_tension_newtons < 400.0:
+            detected_anomalies.append(
+                DiagnosticsAnomalySchema(
+                    anomaly_id=str(uuid.uuid4()),
+                    severity="High" if signals.net_tension_newtons < 380.0 else "Medium",
                     category="Structural Hardware",
-                    description=f"Net structural tension dropped to {raw_input.net_tension_newtons:.1f}N.",
+                    description=f"Net structural tension dropped to {signals.net_tension_newtons:.1f}N.",
                     confidence_score=0.96,
                     recommended_action="Deploy groundskeeper to re-tension net ratchets."
                 )
             )
 
-        # 3. Rule Evaluation Beta: Surface Friction Safeguards
-        if raw_input.surface_friction_index < 0.75:
+        # Rule 3: Wet / Dangerous Surface Friction limits
+        if court_status == "Rained_Out" or signals.surface_friction_index < 0.75:
             detected_anomalies.append(
                 DiagnosticsAnomalySchema(
                     anomaly_id=str(uuid.uuid4()),
                     severity="Critical",
-                    category="Surface Degradation",
-                    description=f"Surface friction index at {raw_input.surface_friction_index:.2f} breaches safety limits.",
-                    confidence_score=0.91,
-                    recommended_action="Lock court and schedule pressure wash sweep."
+                    category="Surface Slip Hazard",
+                    description=f"Surface state or friction coefficient index ({signals.surface_friction_index:.2f}) triggers hydroplaning risks.",
+                    confidence_score=0.95,
+                    recommended_action="Lock entry gates until court surface index completely dries."
                 )
             )
 
-        # 4. Return complete, validated downstream layout contract
         return CourtDiagnosticsPayloadSchema(
             session_id=str(uuid.uuid4()),
-            court_id=raw_input.court_id,
+            court_id=signals.court_id,
             timestamp=datetime.now(timezone.utc).isoformat(),
             metrics=DiagnosticsMetricsSchema(
-                surface_friction_index=round(raw_input.surface_friction_index, 2),
+                surface_friction_index=round(signals.surface_friction_index, 2),
                 bounce_uniformity_percentage=round(calculated_bounce, 1),
-                net_tension_newtons=round(raw_input.net_tension_newtons, 1),
-                ambient_temperature_celsius=round(raw_input.ambient_temperature_celsius, 1),
-                humidity_percentage=round(raw_input.humidity_percentage, 1)
+                net_tension_newtons=round(signals.net_tension_newtons, 1),
+                ambient_temperature_celsius=round(signals.ambient_temperature_celsius, 1),
+                humidity_percentage=round(signals.humidity_percentage, 1)
             ),
             anomalies=detected_anomalies,
-            agent_version="v1.6.5-service-layer"
+            agent_version="v1.7.0-meta-aware"
         )

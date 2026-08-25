@@ -224,7 +224,17 @@ builder.Services.AddHttpClient<IAiEngineService, AiEngineService>(client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
-builder.Services.AddScoped<ICourtDiagnosticsService, CourtDiagnosticsService>();
+// Register CourtDiagnosticsService as a Typed HTTP Client targeting the AI Engine port
+builder.Services.AddHttpClient<ICourtDiagnosticsService, CourtDiagnosticsService>(client =>
+{
+    // Pulls from appsettings.json, or falls back gracefully to your local python port 8000
+    var aiBaseUrl = builder.Configuration["AiEngineSettings:BaseUrl"] ?? "http://localhost:8000/";
+    
+    client.BaseAddress = new Uri(aiBaseUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+// builder.Services.AddScoped<ICourtDiagnosticsService, CourtDiagnosticsService>();
 
 var app = builder.Build();
 
