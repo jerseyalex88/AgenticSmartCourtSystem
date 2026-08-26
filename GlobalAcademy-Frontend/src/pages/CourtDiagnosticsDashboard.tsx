@@ -61,8 +61,15 @@ export default function CourtDiagnosticsDashboard() {
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
   const [selectedCourtGuidString, setSelectedCourtGuidString] = useState<string>('');
 
-  // Operational pipeline feedback states
+  // 🛠️ SERVER-SIDE PAGINATION TRACKING CORES
   const [snapshots, setSnapshots] = useState<DiagnosticSnapshot[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [pageSize] = useState<number>(10); // Records per panel threshold split
+  const [forecasts, setForecasts] = useState<Record<string, any>>({});
+
+  // Operational pipeline feedback states
   const [loading, setLoading] = useState<boolean>(false);
   const [analyzing, setAnalyzing] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -85,43 +92,80 @@ export default function CourtDiagnosticsDashboard() {
     }
   };
 
-  // --- FETCH: Pull historical diagnostic records from .NET context ---
-  const fetchDiagnosticHistory = async () => {
+  const fetchCourtForecast = async (courtId: string) => {
+    // If we already evaluated this court during this session window, skip duplicate requests
+    if (forecasts[courtId]) return;
+
+    try {
+      const response = await apiClient.get<any>(`/maintenance/court-diagnostics/forecast/${courtId}`);
+      setForecasts(prev => ({ ...prev, [courtId]: response.data }));
+    } catch (err) {
+      console.error(`Failed to calculate time-series regression for asset sector ${courtId}:`, err);
+    }
+  };
+
+  // --- FETCH: Query Paginated Data Stream with Dynamic Route Syncing ---
+  const fetchDiagnosticHistory = async (page: number = 1) => {
     setLoading(true);
     setStatusMessage(null);
     try {
-      const response = await apiClient.get<any[]>('/maintenance/court-diagnostics-view');
-      if (!response.data || !Array.isArray(response.data)) {
+      // Build dynamic multi-conditional network query string keys
+      let urlPath = `/maintenance/court-diagnostics-view?pageNumber=${page}&pageSize=${pageSize}`;
+      if (selectedCourtId) urlPath += `&courtId=${selectedCourtId}`;
+      else if (selectedBranchId) urlPath += `&branchId=${selectedBranchId}`;
+      if (searchQuery.trim() !== '') urlPath += `&search=${encodeURIComponent(searchQuery)}`;
+
+      const response = await apiClient.get<any>(urlPath);
+      const envelope = response.data;
+
+      // Extract inner array list and paging flags out of .NET DTO wrapper
+      const rawItems = envelope?.items || [];
+      setCurrentPage(envelope?.pageNumber || 1);
+      setTotalPages(envelope?.totalPages || 1);
+      setTotalRecords(envelope?.totalRecords || 0);
+
+      if (!Array.isArray(rawItems)) {
         setSnapshots([]);
         return;
       }
 
       // Safe normalization array loop mapping matching backend schemas
-      const normalizedSnapshots: DiagnosticSnapshot[] = response.data.map((item: any) => ({
-        session_id: item.sessionId || item.session_id || '',
-        court_id: item.courtId || item.court_id || '',
-        court_name: item.courtName || item.court_name || 'Unknown Court',
-        branch_name: item.branchName || item.branch_name || 'Main Facility',
-        academy_id: item.academyId || item.academy_id || '',
-        branch_id: item.branchId || item.branch_id || '',
-        timestamp: item.timestamp || new Date().toISOString(),
-        agent_version: item.agentVersion || item.agent_version || 'v1.0.0',
-        metrics: {
-          surface_friction_index: Number(item.surfaceFrictionIndex ?? 0.80),
-          bounce_uniformity_percentage: Number(item.bounceUniformityPercentage ?? 95.0),
-          net_tension_newtons: Number(item.netTensionNewtons ?? 420.0),
-          ambient_temperature_celsius: Number(item.ambientTemperatureCelsius ?? 22.0),
-          humidity_percentage: Number(item.humidityPercentage ?? 50.0)
-        },
-        anomalies: Array.isArray(item.anomalies) ? item.anomalies.map((anom: any) => ({
-          anomaly_id: anom.anomalyId || anom.anomaly_id || '',
-          severity: anom.severity || 'Info',
-          category: anom.category || 'General',
-          description: anom.description || '',
-          confidence_score: Number(anom.confidenceScore ?? 0),
-          recommended_action: anom.recommendedAction || ''
-        })) : []
-      }));
+      const normalizedSnapshots: DiagnosticSnapshot[] = rawItems.map((item: any) => {
+        // 1. Isolate the target court identifier string right at the start of the loop
+        const currentCourtId = item.courtId || item.court_id || '';
+        
+        // 2. Fire the background network fetch to calculate Python's time-series analytics
+        if (currentCourtId) {
+          fetchCourtForecast(currentCourtId);
+        }
+
+        // 3. Return your object mapping structure cleanly as usual
+        return {
+          session_id: item.sessionId || item.session_id || '',
+          court_id: currentCourtId,
+          court_name: item.courtName || item.court_name || 'Unknown Court',
+          branch_name: item.branchName || item.branch_name || 'Main Facility',
+          academy_id: item.academyId || item.academy_id || '',
+          branch_id: item.branchId || item.branch_id || '',
+          timestamp: item.timestamp || new Date().toISOString(),
+          agent_version: item.agentVersion || item.agent_version || 'v1.0.0',
+          metrics: {
+            surface_friction_index: Number(item.surfaceFrictionIndex ?? 0.80),
+            bounce_uniformity_percentage: Number(item.bounceUniformityPercentage ?? 95.0),
+            net_tension_newtons: Number(item.netTensionNewtons ?? 420.0),
+            ambient_temperature_celsius: Number(item.ambientTemperatureCelsius ?? 22.0),
+            humidity_percentage: Number(item.humidityPercentage ?? 50.0)
+          },
+          anomalies: Array.isArray(item.anomalies) ? item.anomalies.map((anom: any) => ({
+            anomaly_id: anom.anomalyId || anom.anomaly_id || '',
+            severity: anom.severity || 'Info',
+            category: anom.category || 'General',
+            description: anom.description || '',
+            confidence_score: Number(anom.confidenceScore ?? 0),
+            recommended_action: anom.recommendedAction || ''
+          })) : []
+        };
+      });
 
       setSnapshots(normalizedSnapshots);
     } catch (err: any) {
@@ -132,10 +176,21 @@ export default function CourtDiagnosticsDashboard() {
     }
   };
 
+  // --- FETCH FACILITY LEDGER ON INITIAL LOAD ---
   useEffect(() => {
-    fetchAcademyTopology();
-    fetchDiagnosticHistory();
-  }, []);
+    fetchAcademyTopology(); // Loads your Collapsible Tree Panel layout structure
+  }, []); // Empty array ensures this fires exactly ONCE when page mounts
+
+  // Re-fetch data instantly when selected topology bounds or search query parameters shift
+  useEffect(() => {
+    fetchDiagnosticHistory(1); // Force reset view sequence directly to page 1 on filter alteration
+  }, [selectedCourtId, selectedBranchId, searchQuery]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      fetchDiagnosticHistory(newPage);
+    }
+  };
 
   // --- ACTIONS: SELECTION TREE SECTORS ---
   const handleSelectBranch = (branchId: string) => {
@@ -370,8 +425,9 @@ export default function CourtDiagnosticsDashboard() {
               </button>
               
               <button
-                onClick={fetchDiagnosticHistory}
-                disabled={loading || analyzing}
+                // FIX: Wrapped inside an anonymous callback to stop the MouseEvent from bleeding into the page parameter slot
+                onClick={() => fetchDiagnosticHistory(currentPage)}
+                disabled={loading || analyzing || seeding}
                 className="px-3 py-2 font-bold uppercase tracking-wider transition text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300"
               >
                 🔄 Pull Live Metrics
@@ -389,25 +445,57 @@ export default function CourtDiagnosticsDashboard() {
             </div>
           </div>
 
-          {/* ROW 2: NEW REAL-TIME GLOBAL FILTERS SEARCH BAR */}
-          <div className="flex items-center gap-2">
-            <span className="font-bold uppercase tracking-wider text-slate-600 text-[10px]">Filter Diagnostics:</span>
-            <input 
-              type="text" 
-              placeholder="🔍 Search snapshots by court, facility, severity, category, or keyword..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full sm:max-w-2xl bg-white border border-slate-300 px-2 py-1.5 text-xs font-mono text-slate-800 bg-slate-50/50 focus:outline-none focus:bg-white focus:border-purple-500"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="font-mono text-[9px] uppercase tracking-tighter text-slate-400 hover:text-slate-600"
+          {/* ROW 2: REAL-TIME GLOBAL SEARCH BAR WITH INLINE ABBREVIATED PAGINATION */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+            <div className="flex items-center gap-2 flex-grow">
+              <span className="font-bold uppercase tracking-wider text-slate-600 text-[10px] whitespace-nowrap">Filter Diagnostics:</span>
+              <input 
+                type="text" 
+                placeholder="🔍 Search snapshots by court, facility, version, or keyword..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full sm:max-w-xl bg-white border border-slate-300 px-2 py-1.5 text-xs font-mono text-slate-800 bg-slate-50/50 focus:outline-none focus:bg-white focus:border-purple-500"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="font-mono text-[9px] uppercase tracking-tighter text-slate-400 hover:text-slate-600 whitespace-nowrap"
+                >
+                  [Clear Query]
+                </button>
+              )}
+            </div>
+
+            {/* QUICK INLINE PAGE CHUNKER NAVIGATION CONTROL */}
+            <div className="flex items-center gap-1 self-end sm:self-auto font-mono text-[10px] border border-slate-300 bg-slate-100/50 p-1">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1 || loading}
+                className={`px-2 py-0.5 font-black border transition ${
+                  currentPage === 1 
+                    ? 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed' 
+                    : 'bg-white hover:bg-slate-200 text-slate-800 border-slate-300'
+                }`}
               >
-                [Clear Query]
+                ◀
               </button>
-            )}
+              <span className="px-2 py-0.5 text-slate-700 font-bold uppercase tracking-tighter">
+                PG {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages || loading}
+                className={`px-2 py-0.5 font-black border transition ${
+                  currentPage === totalPages 
+                    ? 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed' 
+                    : 'bg-white hover:bg-slate-200 text-slate-800 border-slate-300'
+                }`}
+              >
+                ▶
+              </button>
+            </div>
           </div>
+
         </div>
 
 
@@ -421,13 +509,13 @@ export default function CourtDiagnosticsDashboard() {
         {/* SYSTEM RECT DATA FEED GRIDS MATRIX */}
         {loading ? (
           <div className="py-12 text-center text-slate-400 font-mono tracking-widest uppercase">Loading ledger logs...</div>
-        ) : filteredSnapshots.length === 0 ? (
+        ) : snapshots.length === 0 ? (
           <div className="py-12 text-center text-slate-400 font-mono border border-dashed border-slate-200">
             No active telemetry signatures logged matching this ledger boundary filter.
           </div>
         ) : (
           <div className="space-y-6">
-            {filteredSnapshots.map((snapshot) => (
+            {snapshots.map((snapshot) => (
               <div key={snapshot.session_id} className="border border-slate-300 bg-slate-50 p-4 shadow-sm">
                 
                 <div className="flex justify-between items-center border-b border-slate-200 pb-2 mb-2">
@@ -454,7 +542,65 @@ export default function CourtDiagnosticsDashboard() {
                   </div>
                 </div>
 
-                {/* METRICS DISPLAY STATISTICS */}
+                {/* ========================================================================= */}
+                {/* NEW: DYNAMIC TIME-SERIES LINEAR FORECAST LIFESPAN PROGRESS INDICATOR      */}
+                {/* ========================================================================= */}
+                {(() => {
+                  const forecast = forecasts[snapshot.court_id];
+                  if (!forecast) return null; // Fallback gracefully if calculation is still computing over network
+
+                  const days = forecast.estimatedDaysUntilBreach;
+                  const isCritical = forecast.isResurfaceRecommended;
+                  
+                  // Dynamically calculate brutalist color tokens based on time-series safety margins
+                  const progressPercent = Math.max(5, Math.min(100, (days / 120) * 100));
+                  const barColor = days < 15 ? 'bg-red-600' : days < 45 ? 'bg-orange-500' : 'bg-emerald-600';
+                  const panelBg = days < 15 ? 'bg-red-50 border-red-300' : 'bg-slate-100 border-slate-300';
+
+                  return (
+                    <div className={`p-3 border font-mono text-[10px] mb-3 flex flex-col md:flex-row md:items-center justify-between gap-3 ${panelBg}`}>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-slate-800 uppercase tracking-tight text-[11px]">
+                            🔮 Predictive Surface Wear Lifespan Analysis
+                          </span>
+                          <span className="text-[8px] px-1 bg-slate-200 border border-slate-400 font-bold uppercase">
+                            Confidence: {((forecast.confidenceScore ?? forecast.confidence_score ?? 0) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <p className="text-slate-500 text-[9px] max-w-xl">
+                          OLS linear regression engine tracks active friction decay velocity at{' '}
+                          <span className="text-slate-800 font-bold">{forecast.velocityFrictionLossPerDay.toFixed(5)} index/day</span>.
+                        </p>
+                      </div>
+
+                      {/* DAYS PLAYING REMAINING COUNTER AND PROGRESS METER TRACK */}
+                      <div className="flex-grow max-w-md space-y-1.5 self-center">
+                        <div className="w-full bg-slate-200 border border-slate-400 h-2.5 rounded-none overflow-hidden relative">
+                          <div 
+                            className={`h-full border-r border-slate-800 transition-all duration-500 ${barColor}`} 
+                            style={{ width: `${progressPercent}%` }} 
+                          />
+                        </div>
+                        <div className="flex justify-between text-[9px] uppercase tracking-wider text-slate-400 font-bold">
+                          <span>🚨 Boundary (0.75 Friction)</span>
+                          <span>Target Lifespan: 120+ Days</span>
+                        </div>
+                      </div>
+
+                      {/* METRIC CALLOUT METERS */}
+                      <div className="text-right whitespace-nowrap min-w-[140px]">
+                        <div className={`text-sm font-black font-mono tracking-tighter ${isCritical ? 'text-red-600 animate-pulse' : 'text-slate-800'}`}>
+                          {days === 365 ? '365+ DAYS' : `${days} DAYS REMAINING`}
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
+                          Est. Breach: <span className="text-slate-700 font-black">{forecast.predictedBreachDate || 'Stable'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4 text-center mt-3">
                   <div className="bg-white p-2 border border-slate-200">
                     <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Friction Index</div>
@@ -492,7 +638,6 @@ export default function CourtDiagnosticsDashboard() {
                   </div>
                 </div>
 
-                {/* CONDITIONAL SUB-ANOMALIES GRID GENERATOR */}
                 {snapshot.anomalies && snapshot.anomalies.length > 0 ? (
                   <div className="mt-3">
                     <div className="font-bold text-[10px] text-red-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
@@ -534,6 +679,59 @@ export default function CourtDiagnosticsDashboard() {
                 )}
               </div>
             ))}
+
+            {/* ========================================================================= */}
+            {/* BRUTALIST FOOTER PAGINATION NAVIGATION PANEL                             */}
+            {/* ========================================================================= */}
+            <div className="mt-6 border-t border-slate-300 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px] text-slate-600">
+              <div>
+                Showing page <span className="font-bold text-slate-800">{currentPage}</span> of <span className="font-bold text-slate-800">{totalPages}</span> ({totalRecords} matching snapshots across ledger)
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1 || loading}
+                  className={`px-2 py-1.5 border font-bold uppercase transition ${
+                    currentPage === 1 ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                  }`}
+                >
+                  ┃◀ First
+                </button>
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || loading}
+                  className={`px-3 py-1.5 border font-bold uppercase transition ${
+                    currentPage === 1 ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                  }`}
+                >
+                  ◀ Prev
+                </button>
+                
+                <span className="px-3 py-1.5 bg-purple-50 border border-purple-200 text-purple-700 font-bold">
+                  {currentPage}
+                </span>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages || loading}
+                  className={`px-3 py-1.5 border font-bold uppercase transition ${
+                    currentPage === totalPages ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                  }`}
+                >
+                  Next ▶
+                </button>
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages || loading}
+                  className={`px-2 py-1.5 border font-bold uppercase transition ${
+                    currentPage === totalPages ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed' : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                  }`}
+                >
+                  Last ▶┃
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

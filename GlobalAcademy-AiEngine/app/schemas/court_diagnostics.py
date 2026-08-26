@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field, UUID4
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 class CourtDiagnosticRequest(BaseModel):
     """🛡️ Validates incoming .NET multi-tenant court telemetry vectors."""
@@ -81,3 +81,15 @@ class MasterOrchestrationInputSchema(BaseModel):
     """
     telemetry_signals: TelemetrySignalsInputSchema
     court_metadata: CourtMetadataInputSchema
+
+class PredictiveAnalysisOutputSchema(BaseModel):
+    """
+    Data contract encapsulating advanced mathematical forecasting metrics 
+    calculated by Python's time-series trend engine.
+    """
+    court_id: str
+    velocity_friction_loss_per_day: float
+    estimated_days_until_breach: int
+    predicted_breach_date: Optional[str] = None
+    is_resurface_recommended: bool
+    confidence_score: float

@@ -2,11 +2,10 @@
 from fastapi import APIRouter, status
 from app.schemas.court_diagnostics import CourtDiagnosticRequest, CourtDiagnosticResponse
 from app.services.court_diagnostics_agent import compute_court_structural_analytics
-import uuid
-import random
 from datetime import datetime, timezone
 from app.services.court_diagnostics_agent import CourtDiagnosticsService
-from app.schemas.court_diagnostics import MasterOrchestrationInputSchema, CourtDiagnosticsPayloadSchema
+from app.schemas.court_diagnostics import MasterOrchestrationInputSchema, CourtDiagnosticsPayloadSchema, PredictiveAnalysisOutputSchema
+from typing import List
 
 router = APIRouter(prefix="/api/ai/diagnostics", tags=["Facility Automation Agents"])
 
@@ -50,3 +49,27 @@ async def seed_court_history(request_payload: dict):
     )
     
     return {"court_id": court_id, "total_records_generated": len(history_records), "records": history_records}
+
+@router.post(
+    "/forecast-surface-decay", 
+    response_model=PredictiveAnalysisOutputSchema
+)
+async def forecast_surface_decay(historical_snapshots: List[dict]):
+    """
+    Takes a list of raw historical snapshots directly from the database, extracts the first court ID,
+    and runs our time-series OLS linear regression to forecast future surface wear.
+    """
+    if not historical_snapshots:
+        return PredictiveAnalysisOutputSchema(
+            court_id="unknown", velocity_friction_loss_per_day=0.0,
+            estimated_days_until_breach=999, is_resurface_recommended=False, confidence_score=0.0
+        )
+        
+    # Extract court identifier parameter from the initial item in the array list
+    first_snapshot = historical_snapshots[0]
+    court_id = first_snapshot.get("courtId") or first_snapshot.get("court_id") or "unknown"
+    
+    return CourtDiagnosticsService.forecast_court_surface_decay(
+        court_id=str(court_id), 
+        historical_snapshots=historical_snapshots
+    )

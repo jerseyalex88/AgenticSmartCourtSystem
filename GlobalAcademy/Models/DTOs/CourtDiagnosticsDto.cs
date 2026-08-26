@@ -63,4 +63,13 @@ namespace GlobalAcademy.Models.DTOs
         public int TotalRecordsGenerated { get; set; }
         public List<CourtDiagnosticsPayloadDto> Records { get; set; } = new();
     }
+    public class PredictiveAnalysisOutputDto
+    {
+        public string CourtId { get; set; } = string.Empty;
+        public double VelocityFrictionLossPerDay { get; set; }
+        public int EstimatedDaysUntilBreach { get; set; }
+        public string? PredictedBreachDate { get; set; }
+        public bool IsResurfaceRecommended { get; set; }
+        public double ConfidenceScore { get; set; }
+    }
 }

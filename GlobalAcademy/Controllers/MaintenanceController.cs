@@ -235,12 +235,47 @@ public class MaintenanceController : ControllerBase
 
     // --- READ ALL: GET api/maintenance/court-diagnostics ---
     [HttpGet("court-diagnostics-view")]
-    public async Task<IActionResult> GetTenantDiagnostics()
+    public async Task<IActionResult> GetTenantDiagnostics(
+        [FromQuery] int pageNumber = 1, 
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? courtId = null,
+        [FromQuery] string? branchId = null,
+        [FromQuery] string? search = null)
     {
-        var singleSnapshot = await _context.CourtDiagnosticSnapshots
-        .Include(s => s.Court) // Include the parent Court entity
-        .ThenInclude(c => c!.Branch)
+        // 1. Build the base query execution expression bound to this multi-tenant claim
+        var query = _context.CourtDiagnosticSnapshots
+            .Include(s => s.Court)
+                .ThenInclude(c => c!.Branch)
+            .Where(s => s.AcademyId == _tenantProvider.GetTenantId());
+
+        // 2. Cascade server-side physical database boundaries instantly if filters are passed
+        if (Guid.TryParse(courtId, out Guid parsedCourtId))
+        {
+            query = query.Where(s => s.CourtId == parsedCourtId);
+        }
+        else if (Guid.TryParse(branchId, out Guid parsedBranchId))
+        {
+            query = query.Where(s => s.BranchId == parsedBranchId);
+        }
+
+        // 3. Optional: Basic server-side text string keyword pre-filtering if provided
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var cleanSearch = search.ToLower().Trim();
+            query = query.Where(s => 
+                (s.Court != null && s.Court.Name.ToLower().Contains(cleanSearch)) ||
+                s.AgentVersion.ToLower().Contains(cleanSearch)
+            );
+        }
+
+        // 4. Calculate total matched count BEFORE cutting records into page slices
+        int totalRecords = await query.CountAsync();
+
+        // 5. Slice database rows directly inside PostgreSQL memory via Skip and Take
+        var snapshotsData = await query
         .OrderByDescending(s => s.Timestamp)
+        .Skip((pageNumber - 1) * pageSize)
+        .Take(pageSize)
         .Select(s => new
         {
             sessionId = s.SessionId,
@@ -271,23 +306,19 @@ public class MaintenanceController : ControllerBase
         })
         .ToListAsync();
 
-        if (singleSnapshot == null)
+        // 6. Wrap structural database outputs inside our new clean metadata envelope response DTO
+        int totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+        var paginatedEnvelope = new PagedResponseDto<object>
         {
-            return NotFound(new { message = "No diagnostic snapshots found for this tenant context." });
-        }
+            Items = snapshotsData.Cast<object>().ToList(),
+            TotalRecords = totalRecords,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = totalPages == 0 ? 1 : totalPages
+        };
 
-        return Ok(singleSnapshot);
-
-        //Guid academyId = _tenantProvider.GetTenantId();
-
-        // Pull snapshots including their nested child anomalies mapped to this tenant
-        // var snapshots = await _context.CourtDiagnosticSnapshots
-        //     .Include(s => s.Anomalies)
-        //     // .Where(s => s.AcademyId == academyId)
-        //     .OrderByDescending(s => s.Timestamp)
-        //     .ToListAsync();
-
-        // return Ok(snapshots);
+        return Ok(paginatedEnvelope);
     }
     // --- ORCHESTRATE & CALCULATE: POST api/maintenance/court-diagnostics/calculate/{courtId} ---
     [HttpPost("court-diagnostics/calculate/{courtId}")]
@@ -347,6 +378,28 @@ public class MaintenanceController : ControllerBase
                 message = $"Internal Server Exception [{generalEx.GetType().Name}]", 
                 detail = generalEx.Message 
             });
+        }
+    }
+    // --- FORECAST DECAY DEADLINES: GET api/maintenance/court-diagnostics/forecast/{courtId} ---
+    [HttpGet("court-diagnostics/forecast/{courtId}")]
+    public async Task<IActionResult> GetCourtSurfaceWearForecast(Guid courtId)
+    {
+        Guid academyId = _tenantProvider.GetTenantId();
+        
+        // Safety check: Verify asset authorization boundaries
+        var courtExists = await _context.Courts.AnyAsync(c => c.Id == courtId && c.AcademyId == academyId);
+        if (!courtExists) return NotFound($"Target Court sector not found inside active academy branch context.");
+
+        try
+        {
+            // Invoke the analytical pipeline method
+            PredictiveAnalysisOutputDto forecastData = await _diagnosticsService.ExecuteSurfaceDecayForecastAsync(courtId);
+            
+            return Ok(forecastData);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Analytics pipeline execution failure: {ex.Message}");
         }
     }
     // --- DELETE: DELETE api/maintenance/court-diagnostics/{sessionId} ---
@@ -435,3 +488,11 @@ public record CreateShadowQueueDto(Guid OriginalCourtId, string PlayerUserId, st
 public record UpdateShadowQueueDto(string QueueStatus, string DisplacementReason);
 public record CreateTicketDto(Guid CourtId, string Title, string Description, string PriorityLevel);
 public record UpdateTicketDto(string Title, string Description, string TicketStatus, string PriorityLevel);
+public class PagedResponseDto<T>
+    {
+        public List<T> Items { get; set; } = new();
+        public int TotalRecords { get; set; }
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages { get; set; }
+    }

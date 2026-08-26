@@ -15,6 +15,7 @@ public interface ICourtDiagnosticsService
 {
     Task ProcessTelemetryAsync(CourtDiagnosticsPayloadDto payload);
     Task<CourtDiagnosticsPayloadDto> RequestAgentAnalysisAsync(Guid courtId);
+    Task<PredictiveAnalysisOutputDto> ExecuteSurfaceDecayForecastAsync(Guid courtId);
     Task<int> SeedHistoricalTelemetryHistoryAsync(Court court);
 }
 
@@ -139,6 +140,74 @@ public class CourtDiagnosticsService : ICourtDiagnosticsService
 
         if (payload == null) throw new InvalidOperationException("Python agent engine returned an empty data signature.");
         return payload;            
+    }
+    public async Task<PredictiveAnalysisOutputDto> ExecuteSurfaceDecayForecastAsync(Guid courtId)
+    {
+        // 1. Gather the entire chronological footprint of snapshots recorded for this asset
+        var localSnapshotsList = await _context.CourtDiagnosticSnapshots
+            .Where(s => s.CourtId == courtId)
+            .OrderBy(s => s.Timestamp)
+            .Select(s => new
+            {
+                courtId = s.CourtId.ToString(),
+                timestamp = s.Timestamp.ToString("o"), // ISO 8601 formatting alignment
+                surfaceFrictionIndex = s.SurfaceFrictionIndex,
+                bounceUniformityPercentage = s.BounceUniformityPercentage,
+                netTensionNewtons = s.NetTensionNewtons,
+                ambientTemperatureCelsius = s.AmbientTemperatureCelsius,
+                humidityPercentage = s.HumidityPercentage
+            })
+            .ToListAsync();
+
+        if (!localSnapshotsList.Any())
+        {
+            throw new InvalidOperationException("Cannot forecast decay profile on an asset with zero historical database entries.");
+        }
+
+        // var verboseJsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+        // string rawPayloadDumpString = System.Text.Json.JsonSerializer.Serialize(localSnapshotsList, verboseJsonOptions);
+        // Console.WriteLine(rawPayloadDumpString);
+
+        PredictiveAnalysisOutputDto? forecastResults = null;
+
+        try
+        {
+            // 2. Fire the server-to-server POST over the Docker network bridge to port 8000
+            // Targets the exact folder route prefix matched on the Python side
+            var response = await _client.PostAsJsonAsync("api/ai/diagnostics/forecast-surface-decay", localSnapshotsList);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorDetails = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Python Analytics Engine rejected the trend query: {response.StatusCode} - {errorDetails}");
+            }
+
+            var jsonParsingOptions = new System.Text.Json.JsonSerializerOptions
+            {
+                // Tells .NET to map incoming 'estimated_days_until_breach' straight into 'EstimatedDaysUntilBreach'
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower,
+                PropertyNameCaseInsensitive = true
+            };
+            forecastResults = await response.Content.ReadFromJsonAsync<PredictiveAnalysisOutputDto>(jsonParsingOptions);
+
+            //forecastResults = await response.Content.ReadFromJsonAsync<PredictiveAnalysisOutputDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [FORECASTING HANDSHAKE FAILURE]: {ex.Message}");
+            throw;
+        }
+
+        if (forecastResults == null)
+        {
+            throw new InvalidOperationException("Python analytical services returned an empty forecasting payload.");
+        }
+
+        // var verboseJsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+        // var rawPayloadDumpString = System.Text.Json.JsonSerializer.Serialize(forecastResults, verboseJsonOptions);
+        // Console.WriteLine(rawPayloadDumpString);
+
+        return forecastResults;
     }
     public async Task<int> SeedHistoricalTelemetryHistoryAsync(Court court)
     {
