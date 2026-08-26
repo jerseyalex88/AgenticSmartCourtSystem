@@ -30,3 +30,23 @@ async def analyze_court_telemetry(payload: MasterOrchestrationInputSchema):
         payload.telemetry_signals, 
         payload.court_metadata
     )
+
+@router.post("/seed-court-history")
+async def seed_court_history(request_payload: dict):
+    """
+    Generates a dense historical dataset wrapper array for a targeted court asset 
+    to populate downstream multi-tenant PostgreSQL tables.
+    """
+    court_id = request_payload.get("court_id")
+    surface_type = request_payload.get("surface_type", "Hard")
+    is_indoor = request_payload.get("is_indoor", False)
+    
+    # Generate the backdated dataset matrix array
+    history_records = CourtDiagnosticsService.generate_synthetic_history(
+        court_id=court_id,
+        surface_type=surface_type,
+        is_indoor=is_indoor,
+        days_back=180
+    )
+    
+    return {"court_id": court_id, "total_records_generated": len(history_records), "records": history_records}

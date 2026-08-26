@@ -1,7 +1,8 @@
 # app/services/court_diagnostics_agent.py
 from app.schemas. court_diagnostics import CourtDiagnosticRequest, CourtDiagnosticResponse
 import uuid
-from datetime import datetime, timezone
+import random
+from datetime import datetime, timedelta, timezone
 from app.schemas.court_diagnostics import (
     TelemetrySignalsInputSchema,
     CourtMetadataInputSchema,
@@ -52,6 +53,7 @@ def compute_court_structural_analytics(payload: CourtDiagnosticRequest) -> Court
     )
 
 class CourtDiagnosticsService:
+
     @staticmethod
     def process_and_analyze_telemetry(
         signals: TelemetrySignalsInputSchema, 
@@ -131,3 +133,92 @@ class CourtDiagnosticsService:
             anomalies=detected_anomalies,
             agent_version="v1.7.0-meta-aware"
         )
+
+    @staticmethod
+    def generate_synthetic_history(court_id: str, surface_type: str, is_indoor: bool, days_back: int = 180) -> list:
+        """
+        Generates a 180-day chronological dataset modeling surface friction decay,
+        weekend activity spikes, and localized net tension loss.
+        """
+        historical_payloads = []
+        current_time = datetime.now(timezone.utc)
+        
+        # Define surface wear factors matching requirement (2) faster lifecycles
+        if surface_type == "Grass":
+            base_friction = 0.88
+            decay_rate_per_day = 0.0012   # Rapid degradation profile
+            base_bounce = 82.0
+        elif surface_type == "Clay":
+            base_friction = 0.82
+            decay_rate_per_day = 0.0007   # Moderate wear, requires frequent grooming
+            base_bounce = 94.0
+        else: # Hard Court
+            base_friction = 0.85
+            decay_rate_per_day = 0.0004   # Durable structural threshold baseline
+            base_bounce = 96.0
+
+        # Loop backward through time day-by-day to simulate continuous play logs
+        for day in range(days_back, 0, -1):
+            log_date = current_time - timedelta(days=day)
+            is_weekend = log_date.weekday() >= 5
+            
+            # Simulate aggregate daily minutes played (Weekend tournaments track double traffic)
+            daily_minutes = random.randint(240, 480) if is_weekend else random.randint(60, 180)
+            
+            # Deduct cumulative surface degradation friction coefficients
+            base_friction -= (daily_minutes * 0.000002) * (1.5 if surface_type == "Grass" else 1.0)
+            # Clip friction floor back up if a periodic resurface maintenance cycle is randomly met
+            if base_friction < 0.68:
+                base_friction = 0.84 # Reset following simulation grooming threshold
+                
+            # Calibrate net tension sag over time
+            net_sag = random.uniform(0.1, 0.4) * (1.0 if is_indoor else 1.5)
+            simulated_tension = max(360.0, 430.0 - (day * net_sag) % 70)
+            
+            # Calculate ambient parameters
+            humidity = random.uniform(40.0, 85.0)
+            temperature = random.uniform(15.0, 32.0)
+            
+            metrics = DiagnosticsMetricsSchema(
+                surface_friction_index=round(max(0.60, base_friction), 2),
+                bounce_uniformity_percentage=round(max(75.0, base_bounce - (day * 0.02) % 10), 1),
+                net_tension_newtons=round(simulated_tension, 1),
+                ambient_temperature_celsius=round(temperature, 1),
+                humidity_percentage=round(humidity, 1)
+            )
+            
+            # Append realistic anomalies if boundaries cross
+            anomalies = []
+            session_guid = str(uuid.uuid4())
+            
+            if metrics.net_tension_newtons < 400.0:
+                anomalies.append(DiagnosticsAnomalySchema(
+                    anomaly_id=str(uuid.uuid4()),
+                    severity="Medium" if metrics.net_tension_newtons > 380.0 else "High",
+                    category="Structural Hardware",
+                    description=f"Net tension fell to {metrics.net_tension_newtons}N during simulation cycles.",
+                    confidence_score=0.95,
+                    recommended_action="Tighten manual net rachets."
+                ))
+
+            if metrics.surface_friction_index < 0.75:
+                anomalies.append(DiagnosticsAnomalySchema(
+                    anomaly_id=str(uuid.uuid4()),
+                    severity="Critical",
+                    category="Surface Degradation",
+                    description=f"Friction boundary index breached on {surface_type} asset interface.",
+                    confidence_score=0.92,
+                    recommended_action="Lock surface entrance gates and schedule maintenance sweep."
+                ))
+
+            payload = CourtDiagnosticsPayloadSchema(
+                session_id=session_guid,
+                court_id=court_id,
+                timestamp=log_date.isoformat(),
+                metrics=metrics,
+                anomalies=anomalies,
+                agent_version="v1.7.5-historical-seeder"
+            )
+            historical_payloads.append(payload.model_dump(mode="json"))
+            
+        return historical_payloads

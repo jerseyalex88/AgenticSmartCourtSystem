@@ -405,6 +405,28 @@ public class MaintenanceController : ControllerBase
 
         return Ok(topologyData);
     }
+    // --- BATCH SEED DATA: POST api/maintenance/court-diagnostics/seed/{courtId} ---
+    [HttpPost("court-diagnostics/seed/{courtId}")]
+    public async Task<IActionResult> SeedHistoricalTelemetryHistory(Guid courtId)
+    {
+        // 1. Resolve multi-tenant boundary parameters
+        Guid academyId = _tenantProvider.GetTenantId();
+        var court = await _context.Courts.FirstOrDefaultAsync(c => c.Id == courtId && c.AcademyId == academyId);
+        if (court == null) return NotFound($"Court ID '{courtId}' was not found within this academy branch.");
+
+        try
+        {
+            int count = await _diagnosticsService.SeedHistoricalTelemetryHistoryAsync(court);
+
+            return Ok(new { 
+                message = $"Successfully generated and injected {count} historical time-series entries for {court.Name}." 
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Historical injection pathway failure: {ex.Message}");
+        }
+    }
 
 }
 

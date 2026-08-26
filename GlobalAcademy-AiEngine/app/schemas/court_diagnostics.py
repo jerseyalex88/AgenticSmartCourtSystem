@@ -21,33 +21,30 @@ class CourtDiagnosticResponse(BaseModel):
     next_upkeep_window_days: int
 
 class DiagnosticsMetricsSchema(BaseModel):
-    surface_friction_index: float = 0.82
-    bounce_uniformity_percentage: float = 94.5
-    net_tension_newtons: float = 385.0
-    ambient_temperature_celsius: float = 22.4
-    humidity_percentage: float = 58.0
+    surface_friction_index: float
+    bounce_uniformity_percentage: float
+    net_tension_newtons: float
+    ambient_temperature_celsius: float
+    humidity_percentage: float
 
 class DiagnosticsAnomalySchema(BaseModel):
-    # Use default_factory so a new Guid is generated for EVERY iteration
     anomaly_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    severity: str = "Medium"
-    category: str = "Structural Hardware"
-    description: str = "Net tension dropped below regulatory 400N baseline."
-    confidence_score: float = 0.98
-    recommended_action: str = "Tighten net ratchets to standard physical operating bounds."
+    severity: str
+    category: str
+    description: str
+    confidence_score: float
+    recommended_action: str
 
 class CourtDiagnosticsPayloadSchema(BaseModel):
-    # Use default_factory for the root session_id as well
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     court_id: str
+    academy_id: str = ""
+    branch_id: str = ""
+    # FIX: Default to current time, but allow explicit historical strings to override it during seeding sweeps
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    metrics: DiagnosticsMetricsSchema = Field(default_factory=DiagnosticsMetricsSchema)
-    
-    # Use default_factory for the list to guarantee unique sub-anomaly objects
-    anomalies: List[DiagnosticsAnomalySchema] = Field(
-        default_factory=lambda: [DiagnosticsAnomalySchema()]
-    )
-    agent_version: str = "v1.4.2"
+    metrics: DiagnosticsMetricsSchema
+    anomalies: List[DiagnosticsAnomalySchema] = Field(default_factory=list)
+    agent_version: str = "v1.7.5-historical-seeder"
 
 class RawTelemetryInputSchema(BaseModel):
     """

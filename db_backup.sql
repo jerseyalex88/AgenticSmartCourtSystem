@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Ia0fWU7JC2inKpZE4UBVsJ7u6Arw08lVYM3uvbO4HbftueSnZ4XtITFlq8SS29o
+\restrict bVlbqkXBaJXOpvsBGtasU2IjrzCsk14V4a9uGlKnUmziPko0dfzeih2VRDWPTY7
 
 -- Dumped from database version 18.4 (Homebrew)
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -10,7 +10,7 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
---SET transaction_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -215,6 +215,46 @@ CREATE TABLE public."Branches" (
 
 
 ALTER TABLE public."Branches" OWNER TO postgres;
+
+--
+-- Name: CourtDiagnosticAnomalies; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."CourtDiagnosticAnomalies" (
+    "AnomalyId" uuid NOT NULL,
+    "SessionId" uuid NOT NULL,
+    "AcademyId" uuid NOT NULL,
+    "BranchId" uuid NOT NULL,
+    "Severity" character varying(20) NOT NULL,
+    "Category" character varying(100) NOT NULL,
+    "Description" text NOT NULL,
+    "ConfidenceScore" double precision NOT NULL,
+    "RecommendedAction" text NOT NULL
+);
+
+
+ALTER TABLE public."CourtDiagnosticAnomalies" OWNER TO postgres;
+
+--
+-- Name: CourtDiagnosticSnapshots; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."CourtDiagnosticSnapshots" (
+    "SessionId" uuid NOT NULL,
+    "AcademyId" uuid NOT NULL,
+    "BranchId" uuid NOT NULL,
+    "CourtId" uuid NOT NULL,
+    "Timestamp" timestamp with time zone NOT NULL,
+    "SurfaceFrictionIndex" double precision NOT NULL,
+    "BounceUniformityPercentage" double precision NOT NULL,
+    "NetTensionNewtons" double precision NOT NULL,
+    "AmbientTemperatureCelsius" double precision NOT NULL,
+    "HumidityPercentage" double precision NOT NULL,
+    "AgentVersion" character varying(20) NOT NULL
+);
+
+
+ALTER TABLE public."CourtDiagnosticSnapshots" OWNER TO postgres;
 
 --
 -- Name: Courts; Type: TABLE; Schema: public; Owner: postgres
@@ -583,6 +623,9 @@ cbfacb6e-b3c7-4b1e-a289-b52d299efce6	60186569-a432-4375-9bee-485c69f086d5	36626d
 ba121229-d70c-4b7d-9077-12031544345f	60186569-a432-4375-9bee-485c69f086d5	0c713a4d-fb5b-4e83-9c0b-27afc3e6f62c	Player App Secured Reservation	505751fb-ee77-4be3-8db1-460017380b7d	2026-08-07 10:33:23.710933-07	2026-08-09 04:00:00-07	Booked manually by player via Smart Court OS.		2026-08-09 03:00:00-07	jerseychiki88@gmail.com	Grass Court 4	f	2026-08-09 03:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 337824d0-3bb3-4f59-8976-c22fbacf5228	60186569-a432-4375-9bee-485c69f086d5	8f41d4d7-722c-4ea4-be3b-73a27d8dcade	Player App Secured Reservation	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-07 11:00:42.269807-07	2026-08-09 03:00:00-07	Booked manually by player via Smart Court OS.		2026-08-09 02:00:00-07	jerseychiki88@gmail.com	Grass Court 2	f	2026-08-09 02:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 3c66ea7d-00ef-4bae-82b1-f6db65e47c48	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Player App Secured Reservation	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-08-10 16:09:40.270088-07	2026-08-12 13:00:00-07	Booked manually by player via Smart Court OS.		2026-08-12 12:00:00-07	Chiki Reyes	Grass Court 1	f	2026-08-12 12:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+1e05dac8-72e8-41fa-8999-ee8e00507265	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Player App Secured Reservation	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-08-23 09:33:29.728337-07	2026-08-23 13:00:00-07	Booked manually by player via Smart Court OS.		2026-08-23 12:00:00-07	Chiki Reyes	Grass Court 1	f	2026-08-23 12:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+d03661d6-385b-4755-8d3f-2798273f7211	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-23 09:38:30.361084-07	2026-08-23 11:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-23 10:00:00-07	Chiki Reyes	Grass Court 2	f	2026-08-23 11:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
+476b2536-1d00-42b1-ba31-d2d11b597251	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	MemberBooking	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-23 09:38:31.628203-07	2026-08-23 12:00:00-07	Booked natively via Smart Court OS conversational assistant interface.		2026-08-23 11:00:00-07	Chiki Reyes	Grass Court 2	f	2026-08-23 12:00:00-07	4c073a7a-7864-4341-85ce-869914b3c117	60	0.00
 \.
 
 
@@ -598,22 +641,607 @@ COPY public."Branches" ("Id", "AcademyId", "Name", "Description", "TimeZoneId", 
 
 
 --
+-- Data for Name: CourtDiagnosticAnomalies; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."CourtDiagnosticAnomalies" ("AnomalyId", "SessionId", "AcademyId", "BranchId", "Severity", "Category", "Description", "ConfidenceScore", "RecommendedAction") FROM stdin;
+5d80e41e-e463-476d-b57d-595d512335bc	81716846-0524-4376-85c7-0b1f71835f88	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+544d255d-e928-4777-8d0e-6126315d06fd	fb3df391-3cb1-419a-8f8e-48c46530d35f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 387.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+5f92673f-32f0-438e-adcf-e839ab5d98a9	d169be84-5831-4f40-8b8d-a3bb6983bc3e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.72 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+6fc5a61a-4dc4-4c99-921b-d0f4137b96bb	eaaa5189-954e-41a5-9e68-014dab1d71e4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 377.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+05472856-844c-4ef8-8b67-e3b5d766e5c0	b1c97dfa-1e4f-4d79-bab4-2355aec4dc6a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 378.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+9e7d7287-009f-4cb0-9ca9-472d46d488b9	1ba8dd92-4686-4500-9c67-da2433e656b5	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 373.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b631263a-84cf-4a1a-93a2-248094779414	b1c97dfa-1e4f-4d79-bab4-2355aec4dc6a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.72 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+d953d329-dea8-4855-8734-7cb7a66edb70	715bca7c-0d5d-44bf-b300-59bdceb70d04	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+1aab9e98-010c-4d9c-921c-7f5727e389a1	edd7a888-f541-4e2a-89c4-4d25bb008320	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.72 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+84c8f71f-43a5-4642-bddf-b684f04451b8	c9d94082-ea14-4121-b390-31602727c496	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 373.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+42698258-b106-4c77-94d6-518d622b4855	60278076-728b-4afc-9eba-0fb2eca0ae34	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 381.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+47d314b0-76ce-4517-9a12-d0f44eff8150	60278076-728b-4afc-9eba-0fb2eca0ae34	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+fc7505cb-2354-4751-a92d-f06daade2387	a43bae41-e24f-4a95-beb0-c6d07c2bf183	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 393.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+253bac73-7957-4da5-a1fd-23b6d2ec6d4c	72a47352-b066-4b53-9668-05fef805ac6c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.72 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+2c69ee0d-60be-4733-a499-e58ceef9e20b	8836f8e0-7aed-4fc1-92a6-8936b98fe976	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+9c81e357-db9a-452e-92e7-6572c1bc87c1	72a47352-b066-4b53-9668-05fef805ac6c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 375.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+440c6a2e-a853-4148-8551-a99bcd07bb9f	8836f8e0-7aed-4fc1-92a6-8936b98fe976	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 388.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+11a74335-b466-430a-8a76-d4a662db4a4e	f001baf6-b2a5-423f-b564-f9f3b908dfca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 398.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+2e801a2c-7a3e-49db-9ced-f150e1711ae8	055c1c12-0cbf-4948-9a81-80d25ec08e66	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 390.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+a5657f21-837e-470d-a24e-f9d84f744f2d	96a90005-d30f-417f-a783-5e85abbaab0f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+539a20fe-d0e1-4059-880f-5ba0efe78e7d	f7488844-9b3d-4d78-a297-4bf0c7f12f17	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 381.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+42e72922-98b8-4a4d-b6b2-bfb49c1cecc6	63a743ad-9ee0-4e52-b95d-5b27dabd33fb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 394.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+dd7e0ac5-6b0c-407e-a966-44dd847e5fb8	7e573693-9397-4b76-86d6-6d78ff54167c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 394.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+df15134b-9002-4efe-8a40-794d2288ac31	db367551-b1b7-4cd0-a8ea-5a6ad9127ff0	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 374.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+251c9307-354e-4463-bd01-2d9fb4449307	9f8de2ce-2fad-4df5-a59d-67aaf2d9cffa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 397.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+efcb4cd1-de56-42fb-854e-090e996b99a5	187ec6b1-ffae-4e53-986d-511578c479e0	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.75 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+46d20cf1-6aa5-48b3-b6b8-12248c4b592a	f76701bc-7688-4fb3-85ff-4bbc0fc18ac9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 384.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+891bbd73-b109-4302-9a7e-a87cb8d3f0e5	83bc195e-59a7-41aa-b61c-bf4ca696a91d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 387.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+44d8b354-6da9-49d5-a9b9-54fae5323777	6b465c14-46fe-4fcd-a829-9990bfd2ec2b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 389.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+952ab878-6e9a-4bba-974e-04977b51e122	5becf482-2af5-4e3a-8cbd-681fe7383e7c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 380.7N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+82fc2a98-ff4a-4bf8-a187-957d47a9c65e	8d410769-4325-45b1-b3d6-5f6d35c0b2a7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 389.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+94c14714-ff52-441d-844a-4f7286ee195d	3c27ad36-e11f-470f-8b31-11d0888db342	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 375.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+38dae050-70ab-4c03-a477-ff2e2e715d80	b9257cb8-5373-4c79-b7d1-e2143ba14aca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+a6848a42-1ffa-4092-83b5-07aea184e8e1	030d43bb-a593-4cd3-872a-5c79ecefbdb5	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 374.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b50d4e55-3c5d-4604-ad67-77af0020868d	feabebf2-87d8-49aa-8723-2c57c05023b8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 385.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b49671b2-6214-456b-85a5-56d965f3db55	d7b596cc-55c1-497d-a0a9-639b2e1b8145	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+5cd3ffee-5072-4f09-98ba-eac4d8b0a48f	e4045ab6-36f5-4620-b858-e93468f60c10	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 373.6N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+9b661a77-e182-46ab-8e11-b3a318b500d5	e4045ab6-36f5-4620-b858-e93468f60c10	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+7b1fba24-1ac2-42f9-b9a4-34845822f3e8	4d475a93-7a16-49d4-93fd-439133705795	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 379.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+ea06f78f-98f3-4e56-a619-01b819372a4f	5af530ff-8161-44b8-bef0-16b2c2ecec2b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 399.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+ca307c59-af7b-4fa4-ab61-f83defad5285	8a679ad7-8ce6-4886-879a-18334d6d4611	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+eabc389e-f923-4962-ba67-36480f16d648	8a679ad7-8ce6-4886-879a-18334d6d4611	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 375.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+f81b1613-6a12-40f7-b243-c84eec8bab01	d01f8538-80a4-4c22-bbaf-81759f7531ba	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 384.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+c66817ac-d082-40ff-94d2-da910202f098	6437c78e-38c4-43fe-855c-a114c9fe5658	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 398.7N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+e30d441d-43bc-4b18-b044-82b7d9e988ed	34f50289-435d-4765-8413-36f8bcb3c91b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 398.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+ef8107ad-f22b-45db-8ed6-9bf68f97b34c	276ccd41-2928-4094-8e77-241e5b4e1d30	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 373.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+ef12fa9c-e86a-420a-8789-730e41d77971	e5152330-6cf0-43ff-af00-21338a7819e9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 373.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+fd20f2c5-92e3-46fc-a0ef-5f0bb353e74c	f281793b-f7ee-4dd5-8847-06ce8e0631ac	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 374.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+768658b0-ed71-4cdb-9888-2bc7aa9d3257	63d538e2-2b5c-4e1e-b6cf-a6603a596ce9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 391.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+3ce0ca32-6e5d-418b-8875-e71cd1ae65a0	43b2fca0-7590-4e54-bc5b-64b3fa9f1f6e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.72 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+8d472057-3110-4c28-aced-e77d98e4f5a3	b122111c-a192-4881-bffc-afc9b657f719	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+9ec6e31c-7bb8-442c-81aa-37a81a67bb6d	404c4cb0-ccae-4914-a683-85d4aee30109	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+060d595e-48a9-43e3-bc2f-7c37596a36c4	e0f3a736-d640-4218-8162-20ec7aa9062c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+162d1e72-5922-4305-a080-b23d19011fd2	15ab560d-d06b-48bd-b9f5-b0d81b30b333	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 387.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+9fe94d79-fc8a-413c-aaf2-761c2740409f	9ac12c4b-f193-4392-9b0a-b2606c78b028	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 381.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+a2a1b205-b696-4d38-adca-6c365c00f9bf	23caa7cb-0ba2-4d87-89ac-9252455ea4e8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 383.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+d1be684c-0b85-4c94-95c2-9de9ef5cf35e	d8976c40-7ab3-460d-a3ab-aaf17290c8b4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 387.6N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+4126bc61-f8c9-422d-83fa-eb969014b2c9	f0e4c4c5-2ad8-4f45-a818-eaac103a5a57	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 376.6N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b8bcc477-cd04-492c-a7b5-bb941870fa07	9ac48f82-b646-4f42-aad6-b65dfcdb1794	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.72 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+76c2aa42-ccab-4df8-9bef-ed74548e4647	ebeb8bed-c986-4e29-9768-853fb38817e1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+15266307-a3da-47b6-a9b8-3dfc42df548f	6abc3205-6f78-48f0-906c-9bc78abff9c3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 377.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+25697520-ea57-4c0f-b7e7-0ac9d6880be4	195d114c-883e-4576-a0f9-eef121cef1fa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+ee6b6fbe-ccf1-46d5-a316-20f7df9877bd	95c4f790-1079-481c-b342-2283cdd0dbe9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.72 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+05ab9388-f48b-4e53-9bab-e6bd10d6534e	c2c7f5f3-c54e-45c7-98a5-39f79fd72fd3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+86f67dd1-aa4f-4915-acd2-f963858c1d73	c2c7f5f3-c54e-45c7-98a5-39f79fd72fd3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 383.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+4884f017-6147-4c16-950e-a579a305df80	f42dbec3-3526-4f6a-bd38-b06f36a125fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 390.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+a0e7ac5a-5b95-4a67-aa40-0d8f00a5318a	a6fbdfb7-f9f3-421b-be5b-74cfa1a6bbc8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 393.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+c1560055-c4a5-4b1b-bb45-3f3b1fc21eda	db27772a-2c44-4bfd-bc2d-74099bc3e635	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+8e0b69ac-5559-48cf-9be9-137651c8833c	739c9002-d0c1-4c8c-ad76-b1cf24f47494	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 394.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+9f67aeaa-4f89-4f81-acb7-0e33dd0c9ead	739c9002-d0c1-4c8c-ad76-b1cf24f47494	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+7e44c24d-0f60-46c6-86b5-cb9707de3fcd	83edaf3e-d924-420c-9d88-3b2b9afaf278	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 381.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+c863702c-5621-41ca-9028-22ea51b0e3e6	2cc7a918-2b7e-4728-b45f-10b772a460fd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 377.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+dd0007e7-bcd4-4c84-a8d5-c7cfe92105be	2a1b69ac-b55a-42a9-8647-d0a1d5ce4376	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+00a7c281-25db-4d3c-b59a-3e4cfce6cabf	2e81ee65-b462-48bf-9f40-e0ebc3290208	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.73 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+4978e739-af1e-4732-bb92-905a336a8982	409a63db-0fbe-42e8-9cab-3b29b242346e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 377.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+40fc102c-dfc9-447d-9ccd-1bce52b96280	82d1dbef-612a-4132-a498-9a61c94285fc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 392.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+88cbab3d-da4f-40e1-8ab2-3dd1a7a97582	409a63db-0fbe-42e8-9cab-3b29b242346e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.74 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+60ce9e5c-21e8-4836-9a6d-713eda117360	17ef7d7a-b155-4f82-aecc-0223d2835fdc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Degradation	Surface friction index at 0.75 breaches safety limits.	0.91	Lock court and schedule pressure wash sweep.
+3ddde56b-f9eb-4c80-b595-178b2044ea40	7a503be0-9612-41d6-8983-d2d50ba14856	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 370.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+0126516b-da29-424b-aec4-a977c0a5757e	1dabc855-01aa-463c-a767-50c8cdd1ede8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 378.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+3155e5a3-ef23-4073-b2cd-03339c084dd7	33643b85-8efd-4605-a548-277d3609f6fa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 372.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+91e09a65-69aa-4f92-a6ff-2c2a9fdb9800	b1a92a75-7640-4b9b-8bcb-e60bcc37db99	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (303/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+9e04746c-3016-418e-a8fd-2ca97d04ed14	33643b85-8efd-4605-a548-277d3609f6fa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (488/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+d4a2837d-4d42-4e03-8d06-817758a3124b	b1a92a75-7640-4b9b-8bcb-e60bcc37db99	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 389.7N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+fbf7ef1f-61de-4367-ba8c-1f61d55a33c8	197e6ff7-ab55-4555-a1fd-785f773fb69b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 392.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+bc4acea9-e7e5-4fa3-8178-3053e6459e9b	046d723b-d45a-49b3-b5f6-857582e476a3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (476/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+1a73d184-a704-4931-a5ad-e08a8dc948e8	f32d4762-5b0e-425c-887a-60bc9955e6ae	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (325/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+9a83fcaa-74f8-45d4-a9f6-4959aba3c557	de88e362-8032-4584-8fb3-a8ae63959535	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 390.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+99eadd7a-c9fa-415e-9641-f925b13d374e	31efa711-c007-4973-8ad9-e9faa9032688	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+1fe8fdd7-360e-4a16-9ba3-87dad3e71e85	25916074-e321-4c61-9419-bdc2a18a6189	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (308/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+683aec88-c3a5-49ce-9bd3-5ef64f3e8b91	9fa1d1f2-f784-440f-b194-a14c603220d2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+4fc13186-bd10-4206-a31f-9a6ca650a14e	25916074-e321-4c61-9419-bdc2a18a6189	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+b36f971c-aae6-4cbb-8bab-f2b99a60394b	9fa1d1f2-f784-440f-b194-a14c603220d2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (375/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+3803ec6b-9dd2-4536-9686-759a4c603f3a	5bda8040-da47-4553-b976-f3558b2cff77	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 373.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+081ec1e8-0a4a-420d-b6c1-260f0ddccead	570a9503-539d-4260-b187-6de3256f6e19	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 376.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+55f645fa-a97e-4c83-a844-0f0b1a30e529	185a55ed-83c4-43ca-bad3-160a0eb3d402	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 383.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+9cc40c7b-2030-41e9-8c8c-dbcc4178e926	185a55ed-83c4-43ca-bad3-160a0eb3d402	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (344/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+2d3701fa-57dd-489a-8cad-6a6ac9253d06	a1258af3-de5d-425f-a2f9-61169f6b9dca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (427/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+c5e65283-fc59-481c-a1b0-8038a803678a	7cb5e84b-3fcd-4836-b6a2-c494792e8216	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+358ab6a4-d2ee-4464-8561-200facb97e52	883b91ff-13bd-4d91-bbb0-f9acb49c1010	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.72) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+ca9e6902-73f1-4d18-b9cb-1dec42650931	11ee4ed5-e107-426a-b1b5-4b7b00141df8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (411/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+afb8e023-6c30-4734-9635-032a349a75d0	eec4dcc7-a2f7-4fa2-8067-fec357d339fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (284/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+7129a4c7-06d6-413c-91b4-b432f78803c4	8d79609f-ff1c-4bb6-a383-4bb3c45666d3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 384.7N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+fe9a197a-ac38-425d-8545-e87d7fa2c652	8d79609f-ff1c-4bb6-a383-4bb3c45666d3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+7457bec8-435a-4ac6-afd9-13da2b4f5905	511f7844-2689-4e7c-85b2-520c63fb3f42	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 382.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b96580ac-8d01-4e69-86fc-ac96c35d3ac6	511f7844-2689-4e7c-85b2-520c63fb3f42	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (438/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+5f643e44-d8a1-4d18-8af5-2d5c906bbc57	1b9aadb6-5413-4f02-a71d-4bc93b9b3f83	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (432/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+88f1acda-5a55-496b-964c-e1985d0e1b78	455b1be6-bb9b-47ba-b9b7-67a482d2ace7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (368/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+a3faabe2-b389-411a-8863-56de1718a457	1b9aadb6-5413-4f02-a71d-4bc93b9b3f83	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+d666856e-b9f1-43b6-bdb8-4d1f946c14b7	1b9aadb6-5413-4f02-a71d-4bc93b9b3f83	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 392.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+62a21c1d-c088-4ab9-b3ae-342ac04f203a	201f16fc-d90a-4109-a184-cd56b9f7b1fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (362/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+e3476f20-a775-4e5d-adff-14d5249498b5	201f16fc-d90a-4109-a184-cd56b9f7b1fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.75) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+56ba9520-8019-4975-adb5-736c26497a47	1bd300f8-993f-40e9-ae2d-52338e70b212	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (386/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+17a33823-5abb-4374-beb9-bc4982a87df3	7f80f196-ece8-4776-91c5-fd077c757785	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 379.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+cbedca7f-b831-4159-9652-89a157d4a836	7f80f196-ece8-4776-91c5-fd077c757785	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (423/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+8b391960-9602-45a4-8223-938ba7e9b231	48df02e2-29c2-4332-b2e1-17fd495ae061	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 376.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+3ea5ad1b-27e3-4161-83b2-9e6e44503728	7002a025-de3d-4a77-886b-98f4d419fe14	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (464/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+c4276968-1504-4cce-81fa-faed0a848bbb	d16d4551-5bf1-4dd5-807c-633546f96bad	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (421/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+0e04e437-b14c-4d2f-a73e-19e0dd444ae3	c42f06d8-4624-4e55-84ee-4a6e8b959194	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 370.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+14a2cac4-2955-48e1-9b2a-75c577b99db5	5bdef3ba-63df-4952-8ca3-746f2257e758	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (420/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+187b26a3-a75d-4703-be77-92fddd6b764c	5bdef3ba-63df-4952-8ca3-746f2257e758	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.72) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+cc2be1b3-01df-4d89-83bf-22d0644b8f31	5bdef3ba-63df-4952-8ca3-746f2257e758	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 387.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+77b68fe4-7343-4d6e-84fd-edd28c193c87	247497d6-9eb0-4fc5-bc12-9b9740b9c17f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (403/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+041dd208-029b-4dd5-993a-ca27de828b3e	8c9ce79f-3fce-415f-8dea-b7ddb19fcc3b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (441/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+120eec87-4beb-41c4-b91b-0df60c5f01d7	8c9ce79f-3fce-415f-8dea-b7ddb19fcc3b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.75) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+a44c5ec5-da99-4cfc-91ea-af61faa795b9	8c9ce79f-3fce-415f-8dea-b7ddb19fcc3b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 397.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b5d88922-80a0-47da-b566-f49ac6384fcc	38453a1f-940b-4edb-8742-4aefcea40cdf	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (317/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+b5d2ce1c-e25b-4c86-b40f-d63c9f4c30d6	b72dbef4-2d91-4301-aa78-63383eac6fb2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 375.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+38003e06-bf72-4790-97f3-f859a99cef82	cc1c4c2b-996c-4c42-b76d-66bb43a25711	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (305/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+49b466b1-5a5d-4dba-99c2-3a6ccbc7a086	48ba5eec-0ad5-4ea4-8dde-0525baa4a5df	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (310/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+6ae384ad-0ed6-4e80-8274-f55e248e92e8	48ba5eec-0ad5-4ea4-8dde-0525baa4a5df	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+26526b53-67d4-434f-950e-afdc657d6b0b	ea4dc16f-8c52-421d-96fc-50a82fe9c865	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 390.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+ee47f053-19d4-4872-9b1a-ca737e3738ba	d1024875-e8e1-4ca0-afe0-0bf31a172bca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 378.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b0172c17-9f2b-44cd-a3aa-e37b2944cc91	b299c00b-b40f-4ce7-bb6b-758d6c6aedfd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (347/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+ca7c223a-8d5c-45ad-ac48-cad708d19465	22a43a1a-34b6-49ce-ae8d-3a6c6ad7eb03	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 377.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+59505a76-14e4-4093-bd55-45feb8e91e28	42ecb243-e422-4d80-966f-8308607c2eed	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (407/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+0d49c0c8-072b-4d5b-bda3-ddf9cd246a86	3a09e094-f05d-4f20-91f8-de3e8a6d670b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 395.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+9575d1d2-4e43-4589-ac19-2347621cc49f	1b95628f-c7bd-4953-8fc9-1aa96dc13745	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (373/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+46ebf18f-7b58-4c4f-a70f-bbe63e993cd0	c1e2820b-f1b9-4c6e-95d2-46e76b815983	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 382.7N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b3cfbc3a-0b1c-4b32-b1d0-c1fb22ce60d1	528f3e9f-71de-46d8-a890-3ca1c484a2da	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 383.6N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+d0101cb0-0067-4445-b04c-7266c9ce2f7c	0f3ee4c9-4144-4c17-941a-14821e4eb9fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (483/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+218c106a-312a-4d6e-8ddc-e42f92e65bcc	67f4f1d9-8e34-462a-bed6-d7d256b3c613	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+3a1c06c6-d56d-40ba-96a1-422244e2a7f2	e8205468-4144-457c-9aed-363e553b033c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+451357cd-94bd-410d-beef-b5b050c4614b	67f4f1d9-8e34-462a-bed6-d7d256b3c613	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (394/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+bc7f26e8-145b-49ef-bdf1-d6f00ac86bbb	e8205468-4144-457c-9aed-363e553b033c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (423/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+6f39f00e-be14-405b-938f-ec74c00d9938	8bbcffbd-0bb8-46ff-a662-190c7a8093d1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (383/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+d8157c64-61c9-4479-8a3f-d9ac25b6e60d	8bbcffbd-0bb8-46ff-a662-190c7a8093d1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 383.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+69286b76-357a-4962-adb6-c16de9fe126b	90f53e36-c2d6-48c3-aee2-39c94286fb57	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (368/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+70d9d872-fac2-4253-b3ab-6e873fff5ed2	2a92f59c-20df-4020-874a-f742760c4b47	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (316/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+536a434f-5e1d-4f9a-8dd9-4399f5488ee9	4bf3cc8e-a2ce-4225-8978-366983c8afeb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (489/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+6bdda360-0736-49f2-9456-20fb98c5b870	2b83d4d6-2936-4c57-8310-34f049ff6770	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (394/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+698ccad5-197b-4619-9cb9-a0dd4906a1c2	4bf3cc8e-a2ce-4225-8978-366983c8afeb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+d27ba4fa-5ac5-4202-af2b-5d4cf2610090	d6889f9f-5580-4b1e-9194-ff1529423be1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (495/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+8afeff32-5606-4836-9b61-0261051b3cc4	4749e562-55ee-4df9-9cdb-8b38b49adc23	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (361/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+0eb8098b-811c-4476-8b54-eec1464426d9	131b27dd-a97a-4be5-bbd1-69c98ebd9dc7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 379.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+1b509282-1c9d-43f4-b8ff-3f1fcc32c5ac	131b27dd-a97a-4be5-bbd1-69c98ebd9dc7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (426/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+6edfa4e8-9301-4c0f-83ad-81363f0e80eb	9431e527-8de7-4e48-9d59-80f1dcad14ed	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (275/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+238c2256-daa2-4cd1-970e-69c5a9612d1c	2768fa64-2c05-4637-9385-7baf13f10fbd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (432/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+5067a490-30f1-4e0c-8f3a-bb0bf25cbad8	9fd09cc9-7f1f-42b7-bc08-d8cac2cdeb7c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+b9bbfb54-1a19-42ba-828f-afbec610e628	2768fa64-2c05-4637-9385-7baf13f10fbd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+6bd10c17-5093-413c-b473-b52cbb3fde67	d4610400-9846-440a-b9a9-cdddcb55bc15	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 391.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+3aba2748-0465-472e-8d05-6935f62ce662	56171018-2bce-4302-841c-2035fe5ed278	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (373/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+18d56256-43d5-4117-901b-62d3f1707907	b5273bac-028a-4310-92c0-840487e254fc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 377.6N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+c8aaefea-911a-4a01-914d-84d444fac0cb	b5273bac-028a-4310-92c0-840487e254fc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (456/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+463dd82e-3f12-4f19-b5ae-927ef6ad15e2	f2c3e5f9-cbd3-4813-9ea4-3aebe2964f5e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 376.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+55d509b8-9aed-4cbd-9533-55cd2a4af746	f2c3e5f9-cbd3-4813-9ea4-3aebe2964f5e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (411/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+d7e1d4d7-d770-458e-a1b2-79f61a4794d7	c412bd89-af0b-4606-aaaa-e0a71fd9ba11	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.72) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+e1af22ce-5654-4679-bdc5-ac57a03d9ae7	c412bd89-af0b-4606-aaaa-e0a71fd9ba11	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 378.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+52c8fa8e-8d0b-478d-a125-9955b7b0185c	89edaf0a-ef17-4a25-87a0-f989ab1c8ab9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 381.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+946b5aaf-bad4-4245-adca-efa2993769df	2ae69cfb-f50a-4f4e-b393-3efa912c3c56	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (380/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+1d3b205e-b2ed-4cee-bc91-72bd72b86de2	ce23c984-2e65-41fd-a5d6-dc73f82f3c58	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 384.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+6da3a014-b66d-4105-8d38-d3f9513e038c	f75e7769-bc7a-432f-9950-5e12d9cd1d99	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 379.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+c9db2009-eef7-4b78-a957-3314d8f199a9	f75e7769-bc7a-432f-9950-5e12d9cd1d99	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (397/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+8fe433df-e67e-4157-afe6-bc17d5073fc0	2fca96ec-1165-4fdd-8ded-514fc2d21df3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 380.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+875dc665-c3db-4407-8aef-04aeb1cadbeb	7997bda3-28ad-41d8-9c47-fce46fcc7840	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 388.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+a4724e4e-98a4-440c-a8d7-1ee507919894	7997bda3-28ad-41d8-9c47-fce46fcc7840	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (305/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+39982db2-1b3e-4677-89a7-9b75843ee3f9	ac34aea2-0739-47d5-b0d3-e60752316900	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 380.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+a2b87b41-dbd7-41b4-9a08-5a43684739d8	ac34aea2-0739-47d5-b0d3-e60752316900	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (425/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+5fc8a8c6-25b3-440c-ad7c-902f17221f98	cada7399-28c1-4237-a337-cbbe0eb1bda4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (445/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+b5128919-ce36-4238-b89d-d64e812c999d	d78cb52c-e429-4483-a397-da8b76c00c5c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 379.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b581099d-73fd-4231-ae60-92e21ee16bb2	d78cb52c-e429-4483-a397-da8b76c00c5c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+b8200de2-a33b-4a28-95f7-08c637fd603b	d78cb52c-e429-4483-a397-da8b76c00c5c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (330/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+bc4fe57f-e851-4429-aa07-5eeaef042304	f28a65f3-3ad7-4ea4-a97b-d3939da4cd14	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 389.9N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+5393bab7-3d55-4eee-8fd4-4a42ee593941	ef4cee52-cd8d-47c8-aad0-b454da08e80f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (452/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+8a5c75c8-ec84-4cdc-ba22-14d44ba02f72	ef4cee52-cd8d-47c8-aad0-b454da08e80f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 399.7N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+9a38ddd5-4db3-4d3e-91a0-95691dbee74b	d4610400-9846-440a-b9a9-cdddcb55bc15	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (414/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+44bc8434-fbaa-4575-938f-dc633099fb9d	ff274d74-b170-48b4-9711-4e9a31d4e47c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 374.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+96759f29-96ab-4a9d-b783-aa27fd529664	ff274d74-b170-48b4-9711-4e9a31d4e47c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (280/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+201d3050-90b4-4a23-b64d-c658aba2b7f4	2c3aac89-bf0f-41e3-9532-527861299684	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 371.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+36601042-5206-4ed4-a18e-bb2b0fc64cf0	f1f2c30f-7490-4adf-a5c3-24928e45391a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (380/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+da64030a-6d61-44ec-ac59-e67da3cc36a5	f1f2c30f-7490-4adf-a5c3-24928e45391a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 398.4N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b645dcc3-42a9-486a-85a0-58dce8baedee	691c76cd-90a0-4a91-89e8-524aac6aa859	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (353/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+3941a42e-4407-458b-84ba-479223963b8b	f61ed3c7-2b11-4516-8b82-f9fa85c8206d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 398.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+f92e19c7-ab0a-476b-a77a-bed692b9bc1a	ae3db645-5383-4d9d-9fb6-71204002cc49	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+ff63ee59-513c-433e-963d-7c146a342e51	ae3db645-5383-4d9d-9fb6-71204002cc49	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (474/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+e89010e8-5853-4298-b977-3bb7e386f12e	f1a0efe6-bd48-4525-bfed-502c23d7123a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (326/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+92330695-26c9-4d60-a03e-e730c1687589	61431508-6a5d-4fbb-b66b-09c6993cd40e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (424/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+fb00ee43-6a8e-4c13-8979-f71204907443	61431508-6a5d-4fbb-b66b-09c6993cd40e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+7c7b701b-ffb8-4ff2-8797-2a32ba00f32d	0c4051f6-9781-41e7-9d92-9c23bec48c3c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+fba5378b-fd12-4f3c-8afa-fe154e96c198	0c4051f6-9781-41e7-9d92-9c23bec48c3c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (299/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+15014e46-0bd7-402b-896f-2777f97a2565	62d223cd-f0b5-464b-bdaf-17f50d941e84	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (277/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+976276c3-1f69-41a4-9fd6-482f3be9a9a1	62d223cd-f0b5-464b-bdaf-17f50d941e84	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 391.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+f7f32618-fe62-4700-afe2-e0d013e2be29	62d223cd-f0b5-464b-bdaf-17f50d941e84	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+2057f05a-7d1d-42ca-bbb8-613bc660e222	5bd26f2b-b04e-4789-806c-a0942bd9d421	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.72) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+9a2efb81-e713-4652-82de-1c0882893d5b	5bd26f2b-b04e-4789-806c-a0942bd9d421	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (272/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+9c562472-da60-40b1-9e8c-04a0461a7f86	3bd9b6d4-888b-4c72-aded-81ac46b77d93	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (346/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+aef430a3-31fd-4dcf-be85-17e860da8b10	3bd9b6d4-888b-4c72-aded-81ac46b77d93	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 384.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+6b208197-d9b8-4dfc-a71a-5278ea4d6732	d438e919-6be6-4814-8e3d-72aca6fd3423	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 372.1N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+ca6cb450-cc84-464d-96b8-5d7b09a5ad58	d438e919-6be6-4814-8e3d-72aca6fd3423	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (350/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+0079f6eb-5a0f-4bec-bc08-51e0b6372ee6	789e938d-f5a0-4e80-bff3-3d8b638b77dc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (362/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+8262b50b-dbcc-44cd-a9b0-c7db0fefa9c2	e690adb2-8eb7-4260-ba6a-ee88248512c2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.75) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+d0c0afb5-8793-4a5f-9a34-23bef1a29a75	e690adb2-8eb7-4260-ba6a-ee88248512c2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 384.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+efda0946-f7c7-4784-8556-4625f93fc4cf	7c4c17e0-91a6-4ff3-8461-52bd75db60aa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (365/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+f9a3710f-9d1b-49f2-b9ad-44adccba6a09	7c4c17e0-91a6-4ff3-8461-52bd75db60aa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 384.5N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+84b04c4a-c8ce-4ade-a4b1-5ec8eb957579	f26864b9-8964-4130-ac11-daab3afc1670	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 374.6N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+4d2f4dbd-7a04-4180-a235-74be0d2abc65	c531e874-7373-4213-814c-93c7990ab727	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	High	Maintenance Threshold Breach	Court has exceeded safe played limits (720/700 mins).	0.99	Lock court for standard Grass maintenance resets.
+128841ce-a23e-41d6-8899-166e2f25a7fe	6884dc63-2c33-4b09-aa0e-271c3a56bbec	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (1380/700 mins).	0.99	Lock court for standard Grass maintenance resets.
+7aa26c36-4d5d-494f-80fe-a0a7699cabc7	839fa16d-802d-4050-87be-16b04e2c47f2	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	High	Maintenance Threshold Breach	Court has exceeded safe played limits (300/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+9e49b55d-854c-40b9-93c9-3eca1ac2b939	8ad1641a-0348-4e3d-9451-53f94eca9a16	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (319/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+a33d5b17-df13-4c6c-88c8-0b433bf3d5af	dc1d0e5a-a598-463c-9e67-dcf20c5626c4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (330/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+786b8c1f-7524-4ef6-809b-8866cec472b5	83fe0ce2-35e9-4189-91c1-33d9abc3380e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 372.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+cb53febc-051c-4e52-91e5-98ba944747a9	2cce52f3-4835-4029-9f45-ab3a2814e28e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (441/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+22a7dfa5-454e-4dbb-becb-e16dd60977b6	17388402-8afb-45b3-b37e-3090e4d08265	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (443/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+02b7698c-c5c5-4b0f-9587-0e7e681231b4	777a228b-3069-4539-b42a-dd7edd4db3d1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 394.8N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+28305c62-5778-4433-b717-b8965d17b032	777a228b-3069-4539-b42a-dd7edd4db3d1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+a9802989-b55a-4431-8f07-d05bec374c9c	84efbef1-c57c-4277-8e44-e512e6900b29	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (299/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+c2089187-0208-4d52-858c-3553aae43875	84efbef1-c57c-4277-8e44-e512e6900b29	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 374.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b47ee2a4-e0f2-4aa3-9125-e520e8776fcc	0ed37648-a275-453c-8722-195c771506b6	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (281/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+0f423003-0109-42f9-bb8d-a3413859a878	8358379e-4357-46cf-a751-bde49a6967ee	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	High	Maintenance Threshold Breach	Court has exceeded safe played limits (720/700 mins).	0.99	Lock court for standard Grass maintenance resets.
+71f3c28b-3121-460f-942f-0ddfe85d13e2	b539ddea-c540-48ec-baa1-c28d9563f274	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	High	Maintenance Threshold Breach	Court has exceeded safe played limits (300/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+07382bd3-b39e-441c-b89c-14ee4ae22474	31b80ffc-50ef-4e68-bc6b-96d29a5de931	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (278/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+24088600-6952-4839-b0f8-1022e2560ece	dc6baae4-7315-43df-9db4-88eb808d13e2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 385.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+c64b7f17-c855-479f-9f38-420f348d6807	dc6baae4-7315-43df-9db4-88eb808d13e2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+4d422401-ad9c-4cbb-88fa-f0ced36546ed	5d364a40-a626-4ca5-afcc-c2c4c630feea	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (358/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+7f91588a-c552-47f7-85fb-d98448d06328	bddadfd1-6817-42eb-bcbc-906987b55fdb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (417/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+f519605a-5b8a-499f-836b-baa56f8aa9db	d035ae09-6a65-4424-aa2c-6e4bb4ae4e1f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (291/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+994514f9-deaa-48e4-b273-c014b28f5f6d	9d187a15-80d3-4a89-94f8-bf1da08a60f3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (306/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+20a8142d-b571-4958-a3fb-6cba65167aca	fa8bf9e3-841e-420f-b70a-06c9b5bb0d52	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 379.6N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b0447dd8-f546-4bcb-8fc3-f7d189a3bd5a	fa8bf9e3-841e-420f-b70a-06c9b5bb0d52	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (333/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+054ea772-a9c8-46f6-b026-51b024361463	7b96feb2-e991-40c3-86b9-178ecd4fe0ab	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 371.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+402f09ac-65a8-44a4-abc4-ad376f09458f	7b96feb2-e991-40c3-86b9-178ecd4fe0ab	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (294/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+80343212-ac64-4894-a5c1-8609648a832f	0273cf9f-a93b-44ec-93d5-df840028a858	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 392.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+d70b99d3-4467-46e0-98ad-c70055ebf97a	0273cf9f-a93b-44ec-93d5-df840028a858	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Maintenance Threshold Breach	Court has exceeded safe played limits (297/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+155bab8e-e24c-4f97-a3ee-6f5b548afafb	21d8a205-cd2b-4d0a-ba6e-2675f78760f2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 376.3N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+2f41c55f-d997-4cec-bcaf-31c5ea217051	21d8a205-cd2b-4d0a-ba6e-2675f78760f2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (391/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+e5126d44-e815-45dd-8111-97e3677a2dc5	21d8a205-cd2b-4d0a-ba6e-2675f78760f2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+05dc5c8f-5e59-4149-929c-d2b699c6fbe9	7b5bb0b3-1b82-4df6-a995-a622c73824cd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.74) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+d60beac2-52e2-46e3-9ad8-a58fca8bf604	7b5bb0b3-1b82-4df6-a995-a622c73824cd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (346/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+a3207fc8-4fd2-4075-a90a-386bb047e98c	36b97797-b6ed-4422-9ecd-7e77aebae65e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (428/270 mins).	0.99	Lock court for standard Clay maintenance resets.
+636e7431-4fcc-4ea8-9b41-e5a784cb0958	834eace8-3a5c-4a9d-87fa-670f847ae55d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.73) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+c152e086-00b2-4860-8275-ce256798b007	b1be8252-2ee8-40be-918f-e399cf82ba3b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (375/270 mins).	0.99	Lock court for standard Hard maintenance resets.
+ef6b99b9-acd4-4e67-8b51-d293cd167c6b	b1be8252-2ee8-40be-918f-e399cf82ba3b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 370.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+97b62651-55ff-4101-b04b-b8cd74c2aad2	27df0e26-8ab3-44e6-a53b-18f9df335255	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	High	Structural Hardware	Net structural tension dropped to 372.0N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+b16037f5-ca1b-4de1-b518-c2601adddc40	27df0e26-8ab3-44e6-a53b-18f9df335255	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (390/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+13b1ec1a-37c6-44a2-ba62-f94e219f85a0	9166268d-4560-4a33-b3db-c28dd429a2f2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 385.6N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+bca2f031-59aa-446b-8f1c-ad8c8c04c6b6	420f3dca-453e-45ef-9d14-b0958632fb5c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Surface Slip Hazard	Surface state or friction coefficient index (0.72) triggers hydroplaning risks.	0.95	Lock entry gates until court surface index completely dries.
+89cffc98-d1ba-48cb-8e1b-584635b6b720	b95d7158-b0d8-4ce3-b43f-d5533ee773be	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (400/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+5a6a6403-8333-439d-a449-6e01505dc473	81459b1c-467e-428b-89a9-d6e2b5edea9f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Medium	Structural Hardware	Net structural tension dropped to 381.2N.	0.96	Deploy groundskeeper to re-tension net ratchets.
+7fa1766f-5d23-4b5b-9dda-f3cc7a921e92	81459b1c-467e-428b-89a9-d6e2b5edea9f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Critical	Maintenance Threshold Breach	Court has exceeded safe played limits (425/270 mins).	0.99	Lock court for standard Grass maintenance resets.
+\.
+
+
+--
+-- Data for Name: CourtDiagnosticSnapshots; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."CourtDiagnosticSnapshots" ("SessionId", "AcademyId", "BranchId", "CourtId", "Timestamp", "SurfaceFrictionIndex", "BounceUniformityPercentage", "NetTensionNewtons", "AmbientTemperatureCelsius", "HumidityPercentage", "AgentVersion") FROM stdin;
+8bbf968f-5d5d-4177-aef1-c104ae447404	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.596405-07	0.79	96.9	425.4	20.1	60.9	v1.6.5-service-layer
+e6919e71-216c-4977-9329-7be6f98b9df5	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.627276-07	0.88	96.7	432.8	32.9	63.4	v1.6.5-service-layer
+6c3d9cd0-3217-4a39-a8e8-e30691f8c4e3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.642141-07	0.85	98	402.7	37.3	48.4	v1.6.5-service-layer
+7452a13a-df3a-4be6-bf4d-0d6482ef8356	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.641293-07	0.81	94.6	445.3	33	83.6	v1.6.5-service-layer
+81716846-0524-4376-85c7-0b1f71835f88	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.216615-07	0.74	97.7	431.2	37.4	52.7	v1.6.5-service-layer
+d6465e60-d5e7-479c-8d73-2540afc4425a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.911727-07	0.83	96.6	414.2	21.3	64.3	v1.6.5-service-layer
+fb3df391-3cb1-419a-8f8e-48c46530d35f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.642386-07	0.78	94.6	387.9	16.3	84.3	v1.6.5-service-layer
+d169be84-5831-4f40-8b8d-a3bb6983bc3e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.648273-07	0.72	96.4	426.9	24.9	65.9	v1.6.5-service-layer
+c8bb5fea-377f-4771-9448-966bd16c2589	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.647289-07	0.81	96.6	440.3	17.5	63.7	v1.6.5-service-layer
+6a6938e7-7cbd-4c75-b0bf-a58246d2d79b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.641706-07	0.8	98	426.7	33.7	47.1	v1.6.5-service-layer
+2252dbea-6ade-4de9-a1f7-d51c4bd35bdf	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.645925-07	0.8	96.3	429.6	30.8	67	v1.6.5-service-layer
+eaaa5189-954e-41a5-9e68-014dab1d71e4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.647737-07	0.81	97.8	377.9	22.2	51.7	v1.6.5-service-layer
+2b6081a9-532c-4631-b39b-b81488904074	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.646794-07	0.87	97	424.1	35.5	59.8	v1.6.5-service-layer
+7b39d147-11b3-42e2-a1b9-448b1576f5f0	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.647446-07	0.82	98	412	18.6	45.2	v1.6.5-service-layer
+2327f666-c7be-4904-ac40-a01c7d0ac486	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.235936-07	0.77	94.7	425.9	19.9	83.3	v1.6.5-service-layer
+b1c97dfa-1e4f-4d79-bab4-2355aec4dc6a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.648032-07	0.72	95.8	378.8	33.2	72.1	v1.6.5-service-layer
+1ba8dd92-4686-4500-9c67-da2433e656b5	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.642555-07	0.87	98	373.1	15.6	44.9	v1.6.5-service-layer
+71942c57-ca0c-424c-b427-1c3cc3edded3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.387494-07	0.8	96.1	410.1	34.7	68.7	v1.6.5-service-layer
+0700897c-147d-49e7-a402-ffad51bc26f7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.68234-07	0.77	98	408.6	15.5	46.2	v1.6.5-service-layer
+76670cb7-cbae-4995-8727-af281ad4ca0a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.38813-07	0.76	97.7	431.1	22.8	52.8	v1.6.5-service-layer
+14f46d9e-945c-47fa-9754-aff406a9c38c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.200329-07	0.76	96.3	432.8	37.9	67.3	v1.6.5-service-layer
+11758ae8-0129-4cfc-b305-b7869d321fa7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.405595-07	0.76	96	408.6	22.8	70	v1.6.5-service-layer
+403c7bad-bfb6-4ad6-8a29-494cd4be46b9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.720541-07	0.83	96.2	402.5	29	68.3	v1.6.5-service-layer
+924068f2-cf1e-4187-8df8-0e9aa99021eb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.91091-07	0.84	98	406.8	32	45.5	v1.6.5-service-layer
+715bca7c-0d5d-44bf-b300-59bdceb70d04	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.199322-07	0.74	96.5	440.8	26.1	65	v1.6.5-service-layer
+edd7a888-f541-4e2a-89c4-4d25bb008320	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.641884-07	0.72	94.8	426	16.4	82.4	v1.6.5-service-layer
+1bef6d91-653b-46a1-8ab9-20b53402dab7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.911538-07	0.86	96.9	434.8	15.9	61.4	v1.6.5-service-layer
+c9d94082-ea14-4121-b390-31602727c496	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.199701-07	0.82	95.6	373.5	34.3	74.3	v1.6.5-service-layer
+60278076-728b-4afc-9eba-0fb2eca0ae34	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.911382-07	0.74	97	381.4	15.6	59.6	v1.6.5-service-layer
+a43bae41-e24f-4a95-beb0-c6d07c2bf183	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.719933-07	0.87	94.6	393.2	31.8	84.3	v1.6.5-service-layer
+20bdb1ee-1f77-473f-8d5d-f73757a2a4d8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.16495-07	0.86	97.7	415.2	37.7	52.7	v1.6.5-service-layer
+72a47352-b066-4b53-9668-05fef805ac6c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:58.646538-07	0.72	97.4	375.4	35.1	55.7	v1.6.5-service-layer
+cade8519-f951-4c1f-95ac-578f2d8066ba	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.387707-07	0.8	98	407.1	36.9	46.6	v1.6.5-service-layer
+13a73cc0-36f3-4fa5-8612-ec8651421e2e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.838677-07	0.77	97.3	405.2	37.5	56.7	v1.6.5-service-layer
+8836f8e0-7aed-4fc1-92a6-8936b98fe976	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.720318-07	0.73	98	388.9	34.9	50.1	v1.6.5-service-layer
+b1b8c163-3025-406a-9477-c156c22f7b63	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.199846-07	0.87	96	443.3	30.2	69.7	v1.6.5-service-layer
+ca9f6d8f-5f7e-4e49-b96a-bc8f219fe0b6	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.650016-07	0.79	94.9	429.7	26.2	81.4	v1.6.5-service-layer
+f001baf6-b2a5-423f-b564-f9f3b908dfca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.200512-07	0.81	94.9	398.8	28.6	81.5	v1.6.5-service-layer
+055c1c12-0cbf-4948-9a81-80d25ec08e66	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.388296-07	0.81	96.6	390.8	31.9	64.4	v1.6.5-service-layer
+96a90005-d30f-417f-a783-5e85abbaab0f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.838204-07	0.73	96	412.2	32.5	69.6	v1.6.5-service-layer
+30b67550-e585-4cec-8fba-ff431a271de4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.838538-07	0.78	97.9	404.9	33.9	50.8	v1.6.5-service-layer
+db642044-9641-4a15-acde-9378e069af14	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.236519-07	0.77	97.3	433.4	16.7	56.6	v1.6.5-service-layer
+f7488844-9b3d-4d78-a297-4bf0c7f12f17	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.236375-07	0.8	96.3	381.4	21.8	66.9	v1.6.5-service-layer
+3374a47d-ab51-4490-aa36-4cedd00c9944	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.236655-07	0.85	94.9	408.7	20.4	81.3	v1.6.5-service-layer
+1627f927-71ad-4c7c-b7b8-243e062c9775	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.681498-07	0.86	95.5	447.7	32.6	74.8	v1.6.5-service-layer
+7fb00e8f-2068-49fa-8b73-774453f7c6e4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.683741-07	0.78	96.8	448.3	32.4	61.8	v1.6.5-service-layer
+ac8f54d8-95a5-4372-9258-49bf416dbdad	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.681873-07	0.76	95.4	421.1	23.8	76.3	v1.6.5-service-layer
+63a743ad-9ee0-4e52-b95d-5b27dabd33fb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.405834-07	0.76	97.2	394.3	29.1	57.6	v1.6.5-service-layer
+7e573693-9397-4b76-86d6-6d78ff54167c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.673117-07	0.75	96.6	394.3	26.7	64.2	v1.6.5-service-layer
+db367551-b1b7-4cd0-a8ea-5a6ad9127ff0	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:52:59.683969-07	0.85	95.8	374.9	30.7	71.9	v1.6.5-service-layer
+09c6e133-63c4-44ab-8e2f-b4e60f101e80	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.503378-07	0.82	98	444.9	28.7	43.3	v1.6.5-service-layer
+739c9002-d0c1-4c8c-ad76-b1cf24f47494	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.044377-07	0.73	95.5	394.9	31.5	74.6	v1.6.5-service-layer
+9c740f9a-2c32-42c2-9d00-4eda8ef563fa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.266472-07	0.79	95.9	410.1	16.2	71	v1.6.5-service-layer
+ce0c015e-9bbf-4e1a-9ad7-b84e23734f40	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.087175-07	0.85	98	449.6	27.6	42.3	v1.6.5-service-layer
+5abbb97e-fbf7-4a46-beb7-8c3c8d23c3d3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.093878-07	0.83	97.5	413.3	28.6	54.9	v1.6.5-service-layer
+ae6fdfca-fd4c-4823-bd13-c62da9b69252	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.321355-07	0.77	96.5	428.9	34.2	64.9	v1.6.5-service-layer
+feabebf2-87d8-49aa-8723-2c57c05023b8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.586195-07	0.81	95.2	385.2	31.2	78	v1.6.5-service-layer
+8a679ad7-8ce6-4886-879a-18334d6d4611	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.503109-07	0.74	95.2	375.3	21.8	78.3	v1.6.5-service-layer
+9d0f46b3-a9b8-413d-a878-a6b7b674acd4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.879636-07	0.86	96.6	436	23.5	63.6	v1.6.5-service-layer
+40119873-c53a-4d6e-be5d-0365a64eca77	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.324202-07	0.83	98	432.7	25.9	47.1	v1.6.5-service-layer
+34f50289-435d-4765-8413-36f8bcb3c91b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.259454-07	0.81	97.9	398.5	28.1	50.8	v1.6.5-service-layer
+2cc7a918-2b7e-4728-b45f-10b772a460fd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.431403-07	0.83	94.8	377.5	19.3	82	v1.6.5-service-layer
+ca32dd2f-d955-4011-946d-9a2657391376	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.101656-07	0.77	98	446.5	22.7	45.2	v1.6.5-service-layer
+030d43bb-a593-4cd3-872a-5c79ecefbdb5	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.427837-07	0.87	94.9	374.1	34.4	81.1	v1.6.5-service-layer
+f281793b-f7ee-4dd5-8847-06ce8e0631ac	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.789556-07	0.79	97.3	374	27.9	57.1	v1.6.5-service-layer
+58c10222-b552-48e3-ab52-ea08160edb0b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.264082-07	0.75	97.4	429.4	33.7	55.9	v1.6.5-service-layer
+15ab560d-d06b-48bd-b9f5-b0d81b30b333	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.443565-07	0.85	97.3	387.8	17.5	56.8	v1.6.5-service-layer
+5f798044-8655-4e6b-8d5a-cc9cda49ed9e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.101859-07	0.77	97.3	421.6	23.8	56.9	v1.6.5-service-layer
+b653c821-3ca2-4f23-9a16-7587962920f8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.320996-07	0.83	97	438.9	17.5	59.8	v1.6.5-service-layer
+187ec6b1-ffae-4e53-986d-511578c479e0	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.10946-07	0.75	97.4	415.9	33.2	55.5	v1.6.5-service-layer
+9f8de2ce-2fad-4df5-a59d-67aaf2d9cffa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.320718-07	0.81	97.9	397.1	36.6	51.1	v1.6.5-service-layer
+0370a082-76fa-4f05-b567-550ed93800ab	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.233661-07	0.85	94.9	429.7	29.2	81.3	v1.6.5-service-layer
+128c8436-b421-4403-a425-0b3c5bdeed26	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.141452-07	0.86	97.8	444.1	20.3	52.3	v1.6.5-service-layer
+83bc195e-59a7-41aa-b61c-bf4ca696a91d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.141169-07	0.82	96	387	25.7	69.5	v1.6.5-service-layer
+f76701bc-7688-4fb3-85ff-4bbc0fc18ac9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.141775-07	0.77	98	384.1	35.1	47.7	v1.6.5-service-layer
+6b465c14-46fe-4fcd-a829-9990bfd2ec2b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.109945-07	0.8	97.6	389.1	22.6	54	v1.6.5-service-layer
+4a6cbf4c-b583-438c-89b8-b55fb04a53b7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.110093-07	0.84	98	422.8	22.6	47.7	v1.6.5-service-layer
+5becf482-2af5-4e3a-8cbd-681fe7383e7c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.233489-07	0.86	96.7	380.7	34.5	63	v1.6.5-service-layer
+8d410769-4325-45b1-b3d6-5f6d35c0b2a7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.788072-07	0.8	98	389.1	34	43.1	v1.6.5-service-layer
+d7b596cc-55c1-497d-a0a9-639b2e1b8145	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.813419-07	0.73	97.7	426.3	32.5	53.2	v1.6.5-service-layer
+3c27ad36-e11f-470f-8b31-11d0888db342	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.682033-07	0.85	97.2	375.1	15.9	57.6	v1.6.5-service-layer
+b9257cb8-5373-4c79-b7d1-e2143ba14aca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.490504-07	0.74	98	438	25.3	49.3	v1.6.5-service-layer
+767dab55-8287-460c-ac0b-64b26ae24aeb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.602538-07	0.87	96.1	404.7	27.3	68.9	v1.6.5-service-layer
+92a0ac4d-4734-4ecf-8e87-335943913008	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.789774-07	0.77	95.3	403.2	23.1	77.3	v1.6.5-service-layer
+1b1b2c6f-0c05-4b46-94ad-64d13ac5cdb8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.813563-07	0.85	97.5	407.7	34.9	55.3	v1.6.5-service-layer
+438c6971-9288-49d0-8dbd-9e78311c352d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.468734-07	0.83	96.8	436.1	30.2	61.6	v1.6.5-service-layer
+276ccd41-2928-4094-8e77-241e5b4e1d30	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.461021-07	0.77	98	373.3	28.5	42	v1.6.5-service-layer
+4d475a93-7a16-49d4-93fd-439133705795	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.766458-07	0.85	94.7	379.4	36.2	83.3	v1.6.5-service-layer
+5af530ff-8161-44b8-bef0-16b2c2ecec2b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.232828-07	0.86	96.2	399.8	27.5	68.4	v1.6.5-service-layer
+6437c78e-38c4-43fe-855c-a114c9fe5658	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.789267-07	0.88	95.1	398.7	19.9	78.5	v1.6.5-service-layer
+d01f8538-80a4-4c22-bbaf-81759f7531ba	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.470194-07	0.76	94.8	384.1	34.3	82.2	v1.6.5-service-layer
+22270b01-3329-457a-9cd4-b46907533623	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.813039-07	0.8	94.6	436.4	21.7	83.5	v1.6.5-service-layer
+fdd25a47-373a-42e1-abf3-7791392d362b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.682445-07	0.88	97	417.2	23	60.1	v1.6.5-service-layer
+9ac48f82-b646-4f42-aad6-b65dfcdb1794	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.777258-07	0.72	94.9	419.7	22.3	80.6	v1.6.5-service-layer
+bec7f4c2-ccfe-4adf-a492-92865fdb5a69	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.470689-07	0.81	98	409	22.8	42.9	v1.6.5-service-layer
+63d538e2-2b5c-4e1e-b6cf-a6603a596ce9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.468339-07	0.8	95.7	391.4	27.1	73.4	v1.6.5-service-layer
+b122111c-a192-4881-bffc-afc9b657f719	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.585868-07	0.74	96.3	410.9	25.4	67	v1.6.5-service-layer
+43b2fca0-7590-4e54-bc5b-64b3fa9f1f6e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.787446-07	0.72	96	408.5	16.6	70.5	v1.6.5-service-layer
+f3572ffd-c43a-4e91-9688-a1639f023ad2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.586624-07	0.82	97.6	429.8	31.3	53.9	v1.6.5-service-layer
+23caa7cb-0ba2-4d87-89ac-9252455ea4e8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.460775-07	0.83	96.7	383.8	30.5	63.3	v1.6.5-service-layer
+f0e4c4c5-2ad8-4f45-a818-eaac103a5a57	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.985263-07	0.87	98	376.6	35.6	44.9	v1.6.5-service-layer
+4179b984-2a54-442b-8354-f2f9f8d8a96c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.682584-07	0.87	95.5	400.9	27.3	74.8	v1.6.5-service-layer
+ebeb8bed-c986-4e29-9768-853fb38817e1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.940126-07	0.73	98	448.9	35.8	45.1	v1.6.5-service-layer
+95c4f790-1079-481c-b342-2283cdd0dbe9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.984818-07	0.72	94.8	437.9	22.7	81.7	v1.6.5-service-layer
+b0fdb656-12ce-4d22-b0b0-b2cba1b8a3f6	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.985422-07	0.8	96.8	423.4	33.5	61.6	v1.6.5-service-layer
+195d114c-883e-4576-a0f9-eef121cef1fa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.879368-07	0.73	94.7	437.6	16.4	83.1	v1.6.5-service-layer
+f42dbec3-3526-4f6a-bd38-b06f36a125fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.049816-07	0.8	97.3	390.8	23.2	57.5	v1.6.5-service-layer
+0d46c8f0-985e-41eb-b47d-049faaed68d1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.039072-07	0.75	94.9	428.8	19.2	81.3	v1.6.5-service-layer
+db27772a-2c44-4bfd-bc2d-74099bc3e635	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:00.897886-07	0.74	95.1	426.5	16	79.3	v1.6.5-service-layer
+dc1f6a65-3387-49c4-b378-021f65a1baca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.050061-07	0.84	96	437.9	38	70.2	v1.6.5-service-layer
+e4045ab6-36f5-4620-b858-e93468f60c10	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.056052-07	0.73	97.4	373.6	31.6	55.8	v1.6.5-service-layer
+26f2804e-7a84-45c7-8a12-c8744076abfc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.534776-07	0.87	96.4	425.6	19	66.3	v1.6.5-service-layer
+404c4cb0-ccae-4914-a683-85d4aee30109	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.129254-07	0.74	98	429.8	37.8	40.6	v1.6.5-service-layer
+fc25057e-0e7e-46cf-9551-8eaf232f4fd7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.429514-07	0.81	97.8	446.9	29.3	52.5	v1.6.5-service-layer
+7f821fb8-a64c-47b7-b4fd-5ac23d86325e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.266137-07	0.78	97.2	410.5	19.8	57.8	v1.6.5-service-layer
+1f96785b-a9cc-4a48-b064-a3e23edc16a2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.423162-07	0.77	95.5	410.5	24.2	74.9	v1.6.5-service-layer
+5c909953-276a-44a7-8ced-f77735b140e4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.055625-07	0.79	98	427.9	22.8	50	v1.6.5-service-layer
+64e11c33-eb6d-476c-a1a7-289d511f69be	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.335877-07	0.82	97.3	432.3	16	56.7	v1.6.5-service-layer
+29eb2174-19c0-4681-9d1b-3d4a3275c958	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.383912-07	0.8	95.6	409.6	33.6	73.6	v1.6.5-service-layer
+83edaf3e-d924-420c-9d88-3b2b9afaf278	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.277033-07	0.83	95.8	381.2	30.3	72.3	v1.6.5-service-layer
+d8976c40-7ab3-460d-a3ab-aaf17290c8b4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.259225-07	0.8	98	387.6	36.3	46	v1.6.5-service-layer
+5640462f-aae7-4315-bf6b-30bcf341cbce	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.074709-07	0.84	96.4	435.8	32.8	66.4	v1.6.5-service-layer
+3a0d8504-091a-4638-9d6b-8f76f8323610	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.443177-07	0.76	94.7	400.9	17.2	83.5	v1.6.5-service-layer
+f291e669-52b3-4659-a542-12582a099f45	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.176384-07	0.78	95.4	445.1	29	76.3	v1.6.5-service-layer
+d23e6018-dfea-490b-85a6-1c4768222c23	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.32488-07	0.76	98	435.5	35	40.9	v1.6.5-service-layer
+ea5bc9cb-b522-4963-813b-bf710ad8587d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.335577-07	0.77	97.9	400.4	31.3	51.3	v1.6.5-service-layer
+e5152330-6cf0-43ff-af00-21338a7819e9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.42901-07	0.75	95.7	373.2	22.6	73.3	v1.6.5-service-layer
+27eb9cc1-5cd9-4859-b0a4-25a6412bd20c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.53529-07	0.75	96.3	448	35.3	66.6	v1.6.5-service-layer
+17ef7d7a-b155-4f82-aecc-0223d2835fdc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.48413-07	0.75	97.3	414.5	15.8	56.8	v1.6.5-service-layer
+6abc3205-6f78-48f0-906c-9bc78abff9c3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.443401-07	0.81	98	377.8	18.5	50	v1.6.5-service-layer
+ff1739e7-a1c9-4710-bcea-29f218f246ea	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.475214-07	0.83	94.9	438.9	30.6	80.6	v1.6.5-service-layer
+03e37036-475b-439b-bbec-7f9d58ff73c7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.266636-07	0.79	95	441.7	31.5	80.4	v1.6.5-service-layer
+e0f3a736-d640-4218-8162-20ec7aa9062c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.415928-07	0.74	94.7	442.3	23.7	82.5	v1.6.5-service-layer
+c2c7f5f3-c54e-45c7-98a5-39f79fd72fd3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.509276-07	0.73	96.1	383.9	32.6	69.2	v1.6.5-service-layer
+b1a92a75-7640-4b9b-8bcb-e60bcc37db99	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.523299-07	0.84	99	389.7	25	72.3	v1.7.0-meta-aware
+046d723b-d45a-49b3-b5f6-857582e476a3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.526347-07	0.87	95.5	423	32.7	78.7	v1.7.0-meta-aware
+31efa711-c007-4973-8ad9-e9faa9032688	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.172685-07	0.73	95.2	443.9	21.9	81.5	v1.7.0-meta-aware
+25916074-e321-4c61-9419-bdc2a18a6189	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.173819-07	0.73	99	413	20.2	78.2	v1.7.0-meta-aware
+a1258af3-de5d-425f-a2f9-61169f6b9dca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.114321-07	0.8	99	429.3	23.8	60.9	v1.7.0-meta-aware
+1b9aadb6-5413-4f02-a71d-4bc93b9b3f83	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.528924-07	0.74	99	392.4	21.1	81.3	v1.7.0-meta-aware
+d1024875-e8e1-4ca0-afe0-0bf31a172bca	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.114483-07	0.81	96	378.5	35.1	74.9	v1.7.0-meta-aware
+8bbcffbd-0bb8-46ff-a662-190c7a8093d1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.669344-07	0.81	95.1	383.4	32.2	81.9	v1.7.0-meta-aware
+9431e527-8de7-4e48-9d59-80f1dcad14ed	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.537002-07	0.78	98.6	431.5	32.5	53.3	v1.7.0-meta-aware
+d035ae09-6a65-4424-aa2c-6e4bb4ae4e1f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.66844-07	0.87	96.8	406.6	27.1	68	v1.7.0-meta-aware
+9d187a15-80d3-4a89-94f8-bf1da08a60f3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.035473-07	0.78	99	429.7	30	84.4	v1.7.0-meta-aware
+58ef1fba-c1fe-4eed-81a9-691dced1c62d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.521786-07	0.81	99	441.4	18.8	55.5	v1.7.0-meta-aware
+f32d4762-5b0e-425c-887a-60bc9955e6ae	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.114634-07	0.81	99	423.2	23.2	59.1	v1.7.0-meta-aware
+4dedc9d4-6413-4c4f-94b4-4d3f0ff339ce	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.112716-07	0.78	97.2	414.2	27.7	65	v1.7.0-meta-aware
+11ee4ed5-e107-426a-b1b5-4b7b00141df8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.603749-07	0.76	99	412.6	30.3	45.4	v1.7.0-meta-aware
+201f16fc-d90a-4109-a184-cd56b9f7b1fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.173055-07	0.75	99	438.7	18.1	41.3	v1.7.0-meta-aware
+1bd300f8-993f-40e9-ae2d-52338e70b212	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.087324-07	0.76	99	421.2	29.2	48.4	v1.7.0-meta-aware
+68349d9e-3821-408b-8998-9a26d456c9d4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.667657-07	0.85	96.8	406.5	22.1	68	v1.7.0-meta-aware
+7f80f196-ece8-4776-91c5-fd077c757785	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.13416-07	0.87	96.7	379.1	34.5	68.8	v1.7.0-meta-aware
+48df02e2-29c2-4332-b2e1-17fd495ae061	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.838349-07	0.85	99	376.8	27.2	80.8	v1.7.0-meta-aware
+7002a025-de3d-4a77-886b-98f4d419fe14	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.420173-07	0.84	99	410.1	28.5	64.2	v1.7.0-meta-aware
+d16d4551-5bf1-4dd5-807c-633546f96bad	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.584364-07	0.84	99	408.2	37.4	41	v1.7.0-meta-aware
+c42f06d8-4624-4e55-84ee-4a6e8b959194	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.585132-07	0.81	94.8	370.2	20.8	84.6	v1.7.0-meta-aware
+7aca4a12-86b6-4676-b0c9-1f507889e98f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.075392-07	0.78	97	449.8	23.4	59.8	v1.6.5-service-layer
+33643b85-8efd-4605-a548-277d3609f6fa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.484757-07	0.82	99	372.5	35.6	70.7	v1.7.0-meta-aware
+197e6ff7-ab55-4555-a1fd-785f773fb69b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.077551-07	0.84	99	392.3	36.5	41.3	v1.7.0-meta-aware
+de88e362-8032-4584-8fb3-a8ae63959535	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.158982-07	0.83	99	390.8	18.6	77.9	v1.7.0-meta-aware
+9fa1d1f2-f784-440f-b194-a14c603220d2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.528456-07	0.73	99	447	23.3	64.5	v1.7.0-meta-aware
+7cb5e84b-3fcd-4836-b6a2-c494792e8216	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.113399-07	0.74	99	438.2	19.1	45.2	v1.7.0-meta-aware
+455b1be6-bb9b-47ba-b9b7-67a482d2ace7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.523981-07	0.81	99	403.5	18.2	40.1	v1.7.0-meta-aware
+1b95628f-c7bd-4953-8fc9-1aa96dc13745	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.635087-07	0.82	99	417.6	16	48.7	v1.7.0-meta-aware
+2a92f59c-20df-4020-874a-f742760c4b47	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.239042-07	0.87	99	433.1	20.9	44.1	v1.7.0-meta-aware
+17812b41-f2c7-4618-af56-e9a62f608658	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.633351-07	0.85	99	416.8	26.7	68.2	v1.7.0-meta-aware
+36e6c6ab-c0a8-4400-bbc1-44b2d235b3af	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.856356-07	0.88	99	428.3	16.6	78.8	v1.7.0-meta-aware
+36b97797-b6ed-4422-9ecd-7e77aebae65e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.035762-07	0.78	99	417	37.7	44.2	v1.7.0-meta-aware
+d6987388-fa6b-40e2-9bd3-1de41f2e9b25	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.371238-07	0.81	99	430.7	34.4	42	v1.7.0-meta-aware
+5bda8040-da47-4553-b976-f3558b2cff77	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.11311-07	0.81	99	373.8	32.9	63.4	v1.7.0-meta-aware
+511f7844-2689-4e7c-85b2-520c63fb3f42	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.09268-07	0.82	99	382	16.7	47.3	v1.7.0-meta-aware
+1dd0fc36-21ba-4bad-abf2-443dbb9dfd33	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.168625-07	0.84	99	431.9	30.6	48.3	v1.7.0-meta-aware
+d4610400-9846-440a-b9a9-cdddcb55bc15	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.536725-07	0.84	99	391.5	23.8	59.1	v1.7.0-meta-aware
+ff274d74-b170-48b4-9711-4e9a31d4e47c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.149468-07	0.88	99	374.2	18.7	59.1	v1.7.0-meta-aware
+79bd99d5-b4ae-4c51-9f89-274bde67e635	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.396949-07	0.84	99	412.4	17.8	55.1	v1.7.0-meta-aware
+570a9503-539d-4260-b187-6de3256f6e19	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.522211-07	0.8	96.5	376.3	26.3	70.6	v1.7.0-meta-aware
+46baaa9d-f646-4c80-b2c6-a638ad7da840	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.528028-07	0.78	97.5	427.7	25.1	62.2	v1.7.0-meta-aware
+48ba5eec-0ad5-4ea4-8dde-0525baa4a5df	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.158772-07	0.74	94.8	414.6	22	84.3	v1.7.0-meta-aware
+4bf3cc8e-a2ce-4225-8978-366983c8afeb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.239941-07	0.74	94.8	450	20.8	84.2	v1.7.0-meta-aware
+56171018-2bce-4302-841c-2035fe5ed278	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.076501-07	0.81	99	426.8	33.6	74.6	v1.7.0-meta-aware
+5769d84c-e94f-4fb9-b1a7-6faa2165b0f5	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.383456-07	0.8	99	430.9	29.5	43.9	v1.7.0-meta-aware
+b5273bac-028a-4310-92c0-840487e254fc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.599008-07	0.79	99	377.6	26.3	46.4	v1.7.0-meta-aware
+2a1b69ac-b55a-42a9-8647-d0a1d5ce4376	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.284266-07	0.74	97.1	400.4	17.2	58.7	v1.6.5-service-layer
+185a55ed-83c4-43ca-bad3-160a0eb3d402	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.52786-07	0.81	98.4	383.2	25.6	54.8	v1.7.0-meta-aware
+10cd0d77-7ee0-4062-b079-38ecc8e07521	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.633581-07	0.77	99	447.9	23.4	71.7	v1.7.0-meta-aware
+a758ec10-47ed-43a5-892e-b39c5196130d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.11832-07	0.8	99	408.2	22.1	74.2	v1.7.0-meta-aware
+842b3016-0345-4222-9587-19ca9c9e96e9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.498851-07	0.77	97.7	440.7	15.5	60.7	v1.7.0-meta-aware
+75660429-6906-45c4-a021-f7129aed43d4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.991659-07	0.86	99	410.4	33.6	62.4	v1.7.0-meta-aware
+e946a6eb-df41-45f6-9568-1b2481b4ab4c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.148767-07	0.78	95.1	427.5	19.4	82.2	v1.7.0-meta-aware
+f1a0efe6-bd48-4525-bfed-502c23d7123a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.585971-07	0.76	96.7	429.7	24.8	69.1	v1.7.0-meta-aware
+883b91ff-13bd-4d91-bbb0-f9acb49c1010	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.527678-07	0.72	97.3	408.9	23.5	63.9	v1.7.0-meta-aware
+5bdef3ba-63df-4952-8ca3-746f2257e758	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.158093-07	0.72	98.9	387.1	19.5	44.8	v1.7.0-meta-aware
+247497d6-9eb0-4fc5-bc12-9b9740b9c17f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.797466-07	0.87	98.9	404.2	19.6	40.3	v1.7.0-meta-aware
+8c9ce79f-3fce-415f-8dea-b7ddb19fcc3b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.240187-07	0.75	99	397	37	44	v1.7.0-meta-aware
+38453a1f-940b-4edb-8742-4aefcea40cdf	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.499154-07	0.75	99	405.9	35.8	54.1	v1.7.0-meta-aware
+4cd0f7d4-95d1-48ae-9e55-aaf605d18139	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.164261-07	0.75	99	448.3	18.3	43.6	v1.7.0-meta-aware
+b72dbef4-2d91-4301-aa78-63383eac6fb2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.258575-07	0.78	99	375.9	36.3	73.9	v1.7.0-meta-aware
+cc1c4c2b-996c-4c42-b76d-66bb43a25711	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.504045-07	0.75	99	432	21.2	59.1	v1.7.0-meta-aware
+8d79609f-ff1c-4bb6-a383-4bb3c45666d3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.173266-07	0.73	97.5	384.7	24.7	62.4	v1.7.0-meta-aware
+3a09e094-f05d-4f20-91f8-de3e8a6d670b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.528282-07	0.8	98.8	395.2	33.9	51.4	v1.7.0-meta-aware
+9fd09cc9-7f1f-42b7-bc08-d8cac2cdeb7c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.076203-07	0.73	97.8	400.3	35.3	60.1	v1.7.0-meta-aware
+354dd411-300c-4436-b6d4-fd290c47ad0b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.497733-07	0.78	99	441.4	15.7	58	v1.7.0-meta-aware
+9166268d-4560-4a33-b3db-c28dd429a2f2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.856207-07	0.83	99	385.6	16.7	62.9	v1.7.0-meta-aware
+b0ef8ba6-c957-4c0b-93d6-00f0be6ef35c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.504215-07	0.78	97.8	424.1	22	59.6	v1.7.0-meta-aware
+81459b1c-467e-428b-89a9-d6e2b5edea9f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.59866-07	0.76	98.9	381.2	33.9	56.8	v1.7.0-meta-aware
+eec4dcc7-a2f7-4fa2-8067-fec357d339fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.174345-07	0.86	97.2	404.9	31.7	65.1	v1.7.0-meta-aware
+31b80ffc-50ef-4e68-bc6b-96d29a5de931	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.468876-07	0.81	99	407.7	20.7	44.3	v1.7.0-meta-aware
+dd0210a7-a320-42bb-bcee-9c963edcf87d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.668045-07	0.8	99	416.3	18	67.7	v1.7.0-meta-aware
+dc6baae4-7315-43df-9db4-88eb808d13e2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.149989-07	0.73	99	385.2	20.4	71.2	v1.7.0-meta-aware
+5d364a40-a626-4ca5-afcc-c2c4c630feea	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.678286-07	0.82	99	440.5	19.7	50.8	v1.7.0-meta-aware
+2e81ee65-b462-48bf-9f40-e0ebc3290208	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.373848-07	0.73	98	428.2	19.8	41.7	v1.6.5-service-layer
+f172dc41-7d5f-44b2-aca9-ff2154169d08	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.527472-07	0.79	99	419.7	24.4	70.8	v1.7.0-meta-aware
+c1e2820b-f1b9-4c6e-95d2-46e76b815983	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.528674-07	0.87	99	382.7	21.1	60.4	v1.7.0-meta-aware
+2b83d4d6-2936-4c57-8310-34f049ff6770	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.088209-07	0.76	99	445.1	18.7	66.8	v1.7.0-meta-aware
+f2c3e5f9-cbd3-4813-9ea4-3aebe2964f5e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.134491-07	0.83	97.8	376.8	37.3	60	v1.7.0-meta-aware
+c412bd89-af0b-4606-aaaa-e0a71fd9ba11	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.482983-07	0.72	99	378.9	15.2	54.1	v1.7.0-meta-aware
+893b3604-0a4b-4457-a80c-f82bf5e0367c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.172459-07	0.79	99	400.7	32.1	50	v1.7.0-meta-aware
+89edaf0a-ef17-4a25-87a0-f989ab1c8ab9	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.85507-07	0.85	95.1	381.3	28.5	82	v1.7.0-meta-aware
+2ae69cfb-f50a-4f4e-b393-3efa912c3c56	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.474501-07	0.75	99	439.3	32.1	73.2	v1.7.0-meta-aware
+ce23c984-2e65-41fd-a5d6-dc73f82f3c58	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.650121-07	0.81	99	384	16.6	46.8	v1.7.0-meta-aware
+af550b89-dc97-42b4-af55-0ba39b3fe208	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.523562-07	0.86	99	407.4	28	57.1	v1.7.0-meta-aware
+22a43a1a-34b6-49ce-ae8d-3a6c6ad7eb03	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.797279-07	0.85	99	377.1	19.8	77.5	v1.7.0-meta-aware
+2768fa64-2c05-4637-9385-7baf13f10fbd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.669039-07	0.73	99	445.5	20.2	77.5	v1.7.0-meta-aware
+5bd26f2b-b04e-4789-806c-a0942bd9d421	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.667859-07	0.72	99	445.1	25.2	48.9	v1.7.0-meta-aware
+d438e919-6be6-4814-8e3d-72aca6fd3423	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.41408-07	0.87	99	372.1	30.8	62	v1.7.0-meta-aware
+e690adb2-8eb7-4260-ba6a-ee88248512c2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.39599-07	0.75	99	384.5	35.9	69.5	v1.7.0-meta-aware
+7c4c17e0-91a6-4ff3-8461-52bd75db60aa	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.407561-07	0.87	99	384.5	25.1	49.7	v1.7.0-meta-aware
+f26864b9-8964-4130-ac11-daab3afc1670	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.650341-07	0.86	99	374.6	33	73.4	v1.7.0-meta-aware
+ea4dc16f-8c52-421d-96fc-50a82fe9c865	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.679256-07	0.77	99	390.3	16.8	65.9	v1.7.0-meta-aware
+90f53e36-c2d6-48c3-aee2-39c94286fb57	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.633741-07	0.78	99	434	28.5	72.5	v1.7.0-meta-aware
+d9ef73a3-b0fb-437c-8dd0-f7f672693e4d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.238805-07	0.86	96.8	400.6	30.1	68.4	v1.7.0-meta-aware
+27df0e26-8ab3-44e6-a53b-18f9df335255	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.855851-07	0.77	99	372	31.1	47.6	v1.7.0-meta-aware
+420f3dca-453e-45ef-9d14-b0958632fb5c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.395652-07	0.72	95.4	401.4	33.8	80	v1.7.0-meta-aware
+b95d7158-b0d8-4ce3-b43f-d5533ee773be	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.56889-07	0.86	95	401	18.5	82.8	v1.7.0-meta-aware
+b299c00b-b40f-4ce7-bb6b-758d6c6aedfd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.798104-07	0.79	99	424.4	21.7	54.8	v1.7.0-meta-aware
+131b27dd-a97a-4be5-bbd1-69c98ebd9dc7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.11874-07	0.79	95.2	379.1	29.7	81.1	v1.7.0-meta-aware
+2c3aac89-bf0f-41e3-9532-527861299684	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.524771-07	0.75	97.9	371.5	36.6	58.5	v1.7.0-meta-aware
+f61ed3c7-2b11-4516-8b82-f9fa85c8206d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.855447-07	0.83	99	398	35.7	55.9	v1.7.0-meta-aware
+5ad0503b-337a-409c-9f04-fc2520d79ca7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.384447-07	0.78	98	405.5	29.1	46	v1.6.5-service-layer
+50bb86f1-61df-49bc-99e2-1e85e8335ce3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:01.526843-07	0.75	99	432	18.7	42.7	v1.7.0-meta-aware
+67f4f1d9-8e34-462a-bed6-d7d256b3c613	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.634285-07	0.73	99	408.5	15.2	63	v1.7.0-meta-aware
+4749e562-55ee-4df9-9cdb-8b38b49adc23	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.088366-07	0.81	99	445.4	29.5	53	v1.7.0-meta-aware
+2fca96ec-1165-4fdd-8ded-514fc2d21df3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.88503-07	0.79	97.7	380.1	22.9	60.8	v1.7.0-meta-aware
+ac34aea2-0739-47d5-b0d3-e60752316900	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.036167-07	0.79	99	380.4	31.6	48.5	v1.7.0-meta-aware
+d78cb52c-e429-4483-a397-da8b76c00c5c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.856045-07	0.73	99	379	25.4	41.2	v1.7.0-meta-aware
+42ecb243-e422-4d80-966f-8308607c2eed	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.614727-07	0.83	96.2	414.4	37.5	72.6	v1.7.0-meta-aware
+61431508-6a5d-4fbb-b66b-09c6993cd40e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.667139-07	0.74	98.9	411.9	26.5	60.3	v1.7.0-meta-aware
+0c4051f6-9781-41e7-9d92-9c23bec48c3c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.296994-07	0.74	98	413.1	15.4	57.7	v1.7.0-meta-aware
+f5e4cd40-8f88-4898-915a-929ecbc41ea3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.297226-07	0.87	98.8	415	15.4	51.2	v1.7.0-meta-aware
+62d223cd-f0b5-464b-bdaf-17f50d941e84	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.677687-07	0.74	97.7	391.3	19	60.8	v1.7.0-meta-aware
+0f3ee4c9-4144-4c17-941a-14821e4eb9fe	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.63409-07	0.76	99	402.4	23.5	73.9	v1.7.0-meta-aware
+b72b6d3e-b32a-45a2-9c1f-f9ac20c674a4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.483347-07	0.78	99	440.4	24.4	77	v1.7.0-meta-aware
+8bfe73f8-fa07-4912-abfc-77fd80e041ce	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.087922-07	0.83	99	428.6	18.1	43.2	v1.7.0-meta-aware
+83fe0ce2-35e9-4189-91c1-33d9abc3380e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.286964-07	0.8	99	372	29.5	61.9	v1.7.0-meta-aware
+2cce52f3-4835-4029-9f45-ab3a2814e28e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.297961-07	0.79	99	414.9	28.4	53.9	v1.7.0-meta-aware
+777a228b-3069-4539-b42a-dd7edd4db3d1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.3967-07	0.73	99	394.8	28.3	52.3	v1.7.0-meta-aware
+0ed37648-a275-453c-8722-195c771506b6	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.602578-07	0.76	99	414	18.9	75.8	v1.7.0-meta-aware
+528f3e9f-71de-46d8-a890-3ca1c484a2da	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.79792-07	0.81	99	383.6	23.2	70.9	v1.7.0-meta-aware
+d6889f9f-5580-4b1e-9194-ff1529423be1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.796904-07	0.77	99	437.5	36.4	50	v1.7.0-meta-aware
+f75e7769-bc7a-432f-9950-5e12d9cd1d99	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.086967-07	0.85	99	379	37.2	72.3	v1.7.0-meta-aware
+7997bda3-28ad-41d8-9c47-fce46fcc7840	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.036448-07	0.83	95.3	388.3	28.6	81	v1.7.0-meta-aware
+cada7399-28c1-4237-a337-cbbe0eb1bda4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.149268-07	0.83	98.9	410.1	27	82.5	v1.7.0-meta-aware
+e8205468-4144-457c-9aed-363e553b033c	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:02.798415-07	0.73	98.5	439.3	23.2	53.8	v1.7.0-meta-aware
+c0ef4634-8ed2-4f65-ac65-f751e1f08f1f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.498042-07	0.76	97.1	417.3	23.1	65.8	v1.7.0-meta-aware
+39c4023b-003d-467e-bd30-113b4bb95bd7	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.537494-07	0.86	97.5	405.4	27.2	62.7	v1.7.0-meta-aware
+0273cf9f-a93b-44ec-93d5-df840028a858	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.831939-07	0.75	99	392.2	27.1	61.1	v1.7.0-meta-aware
+21d8a205-cd2b-4d0a-ba6e-2675f78760f2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.884767-07	0.74	99	376.3	23.9	44	v1.7.0-meta-aware
+7b5bb0b3-1b82-4df6-a995-a622c73824cd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.991288-07	0.74	99	448.1	15	71	v1.7.0-meta-aware
+834eace8-3a5c-4a9d-87fa-670f847ae55d	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.41387-07	0.73	96.5	406	18.3	70.8	v1.7.0-meta-aware
+b1be8252-2ee8-40be-918f-e399cf82ba3b	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.678526-07	0.78	99	370.2	37.4	70.1	v1.7.0-meta-aware
+8ad1641a-0348-4e3d-9451-53f94eca9a16	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.499004-07	0.81	97.9	446.2	30.1	58.9	v1.7.0-meta-aware
+dc1d0e5a-a598-463c-9e67-dcf20c5626c4	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.878963-07	0.83	97.2	446.7	28.4	64.8	v1.7.0-meta-aware
+8b03ffe7-7884-467c-b109-a92323e9e30e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.503693-07	0.82	95.4	410.4	20.4	80.2	v1.7.0-meta-aware
+17388402-8afb-45b3-b37e-3090e4d08265	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.150219-07	0.77	96.4	433.2	35	71.4	v1.7.0-meta-aware
+84efbef1-c57c-4277-8e44-e512e6900b29	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.57408-07	0.81	98	374.3	16.9	57.8	v1.7.0-meta-aware
+63dfe5c1-0419-4df7-9175-ec8dd99ffeba	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.681656-07	0.81	97.5	437.7	31.1	62.1	v1.7.0-meta-aware
+9ac12c4b-f193-4392-9b0a-b2606c78b028	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.219756-07	0.87	98	381.2	21.5	46.2	v1.6.5-service-layer
+bddadfd1-6817-42eb-bcbc-906987b55fdb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:03.239374-07	0.78	96.2	444.9	21.9	72.7	v1.7.0-meta-aware
+63124a55-cc14-400d-ad17-260a20fc09a8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.13724-07	0.75	99	446.3	37.6	50.4	v1.7.0-meta-aware
+fa8bf9e3-841e-420f-b70a-06c9b5bb0d52	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.172677-07	0.79	99	379.6	17.1	46	v1.7.0-meta-aware
+7b96feb2-e991-40c3-86b9-178ecd4fe0ab	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.585549-07	0.75	99	371	26.8	69.7	v1.7.0-meta-aware
+f1f2c30f-7490-4adf-a5c3-24928e45391a	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.139371-07	0.84	99	398.4	15.9	80.3	v1.7.0-meta-aware
+691c76cd-90a0-4a91-89e8-524aac6aa859	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.396473-07	0.83	94.8	437	31.1	84.7	v1.7.0-meta-aware
+ae3db645-5383-4d9d-9fb6-71204002cc49	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.585316-07	0.73	99	449.8	16.5	43.2	v1.7.0-meta-aware
+3bd9b6d4-888b-4c72-aded-81ac46b77d93	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.173125-07	0.82	99	384.3	23	50.5	v1.7.0-meta-aware
+789e938d-f5a0-4e80-bff3-3d8b638b77dc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.387829-07	0.78	99	413.6	22	78	v1.7.0-meta-aware
+f28a65f3-3ad7-4ea4-a97b-d3939da4cd14	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.508399-07	0.81	98.2	389.9	32.5	56.5	v1.7.0-meta-aware
+ef4cee52-cd8d-47c8-aad0-b454da08e80f	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 17:05:04.584773-07	0.84	96.8	399.7	24.8	68	v1.7.0-meta-aware
+1ca89d71-1bdd-462a-867d-1697df584027	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	01b9ed79-3597-4bbd-9a1b-f880d04ca6ac	2026-08-24 17:39:48.343077-07	0.77	97.9	407	23.4	59.3	v1.7.0-meta-aware
+f8490a17-84a4-49fb-9fd0-2294331ed8d8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	01b9ed79-3597-4bbd-9a1b-f880d04ca6ac	2026-08-24 17:44:08.17929-07	0.87	98.8	434.7	23.4	51.7	v1.7.0-meta-aware
+35e44f78-e448-4335-a018-b72f22c836e6	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	01b9ed79-3597-4bbd-9a1b-f880d04ca6ac	2026-08-24 17:45:18.112809-07	0.83	98.5	419.7	23.4	54	v1.7.0-meta-aware
+409a63db-0fbe-42e8-9cab-3b29b242346e	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.475736-07	0.74	95.8	377.2	16	72.3	v1.6.5-service-layer
+c531e874-7373-4213-814c-93c7990ab727	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-25 10:38:04.48659-07	0.76	97.6	407.4	23.4	60.6	v1.7.0-meta-aware
+6884dc63-2c33-4b09-aa0e-271c3a56bbec	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	2026-08-25 10:38:15.45167-07	0.78	97.8	422.3	23.4	58.5	v1.7.0-meta-aware
+40a23e36-e17a-4fab-ab03-b1dac61611ac	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	8f76cb8b-15bb-43b1-85a3-ccf8c4163ed5	2026-08-25 10:38:15.474021-07	0.84	96.6	425.3	23.4	69.6	v1.7.0-meta-aware
+839fa16d-802d-4050-87be-16b04e2c47f2	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	2026-08-25 10:38:15.486387-07	0.8	99	405.7	23.4	58.3	v1.7.0-meta-aware
+a6512a5c-b81d-467f-bc8b-6523b09ae6b3	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.284671-07	0.8	97.9	422.1	34.5	50.8	v1.6.5-service-layer
+8358379e-4357-46cf-a751-bde49a6967ee	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	3628a5d6-e221-4014-8ae1-b83bd2dd78fe	2026-08-25 10:38:15.46405-07	0.79	97.7	414.5	23.4	60.3	v1.7.0-meta-aware
+357f4bf7-51c0-47c0-bf17-27c655264091	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	505751fb-ee77-4be3-8db1-460017380b7d	2026-08-25 10:38:15.480675-07	0.86	97.7	412	23.4	60.8	v1.7.0-meta-aware
+b539ddea-c540-48ec-baa1-c28d9563f274	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	58a3220b-15e0-4d16-97a5-2cee7a3333a0	2026-08-25 10:38:15.49233-07	0.82	97.3	437.9	23.4	64.1	v1.7.0-meta-aware
+82d1dbef-612a-4132-a498-9a61c94285fc	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.143317-07	0.85	97	392.2	20.9	60.2	v1.6.5-service-layer
+a6fbdfb7-f9f3-421b-be5b-74cfa1a6bbc8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.075066-07	0.8	94.9	393.3	35.6	80.8	v1.6.5-service-layer
+7a503be0-9612-41d6-8983-d2d50ba14856	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.53545-07	0.84	97.4	370.8	31.6	56.3	v1.6.5-service-layer
+3409abed-4596-4c29-b9f4-2cc46a8e58ae	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.128597-07	0.79	94.7	418.8	24.7	83.1	v1.6.5-service-layer
+1dabc855-01aa-463c-a767-50c8cdd1ede8	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.209974-07	0.78	98	378.3	23.8	48.3	v1.6.5-service-layer
+3452be4b-d0b8-467a-a37d-c440ce1b8166	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.431635-07	0.85	97.4	426	17	55.7	v1.6.5-service-layer
+606b341e-97c9-4f0d-b6e1-6730e7c23fe2	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.209746-07	0.8	97.2	410.5	15.7	58.3	v1.6.5-service-layer
+c1c4e124-a6fa-4713-a907-4222c8ab94f0	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.431009-07	0.82	98	443.2	29.5	43.9	v1.6.5-service-layer
+b4abb254-6f91-464e-9522-28114e7a4b78	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	858a1dbe-cc50-4916-b09e-78a3dfc83aa1	2026-08-24 09:53:01.055303-07	0.78	96.2	424.2	15.1	68.5	v1.6.5-service-layer
+\.
+
+
+--
 -- Data for Name: Courts; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public."Courts" ("Id", "AcademyId", "BranchId", "Description", "DryCoefficient", "IsIndoor", "Name", "SurfaceType", "CreatedAtUtc", "AggregateMinutesPlayed", "EstimatedReopenTimeUtc", "MaintenanceThresholdMinutes", "Status", "FloodlightState", "IsDecommissioned") FROM stdin;
 7be1c220-56b3-44ed-a30a-a5ee8c880c32	e61d1986-848f-411d-8fc1-4c0962a209d3	32b51caa-309a-412b-b615-ca7fdcc8de12	Plexicushion hardcourt featuring solar geometry floodlight triggers.	0.5	f	Grand Oasis Stadium	Hard	2026-07-10 14:00:16.651515-07	0	\N	270	Open	Off	f
 f4170bca-ce4a-4340-adc1-2ce9fcb1bdac	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	t	VAOB Court 2	Hard	2026-07-21 11:32:47.860353-07	120	\N	1200	Open	Off	f
+3628a5d6-e221-4014-8ae1-b83bd2dd78fe	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 2	Grass	2026-07-21 11:18:44.917547-07	720	\N	700	Open	Off	f
 505751fb-ee77-4be3-8db1-460017380b7d	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 4	Grass	2026-07-21 11:18:48.345792-07	120	\N	700	Open	Off	f
 a738bfa0-4d5d-4c0f-bea7-17ee56a9e1b0	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Enclosed training hall insulated from regional precipitation anomalies.	0	t	Indoor Clay Court 2	Clay	2026-07-10 14:00:16.500229-07	300	\N	270	Open	Off	f
-3628a5d6-e221-4014-8ae1-b83bd2dd78fe	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 2	Grass	2026-07-21 11:18:44.917547-07	600	\N	700	Open	Off	f
 58a3220b-15e0-4d16-97a5-2cee7a3333a0	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Premium Italian surface utilizing active microclimatic sensors.	1.5	f	Stadium Center Clay	Clay	2026-07-10 14:00:16.500229-07	300	\N	270	Open	Off	f
-bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 1	Grass	2026-07-21 10:49:12.607051-07	1320	\N	700	Open	Off	f
 8f76cb8b-15bb-43b1-85a3-ccf8c4163ed5	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 3	Grass	2026-07-21 11:18:47.019877-07	0	\N	700	Open	Off	f
 b4c307b9-7a92-4aaa-a979-c41d592b9e78	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 3	Hard	2026-07-21 11:32:47.865512-07	0	\N	1200	Open	Off	f
 51a6e84f-1678-4f70-bb5d-b03345c3dd47	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 4	Hard	2026-07-21 11:32:47.86988-07	0	\N	1200	Open	Off	f
 6d5afcac-6b58-493e-997f-7bbdb3cd95fd	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 5	Hard	2026-07-21 11:32:47.873332-07	0	\N	1200	Open	Off	f
 95d67d63-8137-463a-b8cf-46761bbd3bfb	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 1	Hard	2026-07-21 11:32:44.933545-07	360	\N	1200	Open	Off	f
+bc885f2c-bfb4-4eca-88c5-f9d1d9b1452e	60186569-a432-4375-9bee-485c69f086d5	4c073a7a-7864-4341-85ce-869914b3c117	Provisioned via administrative agent interface conversation loop.	0.5	f	Grass Court 1	Grass	2026-07-21 10:49:12.607051-07	1380	\N	700	Open	Off	f
 54825e79-02a9-47ba-a1ef-5691fe2e4a73	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 6	Hard	2026-07-21 11:32:47.877658-07	0	\N	1200	Open	Off	f
 01b9ed79-3597-4bbd-9a1b-f880d04ca6ac	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 7	Hard	2026-07-21 11:32:47.883795-07	0	\N	1200	Open	Off	f
 858a1dbe-cc50-4916-b09e-78a3dfc83aa1	60186569-a432-4375-9bee-485c69f086d5	59ccf6a4-094f-46ac-a272-06fec5d4ab7a	Provisioned via administrative agent interface conversation loop.	0.75	f	VAOB Court 8	Hard	2026-07-21 11:32:47.887189-07	0	\N	1200	Open	Off	f
@@ -675,6 +1303,9 @@ b022927d-3901-446c-88b3-d0a0c3e5f4f7	81196bc9-7f05-44ba-99e8-e45399c2add1	\N	Cou
 056b576b-3dab-4920-8612-4582d287db95	29434c0e-8ed7-40b7-8432-23367dfd124a	\N	Court Rental Fee: Grass Court 1 on 2026-08-12 12:00:00 AM @ 19	1	50.00	3c66ea7d-00ef-4bae-82b1-f6db65e47c48
 e051628c-cb98-446d-b9b8-e4be39ccb028	bb8ded29-cefd-4fdf-8c51-e10c662b1ee3	\N	Court Rental Fee: VAOB Court 1 on 2026-08-13 @ 10:00	1	50.00	e859e632-bbcb-415e-b931-8456a2a5f7ad
 78bf46d7-08cf-4de9-9ffe-8b6527f996b0	cda0744d-83d4-4668-900b-ce303d2c3e07	\N	Court Rental Fee: VAOB Court 1 on 2026-08-13 @ 11:00	1	50.00	4e44d416-22b5-4494-aa51-4809a3b1aba3
+b0060a14-b756-4f4c-8b29-2c3aaf92c39e	f64eb372-1eea-4c7a-8267-81239f3d36e5	\N	Court Rental Fee: Grass Court 1 on 2026-08-23 12:00:00 AM @ 19	1	50.00	1e05dac8-72e8-41fa-8999-ee8e00507265
+c614dc93-5cf0-4cdf-8aa8-a2d9a9ffe5a3	8f60eb05-4cd2-4bfd-8a3f-e49959ad887d	\N	Court Rental Fee: Grass Court 2 on 2026-08-23 @ 18:00	1	50.00	d03661d6-385b-4755-8d3f-2798273f7211
+1ab97bb0-34c0-44b6-9562-518741840ea9	59e06f7a-4e27-4742-a752-1791334496af	\N	Court Rental Fee: Grass Court 2 on 2026-08-23 @ 19:00	1	50.00	476b2536-1d00-42b1-ba31-d2d11b597251
 \.
 
 
@@ -716,6 +1347,8 @@ bd3ed93c-d4dc-49eb-8580-af8793c1adb4	60186569-a432-4375-9bee-485c69f086d5	3b7473
 c5f8808e-4718-4df5-bd78-336210549c21	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-02 07:27:40.500437-07	4	50.00	f398477f-8aea-4eb8-8393-7d32f493e94f
 4573bf12-89b9-4fe1-8748-23bee5d35e80	60186569-a432-4375-9bee-485c69f086d5	8f41d4d7-722c-4ea4-be3b-73a27d8dcade	jerseychiki88@gmail.com	2026-08-07 11:00:42.269957-07	4	50.00	\N
 78c4b84c-ff77-4639-a3f0-b8bad35c1851	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-07 10:18:56.876248-07	4	50.00	\N
+59e06f7a-4e27-4742-a752-1791334496af	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-23 09:38:31.628206-07	1	50.00	e15f528f-8c83-4930-a4ed-004a2dd429ca
+8f60eb05-4cd2-4bfd-8a3f-e49959ad887d	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-23 09:38:30.3611-07	1	50.00	e15f528f-8c83-4930-a4ed-004a2dd429ca
 f920614a-04a9-415b-afb6-2982a29381f6	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-09 14:34:01.15334-07	4	50.00	\N
 81196bc9-7f05-44ba-99e8-e45399c2add1	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-10 16:00:01.739565-07	4	50.00	\N
 bb8ded29-cefd-4fdf-8c51-e10c662b1ee3	60186569-a432-4375-9bee-485c69f086d5	36626d17-a18f-4ba9-b026-bd3c873d0e7e	jerseyalex88@gmail.com	2026-08-11 10:01:06.46414-07	4	50.00	\N
@@ -733,6 +1366,7 @@ f5f6a1a0-0ad9-4434-9c4d-b308af3eb0f4	60186569-a432-4375-9bee-485c69f086d5	0c713a
 9473145c-5cb3-462f-8121-c83063299ca4	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-10 12:03:30.638274-07	4	50.00	\N
 d3394e9f-faf9-4aa3-bf19-66fb7d70eb68	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-09 13:16:51.539232-07	4	50.00	\N
 29434c0e-8ed7-40b7-8432-23367dfd124a	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-10 16:09:40.270102-07	1	50.00	f459f310-77c7-4866-9f2b-3ad2e4308c35
+f64eb372-1eea-4c7a-8267-81239f3d36e5	60186569-a432-4375-9bee-485c69f086d5	7560e097-7e73-4739-abd1-8e01b3b4e8f5	Chiki Reyes	2026-08-23 09:33:29.728465-07	1	50.00	7cd129d3-8610-4bec-b458-c6fa122df229
 \.
 
 
@@ -766,6 +1400,8 @@ f398477f-8aea-4eb8-8393-7d32f493e94f	60186569-a432-4375-9bee-485c69f086d5	1	0	RE
 bc4fd7b7-9de6-4829-9b6e-a437e9283825	60186569-a432-4375-9bee-485c69f086d5	1	0	BT-4z5cybt7	50.00	2026-08-07 09:02:50.063675-07	t
 ef599a2e-7e0d-421a-80c9-a54ff3746d13	60186569-a432-4375-9bee-485c69f086d5	0	1	SQ-JAEx1thlBHqeXY3iFVFMT891SeFZY	250.00	2026-08-07 09:04:32.244559-07	t
 f459f310-77c7-4866-9f2b-3ad2e4308c35	60186569-a432-4375-9bee-485c69f086d5	1	0	BT-2m7vp4pp	50.00	2026-08-10 16:10:43.588923-07	t
+7cd129d3-8610-4bec-b458-c6fa122df229	60186569-a432-4375-9bee-485c69f086d5	0	1	SQ-X1rLWLfMHMkfI9RJkMWEbcqzvkSZY	50.00	2026-08-23 09:34:45.027258-07	t
+e15f528f-8c83-4930-a4ed-004a2dd429ca	60186569-a432-4375-9bee-485c69f086d5	0	1	SQ-3TEiLImOSnrjv15aCLtD0gE3ZDaZY	100.00	2026-08-23 09:39:21.887379-07	t
 \.
 
 
@@ -852,6 +1488,7 @@ COPY public."__EFMigrationsHistory" ("MigrationId", "ProductVersion") FROM stdin
 20260726133726_AddFinancialLedgerAndCatalogTables	10.0.9
 20260801182912_SyncPendingModelChanges	10.0.9
 20260804222903_ShiftTransactionPointerToInvoice	10.0.9
+20260823232743_AddCourtDiagnosticsTables	10.0.9
 \.
 
 
@@ -947,6 +1584,22 @@ ALTER TABLE ONLY public."Bookings"
 
 ALTER TABLE ONLY public."Branches"
     ADD CONSTRAINT "PK_Branches" PRIMARY KEY ("Id");
+
+
+--
+-- Name: CourtDiagnosticAnomalies PK_CourtDiagnosticAnomalies; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourtDiagnosticAnomalies"
+    ADD CONSTRAINT "PK_CourtDiagnosticAnomalies" PRIMARY KEY ("AnomalyId");
+
+
+--
+-- Name: CourtDiagnosticSnapshots PK_CourtDiagnosticSnapshots; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourtDiagnosticSnapshots"
+    ADD CONSTRAINT "PK_CourtDiagnosticSnapshots" PRIMARY KEY ("SessionId");
 
 
 --
@@ -1079,6 +1732,20 @@ CREATE INDEX "IX_Branches_AcademyId" ON public."Branches" USING btree ("AcademyI
 
 
 --
+-- Name: IX_CourtDiagnosticAnomalies_SessionId; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "IX_CourtDiagnosticAnomalies_SessionId" ON public."CourtDiagnosticAnomalies" USING btree ("SessionId");
+
+
+--
+-- Name: IX_CourtDiagnosticSnapshots_CourtId; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "IX_CourtDiagnosticSnapshots_CourtId" ON public."CourtDiagnosticSnapshots" USING btree ("CourtId");
+
+
+--
 -- Name: IX_Courts_BranchId; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1178,6 +1845,22 @@ ALTER TABLE ONLY public."Branches"
 
 
 --
+-- Name: CourtDiagnosticAnomalies FK_CourtDiagnosticAnomalies_CourtDiagnosticSnapshots_SessionId; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourtDiagnosticAnomalies"
+    ADD CONSTRAINT "FK_CourtDiagnosticAnomalies_CourtDiagnosticSnapshots_SessionId" FOREIGN KEY ("SessionId") REFERENCES public."CourtDiagnosticSnapshots"("SessionId") ON DELETE CASCADE;
+
+
+--
+-- Name: CourtDiagnosticSnapshots FK_CourtDiagnosticSnapshots_Courts_CourtId; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourtDiagnosticSnapshots"
+    ADD CONSTRAINT "FK_CourtDiagnosticSnapshots_Courts_CourtId" FOREIGN KEY ("CourtId") REFERENCES public."Courts"("Id") ON DELETE CASCADE;
+
+
+--
 -- Name: Courts FK_Courts_Branches_BranchId; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1213,5 +1896,5 @@ ALTER TABLE ONLY public."UserCourts"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Ia0fWU7JC2inKpZE4UBVsJ7u6Arw08lVYM3uvbO4HbftueSnZ4XtITFlq8SS29o
+\unrestrict bVlbqkXBaJXOpvsBGtasU2IjrzCsk14V4a9uGlKnUmziPko0dfzeih2VRDWPTY7
 

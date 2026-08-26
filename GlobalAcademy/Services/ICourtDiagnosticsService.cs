@@ -15,6 +15,7 @@ public interface ICourtDiagnosticsService
 {
     Task ProcessTelemetryAsync(CourtDiagnosticsPayloadDto payload);
     Task<CourtDiagnosticsPayloadDto> RequestAgentAnalysisAsync(Guid courtId);
+    Task<int> SeedHistoricalTelemetryHistoryAsync(Court court);
 }
 
 public class CourtDiagnosticsService : ICourtDiagnosticsService
@@ -139,6 +140,61 @@ public class CourtDiagnosticsService : ICourtDiagnosticsService
         if (payload == null) throw new InvalidOperationException("Python agent engine returned an empty data signature.");
         return payload;            
     }
+    public async Task<int> SeedHistoricalTelemetryHistoryAsync(Court court)
+    {
+        var pythonRequestPayload = new
+        {
+            court_id = court.Id.ToString(),
+            surface_type = court.SurfaceType,
+            is_indoor = court.IsIndoor
+        };
 
+        var response = await _client.PostAsJsonAsync("api/ai/diagnostics/seed-court-history", pythonRequestPayload);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Python AI Engine seeder failure: {response.StatusCode} - {errorContent}");
+        }
+
+        var seederWrapper = await response.Content.ReadFromJsonAsync<HistorySeederResponseDto>();
+        if (seederWrapper == null || seederWrapper.Records == null || !seederWrapper.Records.Any())
+        {
+            throw new InvalidOperationException("Python agent engine returned an empty or unreadable historical snapshot list.");
+        }
+
+        var snapshotsToSave = seederWrapper.Records.Select(payload => new CourtDiagnosticSnapshot
+        {
+            SessionId = payload.SessionId != Guid.Empty ? payload.SessionId : Guid.NewGuid(),
+            CourtId = court.Id,
+            AcademyId = court.AcademyId,
+            BranchId = court.BranchId,
+            Timestamp = payload.Timestamp.ToUniversalTime(), // Crucial: Flag as UTC for Postgres
+            SurfaceFrictionIndex = payload.Metrics.SurfaceFrictionIndex,
+            BounceUniformityPercentage = payload.Metrics.BounceUniformityPercentage,
+            NetTensionNewtons = payload.Metrics.NetTensionNewtons,
+            AmbientTemperatureCelsius = payload.Metrics.AmbientTemperatureCelsius,
+            HumidityPercentage = payload.Metrics.HumidityPercentage,
+            AgentVersion = "v1.7.5-hist",
+            
+            Anomalies = payload.Anomalies.Select(a => new CourtDiagnosticAnomaly
+            {
+                AnomalyId = a.AnomalyId != Guid.Empty ? a.AnomalyId : Guid.NewGuid(),
+                SessionId = payload.SessionId,
+                AcademyId = court.AcademyId,
+                BranchId = court.BranchId,
+                Severity = a.Severity.ToString(),
+                Category = a.Category,
+                Description = a.Description,
+                ConfidenceScore = a.ConfidenceScore,
+                RecommendedAction = a.RecommendedAction
+            }).ToList()
+        }).ToList();
+
+        await _context.CourtDiagnosticSnapshots.AddRangeAsync(snapshotsToSave);
+        await _context.SaveChangesAsync();
+
+        return seederWrapper.TotalRecordsGenerated;
+    }
 }
 

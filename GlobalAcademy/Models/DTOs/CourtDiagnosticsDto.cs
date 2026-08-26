@@ -56,4 +56,11 @@ namespace GlobalAcademy.Models.DTOs
         High,
         Critical
     }
+
+    public class HistorySeederResponseDto
+    {
+        public string CourtId { get; set; } = string.Empty;
+        public int TotalRecordsGenerated { get; set; }
+        public List<CourtDiagnosticsPayloadDto> Records { get; set; } = new();
+    }
 }

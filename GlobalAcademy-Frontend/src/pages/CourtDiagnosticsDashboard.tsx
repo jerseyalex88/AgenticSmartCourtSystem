@@ -67,6 +67,7 @@ export default function CourtDiagnosticsDashboard() {
   const [analyzing, setAnalyzing] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [seeding, setSeeding] = useState<boolean>(false);
 
   // --- INITIAL COMPONENT LIFECYCLE: FETCH TOPOLOGY TREE ---
   const fetchAcademyTopology = async () => {
@@ -200,6 +201,30 @@ export default function CourtDiagnosticsDashboard() {
     }
   };
 
+  const handleInjectHistoricalData = async () => {
+    if (!selectedCourtId) {
+      setStatusMessage("⚠️ Action Refused: Please click and select a single Court from the Ledger above to inject a trend matrix.");
+      return;
+    }
+    
+    if (!window.confirm("Inject 180 days of continuous backdated diagnostic logs into PostgreSQL for this court?")) return;
+    
+    setSeeding(true);
+    setStatusMessage(null);
+    try {
+      const response = await apiClient.post<{ message: string }>(
+        `/maintenance/court-diagnostics/seed/${selectedCourtId}`
+      );
+      setStatusMessage(`🧪 [Seeder Matrix Active]: ${response.data.message}`);
+      await fetchDiagnosticHistory(); // Automatically trigger full UI feed update
+    } catch (err: any) {
+      console.error("Seeder injection loop failure:", err);
+      setStatusMessage(`Seeding Failure: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   // --- CASCADING REVOLUTION MATRIX FILTER ---
   // Replace your existing filteredSnapshots declaration block with this combined matrix:
   const filteredSnapshots = snapshots.filter(s => {
@@ -226,12 +251,6 @@ export default function CourtDiagnosticsDashboard() {
     );
 
     return matchesCourtName || matchesBranchName || matchesAgentVersion || matchesSessionId || matchesAnomalies;
-  });
-
-  const DNUfilteredSnapshots = snapshots.filter(s => {
-    if (selectedCourtId) return s.court_id === selectedCourtId;
-    if (selectedBranchId) return s.branch_id === selectedBranchId;
-    return true; // Default fallthrough handles showing complete list histories if nothing is picked
   });
 
   const getSeverityStyles = (severity: string) => {
@@ -338,6 +357,18 @@ export default function CourtDiagnosticsDashboard() {
             </div>
             
             <div className="flex items-center gap-2 self-end md:self-auto">
+              <button
+                onClick={handleInjectHistoricalData}
+                disabled={seeding || analyzing || loading}
+                className={`px-3 py-2 font-bold uppercase tracking-wider transition text-[10px] border ${
+                  seeding 
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed border-slate-300' 
+                    : 'bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300'
+                }`}
+              >
+                {seeding ? '🧪 Injecting 180 Rows...' : '🧪 Seed Sandbox Trend Data'}
+              </button>
+              
               <button
                 onClick={fetchDiagnosticHistory}
                 disabled={loading || analyzing}
