@@ -19,6 +19,7 @@ import { CookieConsentProvider } from './context/CookieConsentContext';
 import CookieBanner from './components/CookieBanner';
 import ThirdPartyScriptManager from './components/ThirdPartyScriptManager';
 import CourtDiagnosticsDashboard from './pages/CourtDiagnosticsDashboard';
+import AssetHealthControlCenter from './pages/AssetHealthControlCenter';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -222,6 +223,8 @@ export default function App() {
         );
       case 'court-diagnostics':
         return <CourtDiagnosticsDashboard />;
+      case 'court-health':
+        return <AssetHealthControlCenter />;
       case 'agent-dispatch':
         return <AgentDispatchCenter />;
       case 'user-profile':

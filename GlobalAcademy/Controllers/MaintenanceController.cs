@@ -439,7 +439,6 @@ public class MaintenanceController : ControllerBase
 
         return Ok(new { message = $"Successfully purged diagnostic session snapshot {sessionId}." });
     }
-    // File: GlobalAcademy.Controllers/MaintenanceController.cs
 
     // --- READ TOPOLOGY TREE: GET api/maintenance/branches/topology ---
     [HttpGet("branches/topology")]
@@ -498,6 +497,81 @@ public class MaintenanceController : ControllerBase
         {
             return StatusCode(500, $"Historical injection pathway failure: {ex.Message}");
         }
+    }
+    // --- CURRENT ASSET HEALTH MATRIX: GET api/maintenance/court-health-summary ---
+    [HttpGet("court-health-summary")]
+    public async Task<IActionResult> GetAcademyCourtHealthSummary([FromQuery] string? branchId = null, [FromQuery] string? courtId = null)
+    {
+        Guid academyId = _tenantProvider.GetTenantId();
+
+        // 1. Base query matching active multi-tenant court slots
+        var courtsQuery = _context.Courts
+            .Include(c => c.Branch)
+            .Where(c => c.AcademyId == academyId && !c.IsDecommissioned);
+
+        // 2. Apply filtering options passed from the collapsible ledger panel state
+        if (Guid.TryParse(courtId, out Guid parsedCourtId))
+        {
+            courtsQuery = courtsQuery.Where(c => c.Id == parsedCourtId);
+        }
+        else if (Guid.TryParse(branchId, out Guid parsedBranchId))
+        {
+            courtsQuery = courtsQuery.Where(c => c.BranchId == parsedBranchId);
+        }
+
+        var courtsList = await courtsQuery.OrderBy(c => c.Name).ToListAsync();
+
+        // 3. Retrieve the single latest snapshot row for each court via fast Partition matching
+        var courtIds = courtsList.Select(c => c.Id).ToList();
+        
+        var latestSnapshots = await _context.CourtDiagnosticSnapshots
+            .Include(s => s.Anomalies)
+            .Where(s => courtIds.Contains(s.CourtId))
+            .GroupBy(s => s.CourtId)
+            .Select(g => g.OrderByDescending(s => s.Timestamp).FirstOrDefault())
+            .ToDictionaryAsync(s => s!.CourtId, s => s);
+
+        // 4. Map into our clean dashboard presentation DTO wrapper array
+        var healthSummaryList = courtsList.Select(c =>
+        {
+            latestSnapshots.TryGetValue(c.Id, out var snapshot);
+
+            return new CourtHealthOverviewDto
+            {
+                CourtId = c.Id,
+                CourtName = c.Name,
+                BranchId = c.BranchId,
+                BranchName = c.Branch != null ? c.Branch.Name : "Main Facility",
+                SurfaceType = c.SurfaceType,
+                IsIndoor = c.IsIndoor,
+                Status = c.Status,
+                AggregateMinutesPlayed = c.AggregateMinutesPlayed,
+                MaintenanceThresholdMinutes = c.MaintenanceThresholdMinutes,
+                
+                LatestSnapshot = snapshot == null ? null : new LatestSnapshotDataDto
+                {
+                    SessionId = snapshot.SessionId,
+                    Timestamp = snapshot.Timestamp,
+                    SurfaceFrictionIndex = snapshot.SurfaceFrictionIndex,
+                    BounceUniformityPercentage = snapshot.BounceUniformityPercentage,
+                    NetTensionNewtons = snapshot.NetTensionNewtons,
+                    AmbientTemperatureCelsius = snapshot.AmbientTemperatureCelsius,
+                    HumidityPercentage = snapshot.HumidityPercentage,
+                    AgentVersion = snapshot.AgentVersion,
+                    Anomalies = snapshot.Anomalies.Select(a => new MinimalAnomalyDto
+                    {
+                        AnomalyId = a.AnomalyId,
+                        Severity = a.Severity,
+                        Category = a.Category,
+                        Description = a.Description,
+                        ConfidenceScore = a.ConfidenceScore,
+                        RecommendedAction = a.RecommendedAction
+                    }).ToList()
+                }
+            };
+        }).ToList();
+
+        return Ok(healthSummaryList);
     }
 
 }

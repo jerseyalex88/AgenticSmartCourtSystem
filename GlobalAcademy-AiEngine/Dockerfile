@@ -12,6 +12,7 @@ WORKDIR /app
 # Install standard linux system compiler utilities required for native package processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy your framework dependency version tracker requirements sheet

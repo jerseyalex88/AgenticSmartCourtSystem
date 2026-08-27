@@ -368,21 +368,21 @@ class CourtDiagnosticsService:
             calculated_dry_coefficient=1.0
         )
 
-        # =========================================================================
-        # 📡 TELEMETRY DEBUG PRINT UTILITY BLOCK
-        # =========================================================================
-        print("\n" + "="*80)
-        print("🔮 PYTHON TRANS-PORT FORECAST ENGINE DISPATCH RUN")
-        print("="*80)
-        print(f" 📦 Target Court Identifier ID  : {output_payload.court_id}")
-        print(f" 🧮 Number of Records Evaluated : {n} Rows")
-        print(f" 📉 Active Friction Loss Velocity: {output_payload.velocity_friction_loss_per_day:.5f} index/day")
-        print(f" ⏳ Computed Days Until Breach  : {output_payload.estimated_days_until_breach} Days")
-        print(f" 📅 Projected Safety Deadline   : {output_payload.predicted_breach_date}")
-        print(f" 🎯 Flag Resurface Recommended  : {output_payload.is_resurface_recommended}")
-        print(f" 📈 Calculated Model Confidence : {output_payload.confidence_score * 100:.1f}%")
-        print("="*80 + "\n")
-        # =========================================================================
+        # # =========================================================================
+        # # 📡 TELEMETRY DEBUG PRINT UTILITY BLOCK
+        # # =========================================================================
+        # print("\n" + "="*80)
+        # print("🔮 PYTHON TRANS-PORT FORECAST ENGINE DISPATCH RUN")
+        # print("="*80)
+        # print(f" 📦 Target Court Identifier ID  : {output_payload.court_id}")
+        # print(f" 🧮 Number of Records Evaluated : {n} Rows")
+        # print(f" 📉 Active Friction Loss Velocity: {output_payload.velocity_friction_loss_per_day:.5f} index/day")
+        # print(f" ⏳ Computed Days Until Breach  : {output_payload.estimated_days_until_breach} Days")
+        # print(f" 📅 Projected Safety Deadline   : {output_payload.predicted_breach_date}")
+        # print(f" 🎯 Flag Resurface Recommended  : {output_payload.is_resurface_recommended}")
+        # print(f" 📈 Calculated Model Confidence : {output_payload.confidence_score * 100:.1f}%")
+        # print("="*80 + "\n")
+        # # =========================================================================
 
         return output_payload
 
@@ -629,15 +629,15 @@ class CourtDiagnosticsService:
             calculated_dry_coefficient=calculated_dry_modifier
         )
 
-        # 📡 CONSOLE PRINT
-        print("\n" + "🧠" * 40)
-        print("🔮 ENGINE DISPATCH: META PROPHET & SCIPY ANALYSIS")
-        print("🧠" * 40)
-        print(f"  📦 Target Asset Court ID   : {output_payload.court_id}")
-        print(f"  📉 Prophet Curve Velocity  : {output_payload.velocity_friction_loss_per_day:.5f} index/day")
-        print(f"  ⏳ Computed Days to Breach : {output_payload.estimated_days_until_breach} Days")
-        if output_payload.estimated_reopen_time_utc:
-            print(f"  🕒 SciPy Reopen Prediction : {output_payload.estimated_reopen_time_utc}")
-        print("🧠" * 40 + "\n")
+        # # 📡 CONSOLE PRINT
+        # print("\n" + "🧠" * 40)
+        # print("🔮 ENGINE DISPATCH: META PROPHET & SCIPY ANALYSIS")
+        # print("🧠" * 40)
+        # print(f"  📦 Target Asset Court ID   : {output_payload.court_id}")
+        # print(f"  📉 Prophet Curve Velocity  : {output_payload.velocity_friction_loss_per_day:.5f} index/day")
+        # print(f"  ⏳ Computed Days to Breach : {output_payload.estimated_days_until_breach} Days")
+        # if output_payload.estimated_reopen_time_utc:
+        #     print(f"  🕒 SciPy Reopen Prediction : {output_payload.estimated_reopen_time_utc}")
+        # print("🧠" * 40 + "\n")
 
         return output_payload
