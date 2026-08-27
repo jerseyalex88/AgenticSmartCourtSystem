@@ -16,6 +16,7 @@ public interface ICourtDiagnosticsService
     Task ProcessTelemetryAsync(CourtDiagnosticsPayloadDto payload);
     Task<CourtDiagnosticsPayloadDto> RequestAgentAnalysisAsync(Guid courtId);
     Task<PredictiveAnalysisOutputDto> ExecuteSurfaceDecayForecastAsync(Guid courtId);
+    Task<PredictiveAnalysisOutputDto> ExecuteAdvancedLifespanForecastAsync(Guid courtId);
     Task<int> SeedHistoricalTelemetryHistoryAsync(Court court);
 }
 
@@ -206,6 +207,75 @@ public class CourtDiagnosticsService : ICourtDiagnosticsService
         // var verboseJsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
         // var rawPayloadDumpString = System.Text.Json.JsonSerializer.Serialize(forecastResults, verboseJsonOptions);
         // Console.WriteLine(rawPayloadDumpString);
+
+        return forecastResults;
+    }
+    public async Task<PredictiveAnalysisOutputDto> ExecuteAdvancedLifespanForecastAsync(Guid courtId)
+    {
+        var court = await _context.Courts.FirstOrDefaultAsync(c => c.Id == courtId);
+        if (court == null) throw new ArgumentException($"Court missing tracking target: {courtId}");
+
+        var localSnapshotsList = await _context.CourtDiagnosticSnapshots
+            .Where(s => s.CourtId == courtId)
+            .OrderBy(s => s.Timestamp)
+            .Select(s => new
+            {
+                courtId = s.CourtId.ToString(),
+                timestamp = s.Timestamp.ToString("o"),
+                surfaceFrictionIndex = s.SurfaceFrictionIndex,
+                bounceUniformityPercentage = s.BounceUniformityPercentage,
+                netTensionNewtons = s.NetTensionNewtons,
+                ambientTemperatureCelsius = s.AmbientTemperatureCelsius,
+                humidityPercentage = s.HumidityPercentage
+            })
+            .ToListAsync();
+
+        if (!localSnapshotsList.Any()) throw new InvalidOperationException("No history found to process.");
+
+        var payloadWrapperPacket = new
+        {
+            historical_snapshots = localSnapshotsList,
+            court_metadata = new
+            {
+                status = court.Status,
+                surface_type = court.SurfaceType,
+                is_indoor = court.IsIndoor,
+                dry_coefficient = court.DryCoefficient
+            }
+        };
+
+        PredictiveAnalysisOutputDto? forecastResults = null;
+
+        try
+        {
+            // Hits your brand-new distinct advanced python router address url string
+            string advancedUrl = "api/ai/diagnostics/forecast-advanced-lifespan";
+            var response = await _client.PostAsJsonAsync(advancedUrl, payloadWrapperPacket);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorDetails = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Advanced Engine computation rejection: {errorDetails}");
+            }
+
+            forecastResults = await response.Content.ReadFromJsonAsync<PredictiveAnalysisOutputDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [ADVANCED HANDSHAKE FAILURE]: {ex.Message}");
+            throw;
+        }
+
+        if (forecastResults == null) throw new InvalidOperationException("Empty results object mapped.");
+
+        // Update persistent weather tracking structures if calculated by SciPy
+        if (!string.IsNullOrWhiteSpace(forecastResults.EstimatedReopenTimeUtc) && 
+            DateTime.TryParse(forecastResults.EstimatedReopenTimeUtc, out DateTime parsedReopenTime))
+        {
+            court.EstimatedReopenTimeUtc = parsedReopenTime.ToUniversalTime();
+            court.DryCoefficient = forecastResults.CalculatedDryCoefficient;
+            await _context.SaveChangesAsync();
+        }
 
         return forecastResults;
     }

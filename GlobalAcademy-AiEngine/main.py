@@ -1,4 +1,8 @@
 # main.py; source venv/bin/activate
+import os
+os.environ["STAN_LOG_LEVEL"] = "5"
+os.environ["PROPHET_PLOTLY_DISABLED"] = "True"
+
 import uvicorn
 from fastapi import FastAPI
 from app.config import settings

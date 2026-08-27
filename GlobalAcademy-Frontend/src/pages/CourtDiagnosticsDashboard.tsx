@@ -68,6 +68,7 @@ export default function CourtDiagnosticsDashboard() {
   const [totalRecords, setTotalRecords] = useState<number>(0);
   const [pageSize] = useState<number>(10); // Records per panel threshold split
   const [forecasts, setForecasts] = useState<Record<string, any>>({});
+  const [forecastingModel, setForecastingModel] = useState<'OLS' | 'ADVANCED'>('OLS');
 
   // Operational pipeline feedback states
   const [loading, setLoading] = useState<boolean>(false);
@@ -92,15 +93,25 @@ export default function CourtDiagnosticsDashboard() {
     }
   };
 
-  const fetchCourtForecast = async (courtId: string) => {
-    // If we already evaluated this court during this session window, skip duplicate requests
-    if (forecasts[courtId]) return;
+  const fetchCourtForecast = async (courtId: string, modelOverride?: 'OLS' | 'ADVANCED') => {
+    const modelToUse = modelOverride || forecastingModel;
+    
+    // Unique cache key combining Court ID and selected algorithm
+    const cacheKey = `${courtId}_${modelToUse}`;
+    if (forecasts[cacheKey]) return;
 
     try {
-      const response = await apiClient.get<any>(`/maintenance/court-diagnostics/forecast/${courtId}`);
-      setForecasts(prev => ({ ...prev, [courtId]: response.data }));
+      // Choose the exact parallel .NET endpoint route based on user selection state
+      const endpoint = modelToUse === 'ADVANCED' 
+        ? `/maintenance/court-diagnostics/forecast-advanced/${courtId}`
+        : `/maintenance/court-diagnostics/forecast/${courtId}`;
+
+      const response = await apiClient.get<any>(endpoint);
+      
+      // Store results uniquely under the combined cache key matrix
+      setForecasts(prev => ({ ...prev, [cacheKey]: response.data }));
     } catch (err) {
-      console.error(`Failed to calculate time-series regression for asset sector ${courtId}:`, err);
+      console.error(`Failed to execute ${modelToUse} forecasting math for asset ${courtId}:`, err);
     }
   };
 
@@ -136,7 +147,7 @@ export default function CourtDiagnosticsDashboard() {
         
         // 2. Fire the background network fetch to calculate Python's time-series analytics
         if (currentCourtId) {
-          fetchCourtForecast(currentCourtId);
+          fetchCourtForecast(currentCourtId, forecastingModel); // Evaluates active selection type
         }
 
         // 3. Return your object mapping structure cleanly as usual
@@ -185,6 +196,14 @@ export default function CourtDiagnosticsDashboard() {
   useEffect(() => {
     fetchDiagnosticHistory(1); // Force reset view sequence directly to page 1 on filter alteration
   }, [selectedCourtId, selectedBranchId, searchQuery]);
+
+  // Force analytical recalculations across your visible screen rows when the model flips
+  useEffect(() => {
+    setForecasts({}); // Flush old session caches completely to prevent data bleeding
+    snapshots.forEach(s => {
+      if (s.court_id) fetchCourtForecast(s.court_id, forecastingModel);
+    });
+  }, [forecastingModel, snapshots]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -465,6 +484,19 @@ export default function CourtDiagnosticsDashboard() {
                 </button>
               )}
             </div>
+            
+            {/* NEW: DYNAMIC MACHINE LEARNING FORECASTING ALGORITHM SWITCHER */}
+            <div className="flex items-center gap-2">
+              <span className="font-bold uppercase tracking-wider text-slate-600 text-[10px] whitespace-nowrap">🧠 Forecast Brain:</span>
+              <select
+                value={forecastingModel}
+                onChange={(e) => setForecastingModel(e.target.value as 'OLS' | 'ADVANCED')}
+                className="bg-white border border-slate-300 px-2 py-1 text-xs font-mono font-bold text-purple-700 bg-slate-50/50 focus:outline-none focus:border-purple-500 rounded-none cursor-pointer"
+              >
+                <option value="OLS">📊 Linear OLS Baseline Model</option>
+                <option value="ADVANCED">⚡ Meta Prophet + SciPy Advanced</option>
+              </select>
+            </div>
 
             {/* QUICK INLINE PAGE CHUNKER NAVIGATION CONTROL */}
             <div className="flex items-center gap-1 self-end sm:self-auto font-mono text-[10px] border border-slate-300 bg-slate-100/50 p-1">
@@ -546,12 +578,16 @@ export default function CourtDiagnosticsDashboard() {
                 {/* NEW: DYNAMIC TIME-SERIES LINEAR FORECAST LIFESPAN PROGRESS INDICATOR      */}
                 {/* ========================================================================= */}
                 {(() => {
-                  const forecast = forecasts[snapshot.court_id];
+                  const cacheKey = `${snapshot.court_id}_${forecastingModel}`;
+                  const forecast = forecasts[cacheKey];
+
                   if (!forecast) return null; // Fallback gracefully if calculation is still computing over network
 
-                  const days = forecast.estimatedDaysUntilBreach;
-                  const isCritical = forecast.isResurfaceRecommended;
-                  
+                  const days = forecast.estimated_days_until_breach ?? forecast.estimatedDaysUntilBreach ?? 0;
+                  const isCritical = forecast.is_resurface_recommended ?? forecast.isResurfaceRecommended ?? false;
+                  const breachDate = forecast.predicted_breach_date ?? forecast.predictedBreachDate ?? 'Stable';
+                  const confidence = forecast.confidence_score ?? forecast.confidenceScore ?? 0;
+                                    
                   // Dynamically calculate brutalist color tokens based on time-series safety margins
                   const progressPercent = Math.max(5, Math.min(100, (days / 120) * 100));
                   const barColor = days < 15 ? 'bg-red-600' : days < 45 ? 'bg-orange-500' : 'bg-emerald-600';
@@ -570,7 +606,7 @@ export default function CourtDiagnosticsDashboard() {
                         </div>
                         <p className="text-slate-500 text-[9px] max-w-xl">
                           OLS linear regression engine tracks active friction decay velocity at{' '}
-                          <span className="text-slate-800 font-bold">{forecast.velocityFrictionLossPerDay.toFixed(5)} index/day</span>.
+                          <span className="text-slate-800 font-bold">{(forecast.velocity_friction_loss_per_day ?? forecast.velocityFrictionLossPerDay ?? 0).toFixed(5)} index/day</span>.
                         </p>
                       </div>
 

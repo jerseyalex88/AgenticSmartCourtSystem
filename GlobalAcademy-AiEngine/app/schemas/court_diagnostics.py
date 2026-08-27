@@ -93,3 +93,5 @@ class PredictiveAnalysisOutputSchema(BaseModel):
     predicted_breach_date: Optional[str] = None
     is_resurface_recommended: bool
     confidence_score: float
+    estimated_reopen_time_utc: Optional[str] = None
+    calculated_dry_coefficient: float = 1.0

@@ -402,6 +402,25 @@ public class MaintenanceController : ControllerBase
             return StatusCode(500, $"Analytics pipeline execution failure: {ex.Message}");
         }
     }
+    // --- ADVANCED PROPHET/SCIPY ENDPOINT: GET api/maintenance/court-diagnostics/forecast-advanced/{courtId} ---
+    [HttpGet("court-diagnostics/forecast-advanced/{courtId}")]
+    public async Task<IActionResult> GetAdvancedLifespanForecast(Guid courtId)
+    {
+        Guid academyId = _tenantProvider.GetTenantId();
+        var courtExists = await _context.Courts.AnyAsync(c => c.Id == courtId && c.AcademyId == academyId);
+        if (!courtExists) return NotFound($"Target Court asset context could not be validated.");
+
+        try
+        {
+            // Routes execution cleanly into your newly engineered advanced method layout
+            PredictiveAnalysisOutputDto forecastData = await _diagnosticsService.ExecuteAdvancedLifespanForecastAsync(courtId);
+            return Ok(forecastData);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Advanced analytics execution crash: {ex.Message}");
+        }
+    }
     // --- DELETE: DELETE api/maintenance/court-diagnostics/{sessionId} ---
     [HttpDelete("court-diagnostics/{sessionId}")]
     public async Task<IActionResult> DeleteSnapshot(Guid sessionId)

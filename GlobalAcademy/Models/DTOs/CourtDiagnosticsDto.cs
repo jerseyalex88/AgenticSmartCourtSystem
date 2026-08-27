@@ -65,11 +65,29 @@ namespace GlobalAcademy.Models.DTOs
     }
     public class PredictiveAnalysisOutputDto
     {
+        [JsonPropertyName("court_id")]
         public string CourtId { get; set; } = string.Empty;
+
+        [JsonPropertyName("velocity_friction_loss_per_day")]
         public double VelocityFrictionLossPerDay { get; set; }
+
+        [JsonPropertyName("estimated_days_until_breach")]
         public int EstimatedDaysUntilBreach { get; set; }
+
+        [JsonPropertyName("predicted_breach_date")]
         public string? PredictedBreachDate { get; set; }
+
+        [JsonPropertyName("is_resurface_recommended")]
         public bool IsResurfaceRecommended { get; set; }
+
+        [JsonPropertyName("confidence_score")]
         public double ConfidenceScore { get; set; }
+
+        // --- NEW CORES FOR THE ADVANCED WEATHER PREDICTORS ---
+        [JsonPropertyName("estimated_reopen_time_utc")]
+        public string? EstimatedReopenTimeUtc { get; set; }
+
+        [JsonPropertyName("calculated_dry_coefficient")]
+        public double CalculatedDryCoefficient { get; set; }
     }
 }

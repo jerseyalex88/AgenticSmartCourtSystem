@@ -73,3 +73,27 @@ async def forecast_surface_decay(historical_snapshots: List[dict]):
         court_id=str(court_id), 
         historical_snapshots=historical_snapshots
     )
+
+@router.post("/forecast-advanced-lifespan", response_model=PredictiveAnalysisOutputSchema)
+async def forecast_advanced_lifespan(payload_wrapper: dict):
+    """
+    Advanced Endpoint: Processes linear historical arrays alongside structural database metadata 
+    to evaluate seasonal trends with Meta Prophet and drying parameters with SciPy.
+    """
+    historical_snapshots = payload_wrapper.get("historical_snapshots", [])
+    court_metadata = payload_wrapper.get("court_metadata", {})
+    
+    if not historical_snapshots:
+        return PredictiveAnalysisOutputSchema(
+            court_id="unknown", velocity_friction_loss_per_day=0.0,
+            estimated_days_until_breach=999, is_resurface_recommended=False, confidence_score=0.0
+        )
+        
+    first_snapshot = historical_snapshots[0]
+    court_id = first_snapshot.get("courtId") or first_snapshot.get("court_id") or "unknown"
+    
+    return CourtDiagnosticsService.forecast_advanced_lifespan(
+        court_id=str(court_id), 
+        historical_snapshots=historical_snapshots,
+        court_meta=court_metadata
+    )

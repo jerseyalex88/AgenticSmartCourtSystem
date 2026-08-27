@@ -21,3 +21,6 @@ typing-inspection==0.4.2
 typing_extensions==4.16.0
 tzdata==2026.3
 uvicorn==0.39.0
+numpy>=1.24.0,<2.0.0
+scipy==1.13.0
+prophet==1.1.5
