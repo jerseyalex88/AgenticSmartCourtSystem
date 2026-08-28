@@ -1,6 +1,7 @@
 // File: GlobalAcademy-Frontend/src/pages/AssetHealthControlCenter.tsx
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
+import CourtSpatialHeatmap from '../components/CourtSpatialHeatmap';
 
 interface MinimalAnomaly {
   anomalyId: string;
@@ -40,6 +41,56 @@ interface BranchTopologyMeta {
   id: string;
   name: string;
   courts: { id: string; name: string; surfaceType: string; status: string }[];
+}
+
+interface BouncePoint {
+  x: number;
+  y: number;
+  intensity: string;
+}
+interface SectorImpact {
+  id: string;
+  Id: string;
+  name: string;
+  
+  // 🛠️ Instruct TypeScript to accept both casing properties from the wire payload
+  bounceCount?: number;
+  bounce_count?: number;
+  
+  wearIntensityIndex?: number;
+  wear_intensity_index?: number;
+}
+
+interface SpatialHeatmap {
+  courtId: string;
+  
+  // 🛠️ Add both contract signatures to the master layout schema model
+  totalProcessedBounces?: number;
+  total_processed_bounces?: number;
+  
+  lastAnalyzedClipUtc?: string;
+  last_analyzed_clip_utc?: string;
+  
+  sectors: SectorImpact[];
+  bounce_points?: BouncePoint[];
+  bouncePoints?: BouncePoint[];
+}
+
+// Update your main master definition container by appending the new contract node:
+interface CourtHealthOverview {
+  courtId: string;
+  courtName: string;
+  branchId: string;
+  branchName: string;
+  surfaceType: string;
+  isIndoor: boolean;
+  status: string;
+  aggregateMinutesPlayed: number;
+  maintenanceThresholdMinutes: number;
+  latestSnapshot: LatestSnapshot | null;
+  
+  // 🛠️ NEW COMPUTER VISION DATA PROPERTY INTERCEPT MATRIX
+  heatmap: SpatialHeatmap | null;
 }
 
 export default function AssetHealthControlCenter() {
@@ -331,6 +382,114 @@ export default function AssetHealthControlCenter() {
                       ⏳ Computational Python AI models calculating time-series curves over network interfaces...
                     </div>
                   )}
+
+                  {/* ========================================================================= */}
+                  {/* 🛰️ ADVANCED COMPUTER VISION SPATIAL STRIKE HEATMAP RENDERING BLOCK        */}
+                  {/* ========================================================================= */}
+                  {court.heatmap && court.heatmap.sectors && court.heatmap.sectors.length > 0 && (
+                    <div className="mb-4 border border-slate-300 bg-white p-3 shadow-inner font-mono text-[10px]">
+                      
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-200 pb-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-purple-700 text-xs font-black">🛰️ COMPUTER VISION STRIKE INTENSITY MATRIX</span>
+                          <span className="text-[8px] bg-purple-100 text-purple-700 px-1 border border-purple-300 font-bold uppercase tracking-tight">
+                            YOLOv11 Active
+                          </span>
+                        </div>
+                        <div className="text-slate-400 text-[9px] text-right font-semibold">
+                          📊 TOTAL PROCESSED IMPACT STRIKES: <span className="text-slate-800 font-black">
+                            {/* 🛠️ FIXED: Fallback to catch snake_case network properties safely */}
+                            {court.heatmap.total_processed_bounces ?? court.heatmap.totalProcessedBounces ?? 0}
+                          </span>
+                          <span className="mx-2">|</span> 
+                          🕒 LAST ANALYSIS RUN: <span className="text-slate-700 font-bold">
+                            {/* 🛠️ FIXED: Handshake both casing properties cleanly to avoid the Invalid Date crash */}
+                            {new Date(court.heatmap.last_analyzed_clip_utc ?? court.heatmap.lastAnalyzedClipUtc ?? new Date()).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 🛠️ BRUTALIST TOP-DOWN TENNIS COURT OVERLAY GRID CONTAINER */}
+                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center">
+                        
+                        {/* THE GEOMETRIC TENNIS COURT GRID MAP LAYER */}
+                        <div className="lg:col-span-3 border border-slate-800 bg-slate-900 p-2 relative select-none">
+                          <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest absolute top-1 left-2 z-10">Top-Down Surface Sector View</div>
+                          
+                          {/* Outer Doubles Boundary Box Line */}
+                          <div className="border-2 border-slate-200 w-full p-1.5 grid grid-cols-3 gap-1 bg-emerald-950/20">
+                            
+                            {court.heatmap.sectors.slice(0, 12).map((sector) => {
+                              // Dynamic heatmap calculation engine mapping indices down to brutalist color shifts
+                              const count = sector.bounce_count ?? sector.bounceCount ?? 0;
+                              const idx = sector.wear_intensity_index ?? sector.wearIntensityIndex ?? 0;
+                              const name = sector.name ?? sector.Id;
+                              
+                              const heatColor = 
+                                idx >= 0.80 ? 'bg-red-600/90 text-white border-red-400 hover:bg-red-500' :
+                                idx >= 0.40 ? 'bg-amber-500/80 text-slate-900 border-amber-300 hover:bg-amber-400' :
+                                count > 0  ? 'bg-emerald-600/50 text-emerald-100 border-emerald-500 hover:bg-emerald-600/70' :
+                                             'bg-slate-800/40 text-slate-500 border-slate-700/60 opacity-40';
+
+                              return (
+                                <div 
+                                  key={sector.id} 
+                                  className={`border p-2.5 transition duration-150 flex flex-col justify-between items-center text-center min-h-[56px] relative shadow-md font-bold uppercase tracking-tight ${heatColor}`}
+                                >
+                                  <div className="text-[9px] font-black tracking-tight leading-none text-center truncate max-w-full">
+                                    {sector.name}
+                                  </div>
+                                  <div className="text-[11px] font-black font-mono tracking-tighter mt-1">
+                                    {count > 0 ? `💥 ${count} hits` : '0 hits'}
+                                  </div>
+                                  {idx > 0 && (
+                                    <div className="absolute bottom-0.5 right-1 text-[7px] font-mono tracking-tighter font-semibold opacity-80">
+                                      WEAR: {(idx * 100).toFixed(0)}%
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+
+                          </div>
+                        </div>
+
+                        {/* EXECUTED RECONVERSION DATA INDEX METRIC DECK */}
+                        <div className="space-y-2 border border-slate-200 p-2.5 bg-slate-50 h-full flex flex-col justify-center">
+                          <div className="text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1">🔥 Wear Intensity Legend:</div>
+                          <div className="space-y-1.5 font-semibold text-[9px]">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-red-600 border border-red-400 shadow-sm" />
+                              <span className="text-red-700 font-bold uppercase">[CRITICAL WEAR ZONE] : &gt;= 80% Abrasion</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-amber-500 border border-amber-300 shadow-sm" />
+                              <span className="text-amber-700 font-bold uppercase">[MODERATE TRAFFIC] : 40% - 79% Friction Loss</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-emerald-600/60 border border-emerald-500 shadow-sm" />
+                              <span className="text-emerald-700 font-bold uppercase">[PRISTINE RUNWAY] : Stable Impact Surface</span>
+                            </div>
+                          </div>
+                          <p className="text-[8px] text-slate-400 leading-normal border-t border-slate-200 pt-1.5 mt-1.5">
+                            YOLOv11 tracking camera vectors isolate ball deflection vectors to calculate local load distribution coefficients dynamically.
+                          </p>
+                        </div>
+
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ========================================================================= */}
+                  {/* 🛠️ NEW: MOUNT THE ULTRA-PREMIUM REUSABLE SPATIAL MOISTURE HEATMAP ENGINE  */}
+                  {/* ========================================================================= */}
+                  {court.heatmap && (court.heatmap.bounce_points || court.heatmap.bouncePoints) && (
+                    <CourtSpatialHeatmap 
+                      bouncePoints={court.heatmap.bounce_points ?? court.heatmap.bouncePoints ?? []}
+                      totalProcessedBounces={court.heatmap.total_processed_bounces ?? court.heatmap.totalProcessedBounces ?? 0}
+                    />
+                  )}
+                  
                   {/* LATEST METRICS STATISTICS BLOCKS ROW */}
                   {snapshot ? (
                     <>

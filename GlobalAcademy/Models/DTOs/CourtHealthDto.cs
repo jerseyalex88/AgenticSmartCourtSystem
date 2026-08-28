@@ -1,6 +1,7 @@
 // File: GlobalAcademy.Models.DTOs/CourtHealthOverviewDto.cs
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace GlobalAcademy.Models.DTOs
 {
@@ -18,6 +19,8 @@ namespace GlobalAcademy.Models.DTOs
 
         // Holds the single, latest diagnostic snapshot data row or null if never calculated
         public LatestSnapshotDataDto? LatestSnapshot { get; set; }
+        // 🛠️ ADVANCED COMPUTER VISION SPATIAL HEATMAP ATTACHMENT CORE
+        public SpatialHeatmapDto? Heatmap { get; set; }
     }
 
     public class LatestSnapshotDataDto
@@ -41,5 +44,47 @@ namespace GlobalAcademy.Models.DTOs
         public string Description { get; set; } = string.Empty;
         public double ConfidenceScore { get; set; }
         public string RecommendedAction { get; set; } = string.Empty;
+    }
+    public class SpatialHeatmapDto
+    {
+        [JsonPropertyName("court_id")]
+        public Guid CourtId { get; set; }
+
+        [JsonPropertyName("total_processed_bounces")]
+        public int TotalProcessedBounces { get; set; }
+
+        [JsonPropertyName("last_analyzed_clip_utc")]
+        public DateTime LastAnalyzedClipUtc { get; set; }
+
+        [JsonPropertyName("sectors")]
+        public List<SectorImpactDto> Sectors { get; set; } = new();
+        [JsonPropertyName("bounce_points")]
+        public List<BouncePointDto> BouncePoints { get; set; } = new();
+    }
+
+    public class SectorImpactDto
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("bounce_count")]
+        public int BounceCount { get; set; }
+
+        [JsonPropertyName("wear_intensity_index")]
+        public double WearIntensityIndex { get; set; }
+    }
+    public class BouncePointDto
+    {
+        [JsonPropertyName("x")]
+        public double X { get; set; } // Percentage width coordinate from left edge (0 to 100)
+
+        [JsonPropertyName("y")]
+        public double Y { get; set; } // Percentage height coordinate from top edge (0 to 100)
+
+        [JsonPropertyName("intensity")]
+        public string Intensity { get; set; } = "High"; // High (Red), Moderate (Amber), Low (Blue)
     }
 }

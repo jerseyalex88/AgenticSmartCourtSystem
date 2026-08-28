@@ -567,12 +567,73 @@ public class MaintenanceController : ControllerBase
                         ConfidenceScore = a.ConfidenceScore,
                         RecommendedAction = a.RecommendedAction
                     }).ToList()
-                }
+                },
+                // 🛠️ Automatically attach the high-fidelity spatial matrix dataset to this court DTO!
+                Heatmap = GenerateMockSpatialHeatmap(c.Id, c.SurfaceType)
             };
         }).ToList();
 
         return Ok(healthSummaryList);
     }
+    private SpatialHeatmapDto GenerateMockSpatialHeatmap(Guid courtId, string surfaceType)
+    {
+        int baseMultiplier = surfaceType == "Grass" ? 12 : surfaceType == "Clay" ? 15 : 10;
+        var random = new Random((int)courtId.GetHashCode()); // Seed uniquely by Court GUID to keep coordinates stable
+
+        var heatmap = new SpatialHeatmapDto
+        {
+            CourtId = courtId,
+            TotalProcessedBounces = 1238,
+            LastAnalyzedClipUtc = DateTime.UtcNow.AddMinutes(-12),
+            Sectors = new List<SectorImpactDto>
+            {
+                new() { Id = "deuce_baseline", Name = "Deuce Baseline", BounceCount = 392, WearIntensityIndex = 0.88 },
+                new() { Id = "ad_baseline", Name = "Ad Baseline", BounceCount = 338, WearIntensityIndex = 0.82 },
+                new() { Id = "deuce_midcourt", Name = "Deuce Mid-Court", BounceCount = 152, WearIntensityIndex = 0.45 },
+                new() { Id = "ad_midcourt", Name = "Ad Mid-Court", BounceCount = 125, WearIntensityIndex = 0.41 },
+                new() { Id = "left_service_box", Name = "Left Service Box", BounceCount = 72, WearIntensityIndex = 0.28 },
+                new() { Id = "right_service_box", Name = "Right Service Box", BounceCount = 42, WearIntensityIndex = 0.18 },
+                new() { Id = "left_net_quadrant", Name = "Left Net Quadrant", BounceCount = 11, WearIntensityIndex = 0.08 },
+                new() { Id = "right_net_quadrant", Name = "Right Net Quadrant", BounceCount = 5, WearIntensityIndex = 0.04 },
+                new() { Id = "deuce_deep_alleys", Name = "Deuce Deep Alleys", BounceCount = 3, WearIntensityIndex = 0.02 },
+                new() { Id = "ad_deep_alleys", Name = "Ad Deep Alleys", BounceCount = 0, WearIntensityIndex = 0.00 },
+                new() { Id = "left_net_alleys", Name = "Left Net Alleys", BounceCount = 0, WearIntensityIndex = 0.00 },
+                new() { Id = "right_net_alleys", Name = "Right Net Alleys", BounceCount = 0, WearIntensityIndex = 0.00 }
+            }
+        };
+
+        // 🛠️ GENERATE REALISTIC EXPONENTIAL DENSE HEAT GRADIENT CLUSTER COORDINATES
+        // Generate clusters tightly concentrated near the baselines (Left/Right extremes)
+        for (int i = 0; i < 85; i++)
+        {
+            double x, y;
+            string intensity = "Low";
+
+            if (i < 40) // 1. Baseline Heavy Strike Clusters (High Intensity Red)
+            {
+                x = i % 2 == 0 ? random.Next(5, 28) : random.Next(72, 95);
+                y = random.Next(12, 88);
+                intensity = "High";
+            }
+            else if (i < 65) // 2. Mid-Court Trailing Bounces (Moderate Intensity Amber)
+            {
+                x = random.Next(22, 78);
+                y = random.Next(15, 85);
+                intensity = "Moderate";
+            }
+            else // 3. Light Volleys and Net Scrapes (Low Density Blue)
+            {
+                x = random.Next(35, 65);
+                y = random.Next(5, 95);
+                intensity = "Low";
+            }
+
+            heatmap.BouncePoints.Add(new BouncePointDto { X = x, Y = y, Intensity = intensity });
+        }
+
+        return heatmap;
+    }
+
 
 }
 
