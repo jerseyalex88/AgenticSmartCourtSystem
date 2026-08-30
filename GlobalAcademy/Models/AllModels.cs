@@ -72,7 +72,11 @@ namespace GlobalAcademy.Models {
         public Branch? Branch { get; set; }
         // Tracks the real-world state of the physical court hardware: "Off" or "On"
         public string FloodlightState { get; set; } = "Off";
-
+        
+        // 🛠️ MERGED PROPERTY: Native PostgreSQL indexable JSONB storage slot
+        // Overwrites are committed atomically by your async Python callback webhooks
+        [Column(TypeName = "jsonb")]
+        public string? SpatialHeatmapJson { get; set; }
     }
     public class UserBranch : Security.IMultiTenant
     {

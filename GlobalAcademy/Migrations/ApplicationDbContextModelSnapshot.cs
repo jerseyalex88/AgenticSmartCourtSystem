@@ -188,6 +188,9 @@ namespace GlobalAcademy.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SpatialHeatmapJson")
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");

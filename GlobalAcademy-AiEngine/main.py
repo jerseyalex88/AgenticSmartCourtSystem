@@ -1,4 +1,4 @@
-# main.py; source venv/bin/activate
+# main.py; source venv/bin/activate; dotnet run --launch-profile "https"
 import os
 os.environ["STAN_LOG_LEVEL"] = "5"
 os.environ["PROPHET_PLOTLY_DISABLED"] = "True"
@@ -6,8 +6,7 @@ os.environ["PROPHET_PLOTLY_DISABLED"] = "True"
 import uvicorn
 from fastapi import FastAPI
 from app.config import settings
-from app.routers import pricing, maintenance, court_diagnostics
-#from app.routers import court_diagnostics
+from app.routers import pricing, maintenance, court_diagnostics, calibration, video_analytics
 
 # Initialize the central application engine context using values from our config file
 app = FastAPI(
@@ -20,6 +19,8 @@ app = FastAPI(
 app.include_router(pricing.router)
 app.include_router(maintenance.router)
 app.include_router(court_diagnostics.router)
+app.include_router(calibration.router)
+app.include_router(video_analytics.router)
 
 @app.get("/")
 def read_root():

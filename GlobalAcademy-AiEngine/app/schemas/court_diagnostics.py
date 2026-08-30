@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field, UUID4
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Tuple
 
 class CourtDiagnosticRequest(BaseModel):
     """🛡️ Validates incoming .NET multi-tenant court telemetry vectors."""
@@ -95,3 +95,32 @@ class PredictiveAnalysisOutputSchema(BaseModel):
     confidence_score: float
     estimated_reopen_time_utc: Optional[str] = None
     calculated_dry_coefficient: float = 1.0
+
+class CoordinatePoint(BaseModel):
+    """Represents a raw pixel coordinate location on a camera frame image."""
+    x: float
+    y: float
+
+class CourtCalibrationInputSchema(BaseModel):
+    """
+    Data contract capturing the 4 corners of the court selected in the video stream UI
+    to compute the perspective homography transformation matrix.
+    Corners must be provided in sequential order: Top-Left, Top-Right, Bottom-Left, Bottom-Right.
+    """
+    court_id: str
+    video_width: int
+    video_height: int
+    corners: List[CoordinatePoint] # Must contain exactly 4 coordinate structures
+
+class CalibrationResponseSchema(BaseModel):
+    """Confirms matrix calculation validation status back over server bridge."""
+    court_id: str
+    status: str
+    message: str
+
+class VideoAnalysisStartResponseSchema(BaseModel):
+    """Confirms background thread job registration status back to .NET Core."""
+    court_id: str
+    job_id: str
+    status: str
+    message: str

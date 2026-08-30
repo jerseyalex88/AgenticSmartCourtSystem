@@ -109,6 +109,9 @@ export default function AssetHealthControlCenter() {
   const [loading, setLoading] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  const [uploadingCourts, setUploadingCourts] = useState<Record<string, boolean>>({});
+  const [dragActiveCourts, setDragActiveCourts] = useState<Record<string, boolean>>({});
+
   // --- FETCH 1: Initial load for Collapsible Facility Ledger ---
   const fetchAcademyTopology = async () => {
     try {
@@ -151,6 +154,76 @@ export default function AssetHealthControlCenter() {
       setForecasts(prev => ({ ...prev, [cacheKey]: response.data }));
     } catch (err) {
       console.error(`Failed to process computational forecast loop for court ${courtId}:`, err);
+    }
+  };
+
+  // --- FETCH 4: MULTIPART BINARY STREAM UPLOADER (DIAGNOSTIC VERSION) ---
+  const handleUploadVideoClip = async (courtId: string, fileInputSource: any) => {
+    console.log("====================================================");
+    console.log("🔍 [UPLOAD DEBUGGER ACTIVATED] Inbound Source Data Info:");
+    console.log("====================================================");
+    console.log("📦 Inbound Data Raw Type:", typeof fileInputSource);
+    console.log("📦 Is Data an Instance of FileList?", fileInputSource instanceof FileList);
+    console.log("📦 Is Data an Instance of File?", fileInputSource instanceof File);
+    console.log("📋 Full Raw Object Inspector:", fileInputSource);
+
+    let extractedFile: File | null = null;
+
+    // A. If coming from Drag-and-Drop file stream drops list
+    if (fileInputSource instanceof FileList) {
+      if (fileInputSource.length > 0) {
+        extractedFile = fileInputSource[0];
+        console.log("🎯 Extracted from FileList index 0:", extractedFile.name, `(${extractedFile.size} bytes)`);
+      } else {
+        console.warn("⚠️ FileList is empty!");
+      }
+    } 
+    // B. If coming from an HTML File Input select element directly
+    else if (fileInputSource instanceof File) {
+      extractedFile = fileInputSource;
+      console.log("🎯 Input provided direct File reference:", extractedFile.name, `(${extractedFile.size} bytes)`);
+    } 
+    // C. Fallback for manual event objects or index variations
+    else if (fileInputSource && fileInputSource[0] instanceof File) {
+      extractedFile = fileInputSource[0];
+      console.log("🎯 Extracted from loose array index 0:", extractedFile.name);
+    }
+
+    if (!extractedFile) {
+      console.error("❌ [CRITICAL]: Could not resolve a single raw File binary out of the provided source input data container.");
+      setStatusMessage("❌ [UPLOAD FAULT]: No valid binary file could be extracted from input source.");
+      return;
+    }
+
+    // Lock the court card cell row processing state indicators on
+    setUploadingCourts(prev => ({ ...prev, [courtId]: true }));
+    setStatusMessage(`📤 [UPLOADING MEDIA]: Streaming multipart binary video blocks to backend servers...`);
+
+    const uploadFormPayload = new FormData();
+    // Ensure naming matches what C# expects
+    uploadFormPayload.append('courtId', courtId);
+    uploadFormPayload.append('videoFile', extractedFile);
+
+    console.log("📡 [MULTIPART FORMDATA CONTENTS INSPECTOR]:");
+    console.log("   👉 Form field 'courtId' contents:", uploadFormPayload.get('courtId'));
+    console.log("   👉 Form field 'videoFile' binary filename:", (uploadFormPayload.get('videoFile') as File)?.name);
+
+    try {
+      const response = await apiClient.post('/maintenance/court-video/upload', uploadFormPayload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      console.log("🚀 [NETWORK CALLBACK ENGINE SUCCESS] .NET Accepted Response:", response.data);
+      setStatusMessage(`🚀 [JOB RECONCILED]: Video analytical pass scheduled successfully! Job ID: ${response.data.job_id || 'Queued'}`);
+    } catch (err: any) {
+      console.error("❌ [NETWORK HANDSHAKE REJECTION LOG]:", err);
+      if (err.response) {
+        console.error("💥 Server Error Response Body Context:", err.response.data);
+      }
+      setStatusMessage(`❌ [UPLOAD FAULT]: Media pipeline rejected file package: ${err.message}`);
+    } finally {
+      setUploadingCourts(prev => ({ ...prev, [courtId]: false }));
+      console.log("====================================================\n");
     }
   };
 
@@ -414,7 +487,7 @@ export default function AssetHealthControlCenter() {
                         
                         {/* THE GEOMETRIC TENNIS COURT GRID MAP LAYER */}
                         <div className="lg:col-span-3 border border-slate-800 bg-slate-900 p-2 relative select-none">
-                          <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest absolute top-1 left-2 z-10">Top-Down Surface Sector View</div>
+                          <div className="text-[8px] font-bold text-slate-100 uppercase tracking-widest absolute top-1 left-2 z-10">Top-Down Surface Sector View</div>
                           
                           {/* Outer Doubles Boundary Box Line */}
                           <div className="border-2 border-slate-200 w-full p-1.5 grid grid-cols-3 gap-1 bg-emerald-950/20">
@@ -489,7 +562,61 @@ export default function AssetHealthControlCenter() {
                       totalProcessedBounces={court.heatmap.total_processed_bounces ?? court.heatmap.totalProcessedBounces ?? 0}
                     />
                   )}
-                  
+
+                  {/* ========================================================================= */}
+                  {/* 📤 MULTIPART OPTICAL CAMERA CLIP DRAG-AND-DROP INGESTION INTERFACE        */}
+                  {/* ========================================================================= */}
+                  <div className="mb-4 font-mono text-[10px]">
+                    <div 
+                      className={`border border-dashed p-4 text-center transition transition-all relative ${
+                        dragActiveCourts[court.courtId] 
+                          ? 'border-purple-600 bg-purple-50/40 text-purple-700' 
+                          : 'border-slate-400 bg-slate-50/30 text-slate-500 hover:border-slate-600 hover:bg-slate-50/70'
+                      }`}
+                      onDragOver={(e) => { e.preventDefault(); setDragActiveCourts(prev => ({ ...prev, [court.courtId]: true })); }}
+                      onDragLeave={(e) => { e.preventDefault(); setDragActiveCourts(prev => ({ ...prev, [court.courtId]: false })); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragActiveCourts(prev => ({ ...prev, [court.courtId]: false }));
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          handleUploadVideoClip(court.courtId, e.dataTransfer.files[0]);
+                        }
+                      }}
+                    >
+                      {uploadingCourts[court.courtId] ? (
+                        <div className="space-y-2 py-2 animate-pulse">
+                          <div className="text-purple-700 font-black uppercase text-[11px] tracking-wide">
+                            ⚙️ PIPING BINARY DATA CHUNKS OVER CONTAINER INTERFACES...
+                          </div>
+                          <p className="text-[9px] text-slate-400 font-semibold leading-none">
+                            Do not close or navigate away from this management tab shell window boundary loops.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5 cursor-pointer relative">
+                          {/* Hidden raw input trigger interface bridge for manual click interactions */}
+                          <input 
+                            type="file" 
+                            accept=".mp4,.mov,.avi,.mkv" 
+                            onChange={(e) => { 
+                              if (e.target.files && e.target.files.length > 0) { 
+                                // 🛠️ FIX: Handshake index 0 out of the target files collection array explicitly
+                                handleUploadVideoClip(court.courtId, e.target.files[0]); 
+                              } 
+                            }}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                          />
+                          <div className="text-slate-800 font-black uppercase text-[10px] tracking-tight">
+                            📥 DRAG & DROP OPTICAL RECORDING CLIP HERE
+                          </div>
+                          <p className="text-slate-400 text-[9px] leading-tight font-medium max-w-md mx-auto">
+                            Supports compressed <span className="text-slate-600 font-bold">.MP4, .MOV, or .AVI</span> match gameplay or drone analytics footage files. Click to select a file manually.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* LATEST METRICS STATISTICS BLOCKS ROW */}
                   {snapshot ? (
                     <>

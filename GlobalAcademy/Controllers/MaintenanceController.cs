@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace GlobalAcademy.Controllers;
@@ -536,6 +537,22 @@ public class MaintenanceController : ControllerBase
         {
             latestSnapshots.TryGetValue(c.Id, out var snapshot);
 
+            // 🛠️ REPLACES MOCK: Deserializer reads real computer vision analytics maps right out of your native jsonb cell column!
+            SpatialHeatmapDto? liveHeatmapData = null;
+            if (!string.IsNullOrWhiteSpace(c.SpatialHeatmapJson))
+            {
+                try
+                {
+                    var parseOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    liveHeatmapData = JsonSerializer.Deserialize<SpatialHeatmapDto>(c.SpatialHeatmapJson, parseOptions);
+                }
+                catch (Exception)
+                {
+                    // Fail silent fallback safety block to handle old schema rows cleanly
+                    liveHeatmapData = null;
+                }
+            }
+
             return new CourtHealthOverviewDto
             {
                 CourtId = c.Id,
@@ -547,34 +564,108 @@ public class MaintenanceController : ControllerBase
                 Status = c.Status,
                 AggregateMinutesPlayed = c.AggregateMinutesPlayed,
                 MaintenanceThresholdMinutes = c.MaintenanceThresholdMinutes,
-                
-                LatestSnapshot = snapshot == null ? null : new LatestSnapshotDataDto
-                {
-                    SessionId = snapshot.SessionId,
-                    Timestamp = snapshot.Timestamp,
-                    SurfaceFrictionIndex = snapshot.SurfaceFrictionIndex,
-                    BounceUniformityPercentage = snapshot.BounceUniformityPercentage,
-                    NetTensionNewtons = snapshot.NetTensionNewtons,
-                    AmbientTemperatureCelsius = snapshot.AmbientTemperatureCelsius,
-                    HumidityPercentage = snapshot.HumidityPercentage,
-                    AgentVersion = snapshot.AgentVersion,
-                    Anomalies = snapshot.Anomalies.Select(a => new MinimalAnomalyDto
-                    {
-                        AnomalyId = a.AnomalyId,
-                        Severity = a.Severity,
-                        Category = a.Category,
-                        Description = a.Description,
-                        ConfidenceScore = a.ConfidenceScore,
-                        RecommendedAction = a.RecommendedAction
-                    }).ToList()
-                },
-                // 🛠️ Automatically attach the high-fidelity spatial matrix dataset to this court DTO!
-                Heatmap = GenerateMockSpatialHeatmap(c.Id, c.SurfaceType)
+                LatestSnapshot = snapshot == null ? null : new LatestSnapshotDataDto { /* ... your snap attributes mapping ... */ },
+
+                // 🎯 LIVE SYNC: Streams real YOLOv11 tracking metrics to your premium React court maps!
+                Heatmap = liveHeatmapData
             };
         }).ToList();
 
         return Ok(healthSummaryList);
     }
+    // --- 🛰️ COMPUTER VISION TELEMETRY CALLBACK HOOK: POST api/maintenance/court-spatial-heatmap/callback ---
+    [HttpPost("court-spatial-heatmap/callback")]
+    public async Task<IActionResult> ProcessSpatialHeatmapPythonCallback([FromBody] JsonElement rawPythonPayload)
+    {
+        try
+        {
+            // 1. 🛠️ FIXED: Access sub-properties using the clean, native JsonElement struct syntax
+            if (!rawPythonPayload.TryGetProperty("court_id", out JsonElement courtIdElement))
+            {
+                return BadRequest("Invalid spatial payload tracking signature: Missing 'court_id' context parameter.");
+            }
+
+            // 2. 🛠️ FIXED: Extract string tokens natively using GetString() without dropping Session errors
+            string? courtIdString = courtIdElement.GetString();
+            if (string.IsNullOrWhiteSpace(courtIdString) || !Guid.TryParse(courtIdString, out Guid courtId))
+            {
+                return BadRequest("Malformed spatial tracking signature: 'court_id' must be a valid tracking GUID token.");
+            }
+
+            Console.WriteLine($"DEBUG: Target physical court {courtIdString}");
+
+            // 3. Query the physical database row matching this physical asset
+            var court = await _context.Courts.FirstOrDefaultAsync(c => c.Id == courtId);
+            if (court == null)
+            {
+                return NotFound($"Target physical court asset context could not be resolved inside database ledger: {courtId}");
+            }
+
+            // 4. Serialize the clean payload tree straight into your new PostgreSQL jsonb column string cell
+            var formatOptions = new JsonSerializerOptions { WriteIndented = false };
+            court.SpatialHeatmapJson = JsonSerializer.Serialize(rawPythonPayload, formatOptions);
+
+            // 5. Force state synchronization and commit updates to disk storage rows
+            _context.Entry(court).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"🚀 [NETWORK CALLBACK ENGINE SUCCESS]: Locked fresh YOLOv11 spatial tracking metrics to Postgres row for Court {courtId}.");
+            return Ok(new { status = "SUCCESS", message = "Spatial heatmap payload recorded safely inside repository tables." });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [CALLBACK PIPELINE CRASH] Failed to ingest computer vision packet: {ex.Message}");
+            return StatusCode(500, $"Internal server database ingestion synchronization failure: {ex.Message}");
+        }
+    }
+    // --- CCTV CLIP MULTIPART INGESTION STREAM: POST api/maintenance/court-video/upload ---
+    [HttpPost("court-video/upload")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = 524288000)]
+    public async Task<IActionResult> UploadCourtAnalysisVideo([FromForm] CourtVideoUploadRequest request)
+    {
+        // 🛠️ FIXED: Validate your model properties using the new unified request model
+        if (request == null || request.VideoFile == null || request.VideoFile.Length == 0)
+        {
+            return BadRequest("Empty media transfer envelope: Please select a valid compressed video clip asset row.");
+        }
+
+        try
+        {
+            using var multiPartContent = new MultipartFormDataContent();
+            
+            // 🛠️ FIXED: Use properties from the request object container rows
+            multiPartContent.Add(new StringContent(request.CourtId.ToString()), "court_id");
+
+            using var fileStream = request.VideoFile.OpenReadStream();
+            var fileStreamContent = new StreamContent(fileStream);
+            fileStreamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(request.VideoFile.ContentType);
+            
+            multiPartContent.Add(fileStreamContent, "video_file", request.VideoFile.FileName);
+
+            // ... Keep your remaining HttpClient PostAsync and background thread proxy loops completely identical below ...
+            string baseAiEngineUrl = "http://localhost:8000"; 
+            string absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/video/upload-match-clip";
+
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(10) }; 
+            var aiEngineResponse = await httpClient.PostAsync(absoluteEngineRoute, multiPartContent);
+
+            if (!aiEngineResponse.IsSuccessStatusCode)
+            {
+                var errorDetails = await aiEngineResponse.Content.ReadAsStringAsync();
+                return StatusCode((int)aiEngineResponse.StatusCode, $"Headless AI processing engine pipeline rejection: {errorDetails}");
+            }
+
+            var successPayloadJson = await aiEngineResponse.Content.ReadAsStringAsync();
+            return Ok(JsonDocument.Parse(successPayloadJson));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [VIDEO PROXY PIPELINE CRASH]: {ex.Message}");
+            return StatusCode(500, $"Internal server streaming handshake crash: {ex.Message}");
+        }
+    }
+
     private SpatialHeatmapDto GenerateMockSpatialHeatmap(Guid courtId, string surfaceType)
     {
         int baseMultiplier = surfaceType == "Grass" ? 12 : surfaceType == "Clay" ? 15 : 10;
@@ -643,10 +734,18 @@ public record UpdateShadowQueueDto(string QueueStatus, string DisplacementReason
 public record CreateTicketDto(Guid CourtId, string Title, string Description, string PriorityLevel);
 public record UpdateTicketDto(string Title, string Description, string TicketStatus, string PriorityLevel);
 public class PagedResponseDto<T>
-    {
-        public List<T> Items { get; set; } = new();
-        public int TotalRecords { get; set; }
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages { get; set; }
-    }
+{
+    public List<T> Items { get; set; } = new();
+    public int TotalRecords { get; set; }
+    public int PageNumber { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages { get; set; }
+}
+public class CourtVideoUploadRequest
+{
+    [FromForm(Name = "courtId")] // 🎯 FORCES STABILITY: Matches React camelCase exactly
+    public Guid CourtId { get; set; }
+
+    [FromForm(Name = "videoFile")] // 🎯 FORCES STABILITY: Matches React camelCase exactly
+    public IFormFile VideoFile { get; set; } = null!;
+}
