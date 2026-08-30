@@ -56,10 +56,24 @@ class SpatialCalibrationService:
         Applies matrix multiplication over a single raw camera screen pixel coordinate (x,y),
         un-warping perspective distortion to output precise top-down percentage canvas coordinates.
         """
-        matrix = cls._matrix_cache.get(court_id)
+        # 🎯 FIXED: Enforce strict string sanitization and lowercase casing on lookups!
+        clean_key = str(court_id).strip().replace('"', '').replace("'", "").lower()
+        
+        # Grab the cached transformation matrix securely
+        matrix = cls._matrix_cache.get(clean_key)
         
         if matrix is None:
-            # Fallback envelope: If no matrix is calibrated yet, return central default ratios safely
+            # 📡 🛠️ THE DIAGNOSTIC SIREN FLASHER ACTIVATED:
+            # Loudly alerts developers if a background worker requested a missing key context signature
+            print("\n" + "🚨"*30)
+            print("❌ [CRITICAL MATRIX LOOKUP MISMATCH FAULT] OpenCV could not un-warp coordinate!")
+            print("🚨"*30)
+            print(f"   👉 Requested Raw Court ID       : '{court_id}'")
+            print(f"   👉 Normalized Lookup Key Tested : '{clean_key}'")
+            print(f"   📋 Active Memory Cache Keys List: {list(cls._matrix_cache.keys())}")
+            print("   💡 RESULT: Bypassing matrix multiplication. Falling back to default center (50.0, 25.0).")
+            print("🚨"*30 + "\n")
+            
             return (50.0, 25.0)
 
         # 1. Format raw input into a 3D matrix coordinate vector for projective geometry space

@@ -77,6 +77,9 @@ namespace GlobalAcademy.Models {
         // Overwrites are committed atomically by your async Python callback webhooks
         [Column(TypeName = "jsonb")]
         public string? SpatialHeatmapJson { get; set; }
+        
+        [Column(TypeName = "jsonb")]
+        public string? CameraCalibrationJson { get; set; }
     }
     public class UserBranch : Security.IMultiTenant
     {

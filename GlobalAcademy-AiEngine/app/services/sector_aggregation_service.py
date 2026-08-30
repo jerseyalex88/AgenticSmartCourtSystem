@@ -1,4 +1,5 @@
 # File: GlobalAcademy-AiEngine/app/services/sector_aggregation_service.py
+from datetime import datetime
 from typing import List, Tuple, Dict, Any
 from app.schemas.court_diagnostics import PredictiveAnalysisOutputSchema
 
@@ -23,7 +24,7 @@ class SectorAggregationService:
     ]
 
     @classmethod
-    def compile_spatial_summary(cls, court_id: str, bounce_points: List[Tuple[float, float, str]]) -> Dict[str, Any]:
+    def compile_spatial_summary(cls, court_id: str, video_filename: str, bounce_points: List[Tuple[float, float, str]]) -> Dict[str, Any]:
         """
         Groups raw spatial points into 12 functional maintenance sectors [yes].
         Calculates impact counts and wear intensity indices matching your C# data contracts perfectly [yes].
@@ -58,9 +59,21 @@ class SectorAggregationService:
             {"x": pt[0], "y": pt[1], "intensity": pt[2]} for pt in bounce_points
         ]
 
+        # 🛠️ NEW DEBUG TRACKER: Lock the raw incoming point matrix values exactly as they are calculated
+        formatted_bounce_points = []
+        raw_debug_points = []
+
+        for x, y, intensity in bounce_points:
+            formatted_bounce_points.append({"x": x, "y": y, "intensity": intensity})
+            # Preserve a raw copy for side-by-side inspection down the wire
+            raw_debug_points.append({"raw_processed_x": x, "raw_processed_y": y, "assigned_intensity": intensity})
+
         return {
             "court_id": court_id,
             "total_processed_bounces": len(bounce_points),
+            "analyzed_video_filename": video_filename,
+            "last_updated_utc": datetime.utcnow().isoformat() + "Z",
             "sectors": compiled_sectors,
-            "bounce_points": formatted_bounce_points
+            "bounce_points": formatted_bounce_points,
+            "debug_raw_unwarped_points": raw_debug_points
         }

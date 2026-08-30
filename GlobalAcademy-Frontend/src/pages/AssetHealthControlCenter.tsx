@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
 import CourtSpatialHeatmap from '../components/CourtSpatialHeatmap';
+import CourtGeometryCalibrator from '../components/CourtGeometryCalibrator';
 
 interface MinimalAnomaly {
   anomalyId: string;
@@ -111,6 +112,7 @@ export default function AssetHealthControlCenter() {
 
   const [uploadingCourts, setUploadingCourts] = useState<Record<string, boolean>>({});
   const [dragActiveCourts, setDragActiveCourts] = useState<Record<string, boolean>>({});
+  const [selectedCalibCourt, setSelectedCalibCourt] = useState<{ id: string; name: string } | null>(null);
 
   // --- FETCH 1: Initial load for Collapsible Facility Ledger ---
   const fetchAcademyTopology = async () => {
@@ -468,6 +470,12 @@ export default function AssetHealthControlCenter() {
                           <span className="text-[8px] bg-purple-100 text-purple-700 px-1 border border-purple-300 font-bold uppercase tracking-tight">
                             YOLOv11 Active
                           </span>
+                          <button
+                            onClick={() => setSelectedCalibCourt({ id: court.courtId, name: court.courtName })}
+                            className="text-[8px] bg-slate-900 text-slate-100 hover:bg-purple-700 hover:text-white px-2 py-0.5 font-bold uppercase transition ml-2 border border-slate-700"
+                          >
+                            📐 Calibrate Camera Grid
+                          </button>
                         </div>
                         <div className="text-slate-400 text-[9px] text-right font-semibold">
                           📊 TOTAL PROCESSED IMPACT STRIKES: <span className="text-slate-800 font-black">
@@ -703,6 +711,20 @@ export default function AssetHealthControlCenter() {
           </div>
         )}
       </div>
+
+      {/* ========================================================================= */}
+      {/* 📐 THE REUSABLE GEOMETRIC HOMOGRAPHY PERSPECTIVE CALIBRATION POPMODAL     */}
+      {/* ========================================================================= */}
+      <CourtGeometryCalibrator
+        courtId={selectedCalibCourt?.id ?? ''}
+        courtName={selectedCalibCourt?.name ?? ''}
+        isOpen={selectedCalibCourt !== null}
+        onClose={() => setSelectedCalibCourt(null)}
+        onSaveSuccess={() => {
+          setStatusMessage("⚙️ [SYSTEM NOTIFICATION]: Optical camera calibration coordinates updated successfully. Refreshing live view matrix...");
+          // Optional: Re-invoke your query mapping hook fetch summaries here to synchronize local rows instantly
+        }}
+      />
     </div>
   );
 }

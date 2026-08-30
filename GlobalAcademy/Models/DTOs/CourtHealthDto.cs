@@ -1,6 +1,7 @@
 // File: GlobalAcademy.Models.DTOs/CourtHealthOverviewDto.cs
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace GlobalAcademy.Models.DTOs
@@ -53,6 +54,12 @@ namespace GlobalAcademy.Models.DTOs
         [JsonPropertyName("total_processed_bounces")]
         public int TotalProcessedBounces { get; set; }
 
+        [JsonPropertyName("analyzed_video_filename")]
+        public string AnalyzedVideoFilename { get; set; } = string.Empty;
+    
+        [JsonPropertyName("last_updated_utc")]
+        public DateTime LastUpdatedUtc { get; set; }
+
         [JsonPropertyName("last_analyzed_clip_utc")]
         public DateTime LastAnalyzedClipUtc { get; set; }
 
@@ -86,5 +93,35 @@ namespace GlobalAcademy.Models.DTOs
 
         [JsonPropertyName("intensity")]
         public string Intensity { get; set; } = "High"; // High (Red), Moderate (Amber), Low (Blue)
+    }
+    public class SaveCourtCalibrationDto
+    {
+        [Required]
+        public int VideoWidth { get; set; }
+
+        [Required]
+        public int VideoHeight { get; set; }
+        [Required]
+        public string CalibrationPhotoFilename { get; set; } = string.Empty;
+
+        [Required]
+        public double TopLeftX { get; set; }
+        [Required]
+        public double TopLeftY { get; set; }
+
+        [Required]
+        public double TopRightX { get; set; }
+        [Required]
+        public double TopRightY { get; set; }
+
+        [Required]
+        public double BottomLeftX { get; set; }
+        [Required]
+        public double BottomLeftY { get; set; }
+
+        [Required]
+        public double BottomRightX { get; set; }
+        [Required]
+        public double BottomRightY { get; set; }
     }
 }

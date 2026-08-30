@@ -575,7 +575,51 @@ public class MaintenanceController : ControllerBase
     }
     // --- 🛰️ COMPUTER VISION TELEMETRY CALLBACK HOOK: POST api/maintenance/court-spatial-heatmap/callback ---
     [HttpPost("court-spatial-heatmap/callback")]
+    [AllowAnonymous] // 🎯 ASYNC BACKWARD WORKER ACCESSIBLE
     public async Task<IActionResult> ProcessSpatialHeatmapPythonCallback([FromBody] JsonElement rawPythonPayload)
+    {
+        try
+        {
+            // 1. 🛠️ Access sub-properties using the clean, native JsonElement struct syntax
+            if (!rawPythonPayload.TryGetProperty("court_id", out JsonElement courtIdElement) ||
+            !rawPythonPayload.TryGetProperty("academy_id", out JsonElement academyIdElement))
+            {
+                return BadRequest("Invalid spatial tracking payload: Missing 'court_id' or 'academy_id' parameters.");
+            }
+
+            // 2. 🛠️ Extract string tokens natively using GetString() without dropping Session errors
+            if (!Guid.TryParse(courtIdElement.GetString(), out Guid courtId) ||
+                !Guid.TryParse(academyIdElement.GetString(), out Guid incomingAcademyId))
+            {
+                return BadRequest("Malformed spatial tracking attributes: Identifiers must be valid tracking GUID tokens.");
+            }
+
+            // 3. Query the physical database row matching this physical asset
+            var court = await _context.Courts.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.AcademyId == incomingAcademyId && c.Id == courtId);
+            if (court == null)
+            {
+                return NotFound($"Target physical court asset context could not be resolved inside database ledger: {courtId}");
+            }
+
+            // 4. Serialize the clean payload tree straight into your new PostgreSQL jsonb column string cell
+            var formatOptions = new JsonSerializerOptions { WriteIndented = false };
+            court.SpatialHeatmapJson = JsonSerializer.Serialize(rawPythonPayload, formatOptions);
+
+            // 5. Force state synchronization and commit updates to disk storage rows
+            _context.Entry(court).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"🚀 [NETWORK CALLBACK ENGINE SUCCESS]: Locked fresh YOLOv11 spatial tracking metrics to Postgres row for Court {courtId}.");
+            return Ok(new { status = "SUCCESS", message = "Spatial heatmap payload recorded safely inside repository tables." });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [CALLBACK PIPELINE CRASH] Failed to ingest computer vision packet: {ex.Message}");
+            return StatusCode(500, $"Internal server database ingestion synchronization failure: {ex.Message}");
+        }
+    }
+    [HttpPost("court-spatial-heatmap/callbackwithauth")]
+    public async Task<IActionResult> ProcessSpatialHeatmapPythonCallbackWithAuth([FromBody] JsonElement rawPythonPayload)
     {
         try
         {
@@ -630,12 +674,55 @@ public class MaintenanceController : ControllerBase
             return BadRequest("Empty media transfer envelope: Please select a valid compressed video clip asset row.");
         }
 
+        // 🔒 HIGH-SECURITY TENANT AUDIT: Pull active tenancy claims directly from identity providers
+        Guid academyId = _tenantProvider.GetTenantId();
+        var court = await _context.Courts.FirstOrDefaultAsync(c => c.Id == request.CourtId && c.AcademyId == academyId);
+        if (court == null)
+        {
+            return NotFound($"Target court asset could not be resolved under active tenant lines.");
+        }
+
         try
         {
             using var multiPartContent = new MultipartFormDataContent();
             
-            // 🛠️ FIXED: Use properties from the request object container rows
             multiPartContent.Add(new StringContent(request.CourtId.ToString()), "court_id");
+            // 🛠️ Forward the validated secure academyId claim right down into the Python AI multi-form contract!
+            multiPartContent.Add(new StringContent(academyId.ToString()), "academy_id");
+
+            // =========================================================================
+            // 🚀 🛠️ BACKEND HOOK: AUTOMATICALLY DE-SERIALIZE AND INJECT DOCUMENT CALIBRATIONS
+            // =========================================================================
+            // If this court row has an active camera calibration jsonb document saved, extract
+            // its contents and pass them directly to Python's multipart parameters stream.
+            if (!string.IsNullOrWhiteSpace(court.CameraCalibrationJson))
+            {
+                try
+                {
+                    using var jsonDoc = JsonDocument.Parse(court.CameraCalibrationJson);
+                    var root = jsonDoc.RootElement;
+
+                    // Extraction matching PascalCase keys saved in your database record row
+                    multiPartContent.Add(new StringContent(root.GetProperty("VideoWidth").ToString()), "calib_width");
+                    multiPartContent.Add(new StringContent(root.GetProperty("VideoHeight").ToString()), "calib_height");
+                    
+                    multiPartContent.Add(new StringContent(root.GetProperty("TopLeftX").ToString()), "tl_x");
+                    multiPartContent.Add(new StringContent(root.GetProperty("TopLeftY").ToString()), "tl_y");
+                    multiPartContent.Add(new StringContent(root.GetProperty("TopRightX").ToString()), "tr_x");
+                    multiPartContent.Add(new StringContent(root.GetProperty("TopRightY").ToString()), "tr_y");
+                    multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftX").ToString()), "bl_x");
+                    multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftY").ToString()), "bl_y");
+                    multiPartContent.Add(new StringContent(root.GetProperty("BottomRightX").ToString()), "br_x");
+                    multiPartContent.Add(new StringContent(root.GetProperty("BottomRightY").ToString()), "br_y");
+                    
+                    Console.WriteLine($"📡 [PROXY PIPE SUCCESS]: Extracted and hydrated database camera geometry parameters onto video payload for Python AI.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ [PROXY EXCEPTION]: Failed to parse saved calibration JSON document string: {ex.Message}");
+                }
+            }
+            // =========================================================================
 
             using var fileStream = request.VideoFile.OpenReadStream();
             var fileStreamContent = new StreamContent(fileStream);
@@ -725,6 +812,42 @@ public class MaintenanceController : ControllerBase
         return heatmap;
     }
 
+    // --- 📐 COMMIT COURT GEOMETRY SETTINGS: PUT api/maintenance/courts/{id}/calibration ---
+    [HttpPut("courts/{id}/calibration")]
+    public async Task<IActionResult> SaveCourtCameraCalibration(Guid id, [FromBody] SaveCourtCalibrationDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // 🔒 MULTI-TENANT AUDIT SECURE: Query court utilizing internal academy context security scopes
+        Guid academyId = _tenantProvider.GetTenantId();
+        var court = await _context.Courts.FirstOrDefaultAsync(c => c.Id == id && c.AcademyId == academyId);
+        
+        if (court == null)
+        {
+            return NotFound($"Target court asset context could not be resolved or access is denied under tenant boundary lines.");
+        }
+
+        try
+        {
+            // 🎯 FIXED: Serialize the incoming DTO document directly into your single native PostgreSQL jsonb cell column string
+            var formatOptions = new JsonSerializerOptions { WriteIndented = false };
+            court.CameraCalibrationJson = JsonSerializer.Serialize(dto, formatOptions);
+
+            _context.Entry(court).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"⚙️ [GEOMETRY ARCHIVE SUCCESS]: Saved persistent camera calibration jsonb document for Court {id} under Academy tenant {academyId}.");
+            
+            return Ok(new { status = "SUCCESS", message = "Optical camera geometry configurations archived permanently inside PostgreSQL master tables." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server persistent write failure: {ex.Message}");
+        }
+    }
 
 }
 

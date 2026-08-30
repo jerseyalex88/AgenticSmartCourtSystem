@@ -119,8 +119,9 @@ class CalibrationResponseSchema(BaseModel):
     message: str
 
 class VideoAnalysisStartResponseSchema(BaseModel):
-    """Confirms background thread job registration status back to .NET Core."""
+    """Confirms background thread job registration status back to .NET Core with tenant tracking."""
     court_id: str
     job_id: str
+    academy_id: str # 🛠️ NEW: Preserve tenant identity tracking across initialization
     status: str
     message: str

@@ -158,6 +158,9 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CameraCalibrationJson")
+                        .HasColumnType("jsonb");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
