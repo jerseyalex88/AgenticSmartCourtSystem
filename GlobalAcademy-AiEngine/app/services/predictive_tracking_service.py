@@ -104,8 +104,8 @@ class PredictiveTrackingService:
             base_gateway_url = os.getenv("DOTNET_GATEWAY_URL", "https://localhost:7290").strip("/")
             dotnet_callback_url = f"{base_gateway_url}/api/maintenance/court-predictive-heatmap/callback"
 
-            print(f"dotnet_callback_url: {dotnet_callback_url}")
-            print(f"final_spatial_matrix_payload: {final_spatial_matrix_payload}")
+            # print(f"dotnet_callback_url: {dotnet_callback_url}")
+            # print(f"final_spatial_matrix_payload: {final_spatial_matrix_payload}")
 
             try:
                 with httpx.Client(timeout=30.0) as client:

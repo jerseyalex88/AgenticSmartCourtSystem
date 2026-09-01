@@ -687,71 +687,35 @@ public class MaintenanceController : ControllerBase
 
         try
         {
-            using var multiPartContent = new MultipartFormDataContent();
+            // Open a stream reader loop over the uploaded file payload
+            using var videoStream = request.VideoFile.OpenReadStream();
             
-            multiPartContent.Add(new StringContent(request.CourtId.ToString()), "court_id");
-            // 🛠️ Forward the validated secure academyId claim right down into the Python AI multi-form contract!
-            multiPartContent.Add(new StringContent(academyId.ToString()), "academy_id");
+            // 🚀 🛠️ SERVICE DISPATCH CALL INVOCATION LAYER
+            // Pass the properties, streams, and your string fields safely down to your service layer
+            string pythonEngineResultJson = await _diagnosticsService.ForwardVideoToAiEngineAsync(
+                courtId: request.CourtId,
+                academyId: academyId,
+                videoStream: videoStream,
+                filename: request.VideoFile.FileName,
+                contentType: request.VideoFile.ContentType,
+                calibrationJson: court.CameraCalibrationJson, // Passes the PascalCase database JSON string natively
+                processingModel: AiProcessingModel.Standard // Specifies the AI processing model
+            );
 
-            // =========================================================================
-            // 🚀 🛠️ BACKEND HOOK: AUTOMATICALLY DE-SERIALIZE AND INJECT DOCUMENT CALIBRATIONS
-            // =========================================================================
-            // If this court row has an active camera calibration jsonb document saved, extract
-            // its contents and pass them directly to Python's multipart parameters stream.
-            if (!string.IsNullOrWhiteSpace(court.CameraCalibrationJson))
-            {
-                try
-                {
-                    using var jsonDoc = JsonDocument.Parse(court.CameraCalibrationJson);
-                    var root = jsonDoc.RootElement;
-
-                    // Extraction matching PascalCase keys saved in your database record row
-                    multiPartContent.Add(new StringContent(root.GetProperty("VideoWidth").ToString()), "calib_width");
-                    multiPartContent.Add(new StringContent(root.GetProperty("VideoHeight").ToString()), "calib_height");
-                    
-                    multiPartContent.Add(new StringContent(root.GetProperty("TopLeftX").ToString()), "tl_x");
-                    multiPartContent.Add(new StringContent(root.GetProperty("TopLeftY").ToString()), "tl_y");
-                    multiPartContent.Add(new StringContent(root.GetProperty("TopRightX").ToString()), "tr_x");
-                    multiPartContent.Add(new StringContent(root.GetProperty("TopRightY").ToString()), "tr_y");
-                    multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftX").ToString()), "bl_x");
-                    multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftY").ToString()), "bl_y");
-                    multiPartContent.Add(new StringContent(root.GetProperty("BottomRightX").ToString()), "br_x");
-                    multiPartContent.Add(new StringContent(root.GetProperty("BottomRightY").ToString()), "br_y");
-                    
-                    Console.WriteLine($"📡 [PROXY PIPE SUCCESS]: Extracted and hydrated database camera geometry parameters onto video payload for Python AI.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"⚠️ [PROXY EXCEPTION]: Failed to parse saved calibration JSON document string: {ex.Message}");
-                }
-            }
-            // =========================================================================
-
-            using var fileStream = request.VideoFile.OpenReadStream();
-            var fileStreamContent = new StreamContent(fileStream);
-            fileStreamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(request.VideoFile.ContentType);
+            // Read Python's immediate initialization receipt payload document string safely
+            using var jsonResponseDoc = JsonDocument.Parse(pythonEngineResultJson);
             
-            multiPartContent.Add(fileStreamContent, "video_file", request.VideoFile.FileName);
-
-            // ... Keep your remaining HttpClient PostAsync and background thread proxy loops completely identical below ...
-            string baseAiEngineUrl = "http://localhost:8000"; 
-            string absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/video/upload-match-clip";
-
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(10) }; 
-            var aiEngineResponse = await httpClient.PostAsync(absoluteEngineRoute, multiPartContent);
-
-            if (!aiEngineResponse.IsSuccessStatusCode)
-            {
-                var errorDetails = await aiEngineResponse.Content.ReadAsStringAsync();
-                return StatusCode((int)aiEngineResponse.StatusCode, $"Headless AI processing engine pipeline rejection: {errorDetails}");
-            }
-
-            var successPayloadJson = await aiEngineResponse.Content.ReadAsStringAsync();
-            return Ok(JsonDocument.Parse(successPayloadJson));
+            // Return an 'Accepted' (HTTP 202) response status token back to your React tabs browser instantly!
+                return Accepted(jsonResponseDoc.RootElement.Clone());
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"❌ [AI ENGINE REJECTION]: {httpEx.Message}");
+            return StatusCode(500, $"AI Ingestion Pipeline error: {httpEx.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [VIDEO PROXY PIPELINE CRASH]: {ex.Message}");
+            Console.WriteLine($"❌ [PREDICTIVE CONTROLLER PROXY EXCEPTION]: {ex.Message}");
             return StatusCode(500, $"Internal server streaming handshake crash: {ex.Message}");
         }
     }
@@ -871,10 +835,10 @@ public class MaintenanceController : ControllerBase
                 return BadRequest("Malformed spatial tracking attributes: Identifiers must be valid tracking GUID tokens.");
             }
 
-            var court = await _context.Courts.FirstOrDefaultAsync(c => c.Id == courtId);
+            var court = await _context.Courts.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.AcademyId == incomingAcademyId && c.Id == courtId);
             if (court == null)
             {
-                return NotFound($"Target court record context could not be resolved: {courtId}");
+                return NotFound($"Target physical court asset context could not be resolved inside database ledger: {courtId}");
             }
 
             // 🔒 RIGID MAN-IN-THE-MIDDLE AUDIT: Enforce strict multi-tenant containment gates!
@@ -921,68 +885,35 @@ public class MaintenanceController : ControllerBase
 
         try
         {
-            using var multiPartContent = new MultipartFormDataContent();
-            multiPartContent.Add(new StringContent(request.CourtId.ToString()), "court_id");
-            multiPartContent.Add(new StringContent(academyId.ToString()), "academy_id");
-
-            // Hydrate database camera geometry settings out of the jsonb cell if available
-            if (!string.IsNullOrWhiteSpace(court.CameraCalibrationJson))
-            {
-                try
-                {
-                    using var jsonDoc = JsonDocument.Parse(court.CameraCalibrationJson);
-                    var root = jsonDoc.RootElement;
-
-                    multiPartContent.Add(new StringContent(root.GetProperty("VideoWidth").ToString()), "calib_width");
-                    multiPartContent.Add(new StringContent(root.GetProperty("VideoHeight").ToString()), "calib_height");
-                    
-                    multiPartContent.Add(new StringContent(root.GetProperty("TopLeftX").ToString()), "tl_x");
-                    multiPartContent.Add(new StringContent(root.GetProperty("TopLeftY").ToString()), "tl_y");
-                    multiPartContent.Add(new StringContent(root.GetProperty("TopRightX").ToString()), "tr_x");
-                    multiPartContent.Add(new StringContent(root.GetProperty("TopRightY").ToString()), "tr_y");
-                    multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftX").ToString()), "bl_x");
-                    multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftY").ToString()), "bl_y");
-                    multiPartContent.Add(new StringContent(root.GetProperty("BottomRightX").ToString()), "br_x");
-                    multiPartContent.Add(new StringContent(root.GetProperty("BottomRightY").ToString()), "br_y");
-                    
-                    Console.WriteLine($"📡 [PREDICTIVE PROXY PIPE]: Hydrated database calibration onto Kalman payload.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"⚠️ [PREDICTIVE PROXY EXCEPTION]: Failed to parse calibration JSON: {ex.Message}");
-                }
-            }
-
-            using var fileStream = request.VideoFile.OpenReadStream();
-            var fileStreamContent = new StreamContent(fileStream);
-            fileStreamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(request.VideoFile.ContentType);
-            multiPartContent.Add(fileStreamContent, "video_file", request.VideoFile.FileName);
-
-            // 🎯 TARGETING THE ISOLATED PARALLEL PYTHON PREDICTIVE ROUTER ENDPOINT ROUTE
-            string baseAiEngineUrl = "http://localhost:8000"; 
-            string absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/predictive-video/upload-match-clip";
-
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(20) }; 
+            // Open a stream reader loop over the uploaded file payload
+            using var videoStream = request.VideoFile.OpenReadStream();
             
-            // 🔥 TRUE DECOUPLED ASYNC HANDSHAKE:
-            // .NET fires the multi-part data, gets Python's instant 202 receipt, and frees up the network socket!
-            var aiEngineResponse = await httpClient.PostAsync(absoluteEngineRoute, multiPartContent);
+            // 🚀 🛠️ SERVICE DISPATCH CALL INVOCATION LAYER
+            // Pass the properties, streams, and your string fields safely down to your service layer
+            string pythonEngineResultJson = await _diagnosticsService.ForwardVideoToAiEngineAsync(
+                courtId: request.CourtId,
+                academyId: academyId,
+                videoStream: videoStream,
+                filename: request.VideoFile.FileName,
+                contentType: request.VideoFile.ContentType,
+                calibrationJson: court.CameraCalibrationJson, // Passes the PascalCase database JSON string natively
+                processingModel: AiProcessingModel.Predictive // Specifies the AI processing model
+            );
 
-            if (!aiEngineResponse.IsSuccessStatusCode)
-            {
-                var errorDetails = await aiEngineResponse.Content.ReadAsStringAsync();
-                return StatusCode((int)aiEngineResponse.StatusCode, $"Predictive AI Engine proxy rejection: {errorDetails}");
-            }
-
-            // Read Python's immediate initialization receipt payload document string
-            var successPayloadJson = await aiEngineResponse.Content.ReadAsStringAsync();
+            // Read Python's immediate initialization receipt payload document string safely
+            using var jsonResponseDoc = JsonDocument.Parse(pythonEngineResultJson);
             
-            // 🎯 FIXED: Return an 'Accepted' (HTTP 202) response status token back to your React tabs browser instantly!
-            return Accepted(JsonDocument.Parse(successPayloadJson));
+            // Return an 'Accepted' (HTTP 202) response status token back to your React tabs browser instantly!
+                return Accepted(jsonResponseDoc.RootElement.Clone());
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"❌ [AI ENGINE REJECTION]: {httpEx.Message}");
+            return StatusCode(500, $"AI Ingestion Pipeline error: {httpEx.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [PREDICTIVE VIDEO PROXY PIPELINE CRASH]: {ex.Message}");
+            Console.WriteLine($"❌ [PREDICTIVE CONTROLLER PROXY EXCEPTION]: {ex.Message}");
             return StatusCode(500, $"Internal server streaming handshake crash: {ex.Message}");
         }
     }

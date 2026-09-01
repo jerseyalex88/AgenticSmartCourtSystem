@@ -8,7 +8,8 @@ using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using GlobalAcademy.Security;
 using Microsoft.EntityFrameworkCore;
-using OpenAI.Chat;
+using System.Text.Json;
+using System.Net.Http.Headers;
 
 namespace GlobalAcademy.Services;
 public interface ICourtDiagnosticsService
@@ -18,6 +19,14 @@ public interface ICourtDiagnosticsService
     Task<PredictiveAnalysisOutputDto> ExecuteSurfaceDecayForecastAsync(Guid courtId);
     Task<PredictiveAnalysisOutputDto> ExecuteAdvancedLifespanForecastAsync(Guid courtId);
     Task<int> SeedHistoricalTelemetryHistoryAsync(Court court);
+    Task<string> ForwardVideoToAiEngineAsync(
+        Guid courtId, 
+        Guid academyId, 
+        Stream videoStream, 
+        string filename, 
+        string contentType,
+        string? calibrationJson,
+        AiProcessingModel processingModel);
 }
 
 public class CourtDiagnosticsService : ICourtDiagnosticsService
@@ -335,5 +344,86 @@ public class CourtDiagnosticsService : ICourtDiagnosticsService
 
         return seederWrapper.TotalRecordsGenerated;
     }
+
+    public async Task<string> ForwardVideoToAiEngineAsync(
+        Guid courtId, 
+        Guid academyId, 
+        Stream videoStream, 
+        string filename, 
+        string contentType,
+        string? calibrationJson,
+        AiProcessingModel processingModel)
+    {
+        // 1. Re-instantiate the multipart form data boundary wrapper block
+        using var multiPartContent = new MultipartFormDataContent();
+        
+        // 🎯 CRITICAL: Form values MUST be passed as StringContent mapped to lowercase keys
+        multiPartContent.Add(new StringContent(courtId.ToString()), "court_id");
+        multiPartContent.Add(new StringContent(academyId.ToString()), "academy_id");
+
+        // 2. Extract and append your camera geometry settings from your JSON data tree
+        if (!string.IsNullOrWhiteSpace(calibrationJson))
+        {
+            try
+            {
+                using var jsonDoc = JsonDocument.Parse(calibrationJson);
+                var root = jsonDoc.RootElement;
+
+                multiPartContent.Add(new StringContent(root.GetProperty("VideoWidth").ToString()), "calib_width");
+                multiPartContent.Add(new StringContent(root.GetProperty("VideoHeight").ToString()), "calib_height");
+                multiPartContent.Add(new StringContent(root.GetProperty("TopLeftX").ToString()), "tl_x");
+                multiPartContent.Add(new StringContent(root.GetProperty("TopLeftY").ToString()), "tl_y");
+                multiPartContent.Add(new StringContent(root.GetProperty("TopRightX").ToString()), "tr_x");
+                multiPartContent.Add(new StringContent(root.GetProperty("TopRightY").ToString()), "tr_y");
+                multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftX").ToString()), "bl_x");
+                multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftY").ToString()), "bl_y");
+                multiPartContent.Add(new StringContent(root.GetProperty("BottomRightX").ToString()), "br_x");
+                multiPartContent.Add(new StringContent(root.GetProperty("BottomRightY").ToString()), "br_y");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ [SERVICE CORNER EXCEPTION]: Failed to map calibration schema nodes: {ex.Message}");
+            }
+        }
+
+        // 3. Bind the raw media binary stream payload envelope
+        var fileStreamContent = new StreamContent(videoStream);
+        fileStreamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        
+        // 🎯 CRITICAL: Must map exactly to "video_file" to clear FastAPI's file field contract rules
+        multiPartContent.Add(fileStreamContent, "video_file", filename);
+
+        // 4. Dispatch the compiled form data bundle down to Python port 8000
+        string baseAiEngineUrl = "http://localhost:8000"; 
+        string absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/predictive-video/upload-match-clip"; 
+        if (processingModel == AiProcessingModel.Standard)
+        {
+            absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/video/upload-match-clip";
+        }
+        else if (processingModel == AiProcessingModel.Predictive)
+        {
+            absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/predictive-video/upload-match-clip";
+        }
+        else
+        {
+            throw new ArgumentException($"Unsupported processing model: {processingModel}");
+        }
+
+        // Note: Switch to your standard endpoint url if refactoring the baseline channel route
+
+        using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(5) }; 
+        var aiEngineResponse = await httpClient.PostAsync(absoluteEngineRoute, multiPartContent);
+
+        // var aiEngineResponse = await _client.PostAsJsonAsync("api/ai/predictive-video/upload-match-clip", multiPartContent);
+
+        if (!aiEngineResponse.IsSuccessStatusCode)
+        {
+            var errorDetails = await aiEngineResponse.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"AI Engine rejected multipart form handoff. Status: {aiEngineResponse.StatusCode} - Details: {errorDetails}");
+        }
+
+        return await aiEngineResponse.Content.ReadAsStringAsync();
+    }
+
 }
 

@@ -6,6 +6,11 @@ using System.Text.Json.Serialization;
 
 namespace GlobalAcademy.Models.DTOs
 {
+    public enum AiProcessingModel
+    {
+        Standard,
+        Predictive
+    }
     public class CourtHealthOverviewDto
     {
         public Guid CourtId { get; set; }
