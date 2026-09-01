@@ -191,6 +191,9 @@ namespace GlobalAcademy.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PredictiveHeatmapJson")
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("SpatialHeatmapJson")
                         .HasColumnType("jsonb");
 

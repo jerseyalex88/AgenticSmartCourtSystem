@@ -20,8 +20,13 @@ namespace GlobalAcademy.Models.DTOs
 
         // Holds the single, latest diagnostic snapshot data row or null if never calculated
         public LatestSnapshotDataDto? LatestSnapshot { get; set; }
+        
         // 🛠️ ADVANCED COMPUTER VISION SPATIAL HEATMAP ATTACHMENT CORE
         public SpatialHeatmapDto? Heatmap { get; set; }
+
+        // 🔮 NEW: Parallel data transfer layer for the Kalman Predictive framework stream
+        public SpatialHeatmapDto? PredictiveHeatmap { get; set; }
+
     }
 
     public class LatestSnapshotDataDto

@@ -7,6 +7,7 @@ import uvicorn
 from fastapi import FastAPI
 from app.config import settings
 from app.routers import pricing, maintenance, court_diagnostics, calibration, video_analytics
+from app.routers.predictive_video_analytics import router as predictive_video_router
 
 # Initialize the central application engine context using values from our config file
 app = FastAPI(
@@ -21,6 +22,7 @@ app.include_router(maintenance.router)
 app.include_router(court_diagnostics.router)
 app.include_router(calibration.router)
 app.include_router(video_analytics.router)
+app.include_router(predictive_video_router)
 
 @app.get("/")
 def read_root():

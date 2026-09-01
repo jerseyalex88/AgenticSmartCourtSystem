@@ -80,6 +80,14 @@ namespace GlobalAcademy.Models {
         
         [Column(TypeName = "jsonb")]
         public string? CameraCalibrationJson { get; set; }
+
+        // =========================================================================
+        // 🔮 NEW: ADVANCED PREDICTIVE COMPUTER VISION SPECTRUM TELEMETRY SLOT
+        // =========================================================================
+        // Stores Kalman-filtered cubic spline summary matrix data documents natively
+        [Column(TypeName = "jsonb")]
+        public string? PredictiveHeatmapJson { get; set; }
+        // =========================================================================
     }
     public class UserBranch : Security.IMultiTenant
     {

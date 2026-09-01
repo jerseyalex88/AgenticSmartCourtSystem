@@ -113,6 +113,7 @@ export default function AssetHealthControlCenter() {
   const [uploadingCourts, setUploadingCourts] = useState<Record<string, boolean>>({});
   const [dragActiveCourts, setDragActiveCourts] = useState<Record<string, boolean>>({});
   const [selectedCalibCourt, setSelectedCalibCourt] = useState<{ id: string; name: string } | null>(null);
+  const [activeModelTabs, setActiveModelTabs] = useState<Record<string, 'STANDARD' | 'PREDICTIVE'>>({});
 
   // --- FETCH 1: Initial load for Collapsible Facility Ledger ---
   const fetchAcademyTopology = async () => {
@@ -206,17 +207,22 @@ export default function AssetHealthControlCenter() {
     uploadFormPayload.append('courtId', courtId);
     uploadFormPayload.append('videoFile', extractedFile);
 
+    // 🎯 DYNAMIC ROUTING HOOK: Route to the Kalman pipeline if the predictive tab is active!
+    const isPredictiveTabActive = activeModelTabs[courtId] === 'PREDICTIVE';
+    const targetEndpointRoute = isPredictiveTabActive 
+      ? '/maintenance/court-video/upload-predictive' // Routes straight to your new Kalman endpoint!
+      : '/maintenance/court-video/upload';            // Original fallback channel
+
     console.log("📡 [MULTIPART FORMDATA CONTENTS INSPECTOR]:");
     console.log("   👉 Form field 'courtId' contents:", uploadFormPayload.get('courtId'));
     console.log("   👉 Form field 'videoFile' binary filename:", (uploadFormPayload.get('videoFile') as File)?.name);
 
     try {
-      const response = await apiClient.post('/maintenance/court-video/upload', uploadFormPayload, {
+      const response = await apiClient.post(targetEndpointRoute, uploadFormPayload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      console.log("🚀 [NETWORK CALLBACK ENGINE SUCCESS] .NET Accepted Response:", response.data);
-      setStatusMessage(`🚀 [JOB RECONCILED]: Video analytical pass scheduled successfully! Job ID: ${response.data.job_id || 'Queued'}`);
+      setStatusMessage(`🚀 [JOB RECONCILED]: ${isPredictiveTabActive ? 'Kalman AI' : 'Standard'} analytical pass scheduled successfully! Job ID: ${response.data.job_id}`);
     } catch (err: any) {
       console.error("❌ [NETWORK HANDSHAKE REJECTION LOG]:", err);
       if (err.response) {
@@ -410,6 +416,12 @@ export default function AssetHealthControlCenter() {
                       <span className="text-slate-500 bg-slate-100 px-1 py-0.5 border border-slate-200">
                         Type: {court.surfaceType}
                       </span>
+                      <button
+                        onClick={() => setSelectedCalibCourt({ id: court.courtId, name: court.courtName })}
+                        className="text-[8px] bg-slate-900 text-slate-100 hover:bg-purple-700 hover:text-white px-2 py-0.5 font-bold uppercase transition ml-2 border border-slate-700"
+                      >
+                        📐 Calibrate Camera Grid
+                      </button>
                     </div>
                   </div>
 
@@ -562,14 +574,64 @@ export default function AssetHealthControlCenter() {
                   )}
 
                   {/* ========================================================================= */}
-                  {/* 🛠️ NEW: MOUNT THE ULTRA-PREMIUM REUSABLE SPATIAL MOISTURE HEATMAP ENGINE  */}
+                  {/* 🔬 UNIFIED ADVANCED MODEL COMPARISON DECK WRAPPER                         */}
                   {/* ========================================================================= */}
-                  {court.heatmap && (court.heatmap.bounce_points || court.heatmap.bouncePoints) && (
-                    <CourtSpatialHeatmap 
-                      bouncePoints={court.heatmap.bounce_points ?? court.heatmap.bouncePoints ?? []}
-                      totalProcessedBounces={court.heatmap.total_processed_bounces ?? court.heatmap.totalProcessedBounces ?? 0}
-                    />
-                  )}
+                  <div className="mb-4 space-y-3">
+                    
+                    {/* Brutalist Tab Selection Headers */}
+                    <div className="flex border border-slate-700 bg-slate-950 p-0.5 font-mono text-[9px] font-black">
+                      <button
+                        onClick={() => setActiveModelTabs(prev => ({ ...prev, [court.courtId]: 'STANDARD' }))}
+                        className={`flex-1 text-center py-1 transition uppercase ${
+                          (activeModelTabs[court.courtId] ?? 'STANDARD') === 'STANDARD'
+                            ? 'bg-purple-700 text-white font-black'
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'
+                        }`}
+                      >
+                        📐 Standard Tracking (Model 1)
+                      </button>
+                      <button
+                        onClick={() => setActiveModelTabs(prev => ({ ...prev, [court.courtId]: 'PREDICTIVE' }))}
+                        className={`flex-1 text-center py-1 transition uppercase flex items-center justify-center gap-1 ${
+                          activeModelTabs[court.courtId] === 'PREDICTIVE'
+                            ? 'bg-purple-700 text-white font-black shadow-[0_0_10px_rgba(147,51,234,0.4)]'
+                            : 'text-slate-500 hover:text-purple-400 hover:bg-purple-950/20'
+                        }`}
+                      >
+                        🔮 Kalman Predictive (Model 2)
+                        {court.predictiveHeatmap && (
+                          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* DYNAMIC VISUALIZATION CANVAS CARRIER */}
+                    <div className="relative p-2 bg-slate-950 border border-slate-800">
+                      {(activeModelTabs[court.courtId] ?? 'STANDARD') === 'STANDARD' ? (
+                        /* MODEL 1: ORIGINAL TRACKING (CONTROL SYSTEM) */
+                        <div>
+                          <div className="text-[8px] text-slate-500 font-mono mb-1 truncate uppercase">
+                            SOURCE DISPATCH: {court.heatmap?.analyzed_video_filename || 'NO CLIPS RUN'} | STRIKES: {court.heatmap?.total_processed_bounces ?? 0}
+                          </div>
+                          <CourtSpatialHeatmap 
+                            bouncePoints={court.heatmap?.bounce_points ?? []} 
+                            totalProcessedBounces={court.heatmap?.total_processed_bounces ?? 0} 
+                          />
+                        </div>
+                      ) : (
+                        /* MODEL 2: ADVANCED KALMAN ESTIMATION SYSTEM */
+                        <div>
+                          <div className="text-[8px] text-purple-400 font-mono mb-1 truncate uppercase tracking-tight font-bold">
+                            KALMAN SPECTRAL INTERPOLATION RUN: {court.predictiveHeatmap?.analyzed_video_filename || 'PENDING ASSAY'} | STRIKES: {court.predictiveHeatmap?.total_processed_bounces ?? 0}
+                          </div>
+                          <CourtSpatialHeatmap 
+                            bouncePoints={court.predictiveHeatmap?.bounce_points ?? []} 
+                            totalProcessedBounces={court.predictiveHeatmap?.total_processed_bounces ?? 0} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
                   {/* ========================================================================= */}
                   {/* 📤 MULTIPART OPTICAL CAMERA CLIP DRAG-AND-DROP INGESTION INTERFACE        */}

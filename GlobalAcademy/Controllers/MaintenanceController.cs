@@ -537,20 +537,22 @@ public class MaintenanceController : ControllerBase
         {
             latestSnapshots.TryGetValue(c.Id, out var snapshot);
 
-            // 🛠️ REPLACES MOCK: Deserializer reads real computer vision analytics maps right out of your native jsonb cell column!
             SpatialHeatmapDto? liveHeatmapData = null;
+            SpatialHeatmapDto? advancedPredictiveData = null;
+            var parseOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            // 1. Map your original control database cell
             if (!string.IsNullOrWhiteSpace(c.SpatialHeatmapJson))
             {
-                try
-                {
-                    var parseOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    liveHeatmapData = JsonSerializer.Deserialize<SpatialHeatmapDto>(c.SpatialHeatmapJson, parseOptions);
-                }
-                catch (Exception)
-                {
-                    // Fail silent fallback safety block to handle old schema rows cleanly
-                    liveHeatmapData = null;
-                }
+                try { liveHeatmapData = JsonSerializer.Deserialize<SpatialHeatmapDto>(c.SpatialHeatmapJson, parseOptions); }
+                catch (Exception) { liveHeatmapData = null; }
+            }
+
+            // 2. 🔮 NEW: Map your parallel advanced predictive database cell natively side-by-side!
+            if (!string.IsNullOrWhiteSpace(c.PredictiveHeatmapJson))
+            {
+                try { advancedPredictiveData = JsonSerializer.Deserialize<SpatialHeatmapDto>(c.PredictiveHeatmapJson, parseOptions); }
+                catch (Exception) { advancedPredictiveData = null; }
             }
 
             return new CourtHealthOverviewDto
@@ -567,7 +569,8 @@ public class MaintenanceController : ControllerBase
                 LatestSnapshot = snapshot == null ? null : new LatestSnapshotDataDto { /* ... your snap attributes mapping ... */ },
 
                 // 🎯 LIVE SYNC: Streams real YOLOv11 tracking metrics to your premium React court maps!
-                Heatmap = liveHeatmapData
+                Heatmap = liveHeatmapData,
+                PredictiveHeatmap = advancedPredictiveData
             };
         }).ToList();
 
@@ -846,6 +849,141 @@ public class MaintenanceController : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(500, $"Internal server persistent write failure: {ex.Message}");
+        }
+    }
+
+    // --- 🔮 PARALLEL KALMAN TELEMETRY HOOK: POST api/maintenance/court-predictive-heatmap/callback ---
+    [HttpPost("court-predictive-heatmap/callback")]
+    [AllowAnonymous] // Acccessible securely via background threads
+    public async Task<IActionResult> ProcessPredictiveHeatmapPythonCallback([FromBody] JsonElement rawPredictivePayload)
+    {
+        try
+        {
+            if (!rawPredictivePayload.TryGetProperty("court_id", out JsonElement courtIdElement) ||
+                !rawPredictivePayload.TryGetProperty("academy_id", out JsonElement academyIdElement))
+            {
+                return BadRequest("Invalid predictive payload: Missing 'court_id' or 'academy_id' parameters.");
+            }
+
+            if (!Guid.TryParse(courtIdElement.GetString(), out Guid courtId) ||
+                !Guid.TryParse(academyIdElement.GetString(), out Guid incomingAcademyId))
+            {
+                return BadRequest("Malformed spatial tracking attributes: Identifiers must be valid tracking GUID tokens.");
+            }
+
+            var court = await _context.Courts.FirstOrDefaultAsync(c => c.Id == courtId);
+            if (court == null)
+            {
+                return NotFound($"Target court record context could not be resolved: {courtId}");
+            }
+
+            // 🔒 RIGID MAN-IN-THE-MIDDLE AUDIT: Enforce strict multi-tenant containment gates!
+            if (court.AcademyId != incomingAcademyId)
+            {
+                Console.WriteLine($"🚨 [PREDICTIVE CONTAMINATION SECURE ALERT]: Blocked unauthorized write attempt across tenant boundaries!");
+                return Forbid("Tenant boundary mismatch detected. Predictive data write operation rejected.");
+            }
+
+            // Serialize into your brand-new column slot!
+            var formatOptions = new JsonSerializerOptions { WriteIndented = false };
+            court.PredictiveHeatmapJson = JsonSerializer.Serialize(rawPredictivePayload, formatOptions);
+
+            _context.Entry(court).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"🚀 [PREDICTIVE STREAM SUCCESS]: Locked advanced Kalman analytics to Postgres Predictive column for Court {courtId}.");
+            return Ok(new { status = "SUCCESS", message = "Advanced predictive tracking analytics recorded safely inside table rows." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server database ingestion synchronization failure: {ex.Message}");
+        }
+    }
+
+    // --- CCTV CLIP PREDICTIVE MULTIPART INGESTION: POST api/maintenance/court-video/upload-predictive ---
+    [HttpPost("court-video/upload-predictive")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = 524288000)] // 500 MB capacity ceiling
+    public async Task<IActionResult> UploadCourtPredictiveAnalysisVideo([FromForm] CourtVideoUploadRequest request)
+    {
+        if (request == null || request.VideoFile == null || request.VideoFile.Length == 0)
+        {
+            return BadRequest("Empty media transfer envelope: Please select a valid compressed video clip asset row.");
+        }
+
+        // 🔒 HIGH-SECURITY TENANT AUDIT: Verify asset token boundaries natively
+        Guid academyId = _tenantProvider.GetTenantId();
+        var court = await _context.Courts.FirstOrDefaultAsync(c => c.Id == request.CourtId && c.AcademyId == academyId);
+        if (court == null)
+        {
+            return NotFound($"Target court asset could not be resolved under active tenant lines.");
+        }
+
+        try
+        {
+            using var multiPartContent = new MultipartFormDataContent();
+            multiPartContent.Add(new StringContent(request.CourtId.ToString()), "court_id");
+            multiPartContent.Add(new StringContent(academyId.ToString()), "academy_id");
+
+            // Hydrate database camera geometry settings out of the jsonb cell if available
+            if (!string.IsNullOrWhiteSpace(court.CameraCalibrationJson))
+            {
+                try
+                {
+                    using var jsonDoc = JsonDocument.Parse(court.CameraCalibrationJson);
+                    var root = jsonDoc.RootElement;
+
+                    multiPartContent.Add(new StringContent(root.GetProperty("VideoWidth").ToString()), "calib_width");
+                    multiPartContent.Add(new StringContent(root.GetProperty("VideoHeight").ToString()), "calib_height");
+                    
+                    multiPartContent.Add(new StringContent(root.GetProperty("TopLeftX").ToString()), "tl_x");
+                    multiPartContent.Add(new StringContent(root.GetProperty("TopLeftY").ToString()), "tl_y");
+                    multiPartContent.Add(new StringContent(root.GetProperty("TopRightX").ToString()), "tr_x");
+                    multiPartContent.Add(new StringContent(root.GetProperty("TopRightY").ToString()), "tr_y");
+                    multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftX").ToString()), "bl_x");
+                    multiPartContent.Add(new StringContent(root.GetProperty("BottomLeftY").ToString()), "bl_y");
+                    multiPartContent.Add(new StringContent(root.GetProperty("BottomRightX").ToString()), "br_x");
+                    multiPartContent.Add(new StringContent(root.GetProperty("BottomRightY").ToString()), "br_y");
+                    
+                    Console.WriteLine($"📡 [PREDICTIVE PROXY PIPE]: Hydrated database calibration onto Kalman payload.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ [PREDICTIVE PROXY EXCEPTION]: Failed to parse calibration JSON: {ex.Message}");
+                }
+            }
+
+            using var fileStream = request.VideoFile.OpenReadStream();
+            var fileStreamContent = new StreamContent(fileStream);
+            fileStreamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(request.VideoFile.ContentType);
+            multiPartContent.Add(fileStreamContent, "video_file", request.VideoFile.FileName);
+
+            // 🎯 TARGETING THE ISOLATED PARALLEL PYTHON PREDICTIVE ROUTER ENDPOINT ROUTE
+            string baseAiEngineUrl = "http://localhost:8000"; 
+            string absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/predictive-video/upload-match-clip";
+
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(20) }; 
+            
+            // 🔥 TRUE DECOUPLED ASYNC HANDSHAKE:
+            // .NET fires the multi-part data, gets Python's instant 202 receipt, and frees up the network socket!
+            var aiEngineResponse = await httpClient.PostAsync(absoluteEngineRoute, multiPartContent);
+
+            if (!aiEngineResponse.IsSuccessStatusCode)
+            {
+                var errorDetails = await aiEngineResponse.Content.ReadAsStringAsync();
+                return StatusCode((int)aiEngineResponse.StatusCode, $"Predictive AI Engine proxy rejection: {errorDetails}");
+            }
+
+            // Read Python's immediate initialization receipt payload document string
+            var successPayloadJson = await aiEngineResponse.Content.ReadAsStringAsync();
+            
+            // 🎯 FIXED: Return an 'Accepted' (HTTP 202) response status token back to your React tabs browser instantly!
+            return Accepted(JsonDocument.Parse(successPayloadJson));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [PREDICTIVE VIDEO PROXY PIPELINE CRASH]: {ex.Message}");
+            return StatusCode(500, $"Internal server streaming handshake crash: {ex.Message}");
         }
     }
 
