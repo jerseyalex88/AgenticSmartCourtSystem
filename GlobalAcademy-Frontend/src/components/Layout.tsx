@@ -56,6 +56,10 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
   const [activeInvoiceId, setActiveInvoiceId] = useState('');
   const [activeInvoiceAmount, setActiveInvoiceAmount] = useState(0);
 
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -213,7 +217,8 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       });
 
       const rawAgentResponse = response.data.agentResponse;
-      //console.log("📡 [Layout] Received raw agent response:", rawAgentResponse);
+      // 🎯 INTERCEPT THE COMPANION AUDIO PAYLOAD TRACK PROPERTY FROM THE UNIFIED NETWORK WIRE
+      const responseAudioBase64 = response.data.audioBase64; 
 
       // =========================================================================
       // STEP 1: INTERCEPT AND FORCE DAY CHANGES BEFORE TEXT CLEANING
@@ -246,6 +251,9 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
         text: rawDisplayMsg
       }]);
 
+      // 🚀 SPEECH CONVERT TRIGGER: Fire instant high-fidelity neural audio voice playback!
+      autoplayBase64Audio(responseAudioBase64);
+
     } catch (err: any) {
       const serverErr = err.response?.data?.message || 'Universal Copilot connection timed out.';
       setChatHistory(prev => [...prev, {
@@ -257,6 +265,123 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       setLoading(false);
     }
   };
+
+const handleToggleRecording = async () => {
+  if (isRecording) {
+    // 🛑 STOP SPEAKING SEQUENCE
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  } else {
+    // 🎤 START SPEAKING SEQUENCE
+    try {
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+
+      const recorderInstance = new MediaRecorder(audioStream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg'
+      });
+
+      recorderInstance.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorderInstance.onstop = async () => {
+        // Stop all hardware mic trackers to release user device resources cleanly
+        audioStream.getTracks().forEach(track => track.stop());
+
+        const compiledAudioBlob = new Blob(audioChunksRef.current, { type: recorderInstance.mimeType });
+        if (compiledAudioBlob.size === 0) return;
+
+        // Process dispatch handshakes directly down the wire
+        await handleSendVoiceQuery(compiledAudioBlob);
+      };
+
+      setMediaRecorder(recorderInstance);
+      recorderInstance.start(250); // Slice chunk data timelines into 250ms fragments
+      setIsRecording(true);
+      // setStatusMessage?.("🎙️ Microphone active... Speak your inquiry clearly.");
+    } catch (err: any) {
+      console.error("Microphone hardware access denied:", err);
+      alert("❌ Device communication fault: Unable to initialize audio recording lines.");
+    }
+  }
+};
+
+const handleSendVoiceQuery = async (audioBlob: Blob) => {
+  setLoading(true);
+  
+  // 🎯 FIXED: Create a sanitized clone of the audio blob that strips away the complex codecs parameter string.
+  // This satisfies .NET Core's strict header token validation checks perfectly!
+  const sanitizedAudioBlob = new File([audioBlob], `voice_query_${Date.now()}.webm`, {
+    type: 'audio/webm' 
+  });
+
+  const voiceFormData = new FormData();
+  // Pass your clean, sanitized file blob straight into the multi-form append handler
+  voiceFormData.append('audioFile', sanitizedAudioBlob);
+
+  try {
+    // 🚀 DISPATCH TO YOUR SECURE VOICE GATEWAY WEBHOOK
+    const response = await apiClient.post('/AiOrchestration/voice-query', voiceFormData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+
+    const rawAgentResponse = response.data.agentResponse;
+    // 🎯 INTERCEPT THE NEURAL SPEECH BYTE MATRIX FROM THE RESPONSE STREAM CONTRACT
+    const responseAudioBase64 = response.data.audioBase64;
+
+    setChatHistory(prev => [
+      ...prev,
+      { id: Math.random().toString(), sender: 'player', text: "🎙️ [Voice Query Sent]" },
+      { id: Math.random().toString(), sender: 'agent', text: rawAgentResponse }
+    ]);
+
+    // 🚀 SPEECH CONVERT TRIGGER: Fire instant hands-free audible voice notes back out the speakers!
+    autoplayBase64Audio(responseAudioBase64);
+    
+  } catch (err: any) {
+    console.error(err);
+    alert(`❌ Voice Pipeline Error: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const autoplayBase64Audio = (base64String: string | null | undefined) => {
+  if (!base64String) return;
+
+  try {
+    // 1. Convert the base64 string payload into a raw binary byte array array
+    const byteCharacters = atob(base64String);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    
+    // 2. Wrap the binary stream blocks inside a clean audio/mp3 Blob container
+    const audioBlob = new Blob([byteArray], { type: 'audio/mp3' });
+    const localPlayableUrl = URL.createObjectURL(audioBlob);
+
+    // 3. Instantiate an isolated HTML5 Audio element and trigger instant playback
+    const browserAudioPlayer = new Audio(localPlayableUrl);
+    browserAudioPlayer.play().catch(playErr => {
+      console.warn("🧭 [BROWSER AUTOPLAY BLOCK]: User interaction required before browser can fire audio wave outputs:", playErr);
+    });
+
+    // 4. Secure memory cleanup: revoke the object URL once the audio finishes playing
+    browserAudioPlayer.onended = () => {
+      URL.revokeObjectURL(localPlayableUrl);
+    };
+  } catch (ex) {
+    console.error("❌ [FRONTEND AUDIO STREAM ENGINE FAULT]: Failed to parse base64 audio byte tracks:", ex);
+  }
+};
+
   const navItems = [
     { id: 'academies', label: '🏢 Academies Manager', roles: ['GlobalAdmin'] },
     { id: 'dashboard', label: '🏟️ Core Asset Matrix', roles: ['AcademyDirector', 'GlobalAdmin', 'Groundskeeper'] },
@@ -504,6 +629,18 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
 
                 {/* USER INPUT TERMINAL FORM */}
                 <form onSubmit={handleSendUniversalQuery} className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/40 flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleToggleRecording}
+                    className={`p-2 transition font-sans font-bold text-xs uppercase flex items-center justify-center border ${
+                      isRecording 
+                        ? 'bg-red-700 text-white border-red-500 animate-pulse' 
+                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-purple-600 hover:text-purple-400'
+                    }`}
+                    title={isRecording ? "Click to lock and evaluate statement" : "Hold to transmit voice note"}
+                  >
+                    {isRecording ? '🛑 Recording' : '🎙️ Mic'}
+                  </button>
                   <textarea
                     rows={3}
                     required
