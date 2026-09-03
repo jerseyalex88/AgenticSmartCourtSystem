@@ -53,6 +53,8 @@ export default function BillingDashboard(){
   // Dynamically compute the total sum of all outstanding unpaid invoice values
   const unpaidInvoicesList = statements.filter(inv => inv.status === 'Unpaid');
   const totalUnpaidBalance = unpaidInvoicesList.reduce((sum, inv) => sum + inv.totalAmount, 0);
+  const [downloadingReport, setDownloadingReport] = useState<boolean>(false);
+  const [downloadingVelocityReport, setDownloadingVelocityReport] = useState<boolean>(false);
 
   const fetchStatements = async () => {
     try {
@@ -317,7 +319,70 @@ export default function BillingDashboard(){
       printWindow.document.close();
     }
   };
+  const handleExportFinancialLedgerAudit = async () => {
+    setDownloadingReport(true);
+    
+    try {
+      // 🎯 CRITICAL: Pass responseType: 'blob' so Axios extracts raw file bytes instead of parsing strings!
+      const response = await apiClient.get('/AiOrchestration/financial-ledger/export-pdf', {
+        responseType: 'blob'
+      });
 
+      // Bundle incoming binary blocks into a strict application/pdf document wrapper context
+      const fileBlobContainer = new Blob([response.data], { type: 'application/pdf' });
+      const localDownloadUrl = URL.createObjectURL(fileBlobContainer);
+
+      // Instantiate a temporary, invisible DOM anchor node link to execute local file saving
+      const virtualLinkElement = document.createElement('a');
+      virtualLinkElement.href = localDownloadUrl;
+      virtualLinkElement.download = `Financial_Ledger_Operational_Audit_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      document.body.appendChild(virtualLinkElement);
+      virtualLinkElement.click();
+      
+      // Secure cleanup: Remove element track indices and release local browser object memory slots
+      document.body.removeChild(virtualLinkElement);
+      URL.revokeObjectURL(localDownloadUrl);
+
+    } catch (err: any) {
+      console.error("Financial PDF download stream failed:", err);
+      alert(`❌ Financial Reporting Handshake Exception: Could not compile document. Details: ${err.message}`);
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+  const handleExportInvoiceVelocityAudit = async () => {
+    setDownloadingVelocityReport(true);
+    
+    try {
+      // 🎯 CRITICAL: Pass responseType: 'blob' so Axios yields raw binary file bytes!
+      const response = await apiClient.get('/AiOrchestration/invoice-integrity/export-pdf', {
+        responseType: 'blob'
+      });
+
+      // Bundle incoming binary blocks into a strict application/pdf document wrapper context
+      const fileBlobContainer = new Blob([response.data], { type: 'application/pdf' });
+      const localDownloadUrl = URL.createObjectURL(fileBlobContainer);
+
+      // Instantiate a temporary, invisible DOM anchor node link to execute local file saving
+      const virtualLinkElement = document.createElement('a');
+      virtualLinkElement.href = localDownloadUrl;
+      virtualLinkElement.download = `Invoice_Velocity_Operational_Audit_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      document.body.appendChild(virtualLinkElement);
+      virtualLinkElement.click();
+      
+      // Secure cleanup: Remove element track indices and release local browser object memory slots
+      document.body.removeChild(virtualLinkElement);
+      URL.revokeObjectURL(localDownloadUrl);
+
+    } catch (err: any) {
+      console.error("Velocity PDF download stream failed:", err);
+      alert(`❌ Invoicing Velocity Handshake Exception: Could not compile document. Details: ${err.message}`);
+    } finally {
+      setDownloadingVelocityReport(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -343,8 +408,44 @@ export default function BillingDashboard(){
         <div className="p-8 text-center bg-white border border-slate-300 text-xs text-slate-600 font-medium">
           📭 Clean Ledger Sheet: No historical financial entries found matching your account ID.
         </div>
-      ) : (
+      ) : (        
         <div className="bg-white border border-slate-300 overflow-hidden shadow-lg shadow-purple-900/10">
+          {/* Inside your Billing & Statements top toolbar / button layout deck panels */}
+          <div className="flex justify-between items-center border border-slate-800 bg-slate-900/60 p-4 font-mono mb-4">
+            <div>
+              <h2 className="text-xs font-black text-slate-200 uppercase tracking-tight m-0">🧾 Academy Accounts Ledger Registry</h2>
+              <p className="text-[10px] text-slate-500 font-sans mt-0.5 leading-none">Review real-time billing transactions, checkout void velocities, and processed refunds.</p>
+            </div>
+
+            {/* 📈 EXPORT FINANCIAL AUDIT ACTION BUTTON TRIGGER */}
+            <button
+              type="button"
+              disabled={downloadingReport}
+              onClick={handleExportFinancialLedgerAudit}
+              className={`px-4 py-2 border font-sans font-black text-[10px] uppercase tracking-wider transition duration-150 flex items-center gap-1.5 ${
+                downloadingReport
+                  ? 'bg-purple-950 text-purple-400 border-purple-900 animate-pulse cursor-wait'
+                  : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-purple-600 hover:text-purple-400 shadow-sm'
+              }`}
+              title="Compile high-density financial integrity report tracking revenue velocity and utilization attrition"
+            >
+              <span>📈</span> {downloadingReport ? 'Compiling Audit Brief...' : 'Export Financial Integrity Report'}
+            </button>
+            {/* 🎯 INVOICE VELOCITY REPORT (PIE/BAR CHARTS TRANS QUANTITY COUNTS) */}
+            <button
+              type="button"
+              disabled={downloadingVelocityReport}
+              onClick={handleExportInvoiceVelocityAudit}
+              className={`flex-1 md:flex-initial px-4 py-2 border font-sans font-black text-[10px] uppercase tracking-wider transition duration-150 flex items-center gap-1.5 ${
+                downloadingVelocityReport
+                  ? 'bg-purple-950 text-purple-400 border-purple-900 animate-pulse cursor-wait'
+                  : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-purple-600 hover:text-purple-400 shadow-sm'
+              }`}
+              title="Group and count transaction quantities via strict database enum vectors to display side-by-side Pie and Bar charts"
+            >
+              <span>📊</span> {downloadingVelocityReport ? 'Counting Enums...' : 'Export Invoice Velocity Report'}
+            </button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>

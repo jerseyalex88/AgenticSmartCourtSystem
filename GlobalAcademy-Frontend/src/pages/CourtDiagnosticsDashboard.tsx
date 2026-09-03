@@ -299,6 +299,39 @@ export default function CourtDiagnosticsDashboard() {
     }
   };
 
+  const handleExportFacilityAuditReport = async (courtId: string, courtName: string) => {
+    setStatusMessage?.(`📥 [REPORT PIPELINE]: Requesting corporate audit layout binary stream for ${courtName}...`);
+    
+    try {
+      // 🎯 CRITICAL: Must pass responseType: 'blob' so axios yields raw binary arrays instead of string objects!
+      const response = await apiClient.get(`/maintenance/courts/${courtId}/export-pdf`, {
+        responseType: 'blob'
+      });
+
+      // Wrap the incoming file bytes inside a strict application/pdf document wrapper context
+      const fileBlobContainer = new Blob([response.data], { type: 'application/pdf' });
+      const localDownloadUrl = URL.createObjectURL(fileBlobContainer);
+
+      // Instantiate a temporary, invisible DOM action node link to force a clean local file save
+      const virtualLinkElement = document.createElement('a');
+      virtualLinkElement.href = localDownloadUrl;
+      virtualLinkElement.download = `Facility_Safety_Audit_${courtName.replace(/\s+/g, '_')}.pdf`;
+      
+      document.body.appendChild(virtualLinkElement);
+      virtualLinkElement.click();
+      
+      // Secure clean up: Wipe the element rows and release the local browser object memory slot
+      document.body.removeChild(virtualLinkElement);
+      URL.revokeObjectURL(localDownloadUrl);
+
+      setStatusMessage?.(`✅ [REPORT DOWNLOADED]: Executive structural report file saved successfully for ${courtName}!`);
+    } catch (err: any) {
+      console.error("PDF download stream failed:", err);
+      setStatusMessage?.(`❌ [REPORT EXTRACTION FAULT]: Failed to render reporting binary stream over wire.`);
+      alert(`❌ Reporting Handshake Exception: Could not compile document.`);
+    }
+  };
+  
   // --- CASCADING REVOLUTION MATRIX FILTER ---
   // Replace your existing filteredSnapshots declaration block with this combined matrix:
   const filteredSnapshots = snapshots.filter(s => {
@@ -569,8 +602,15 @@ export default function CourtDiagnosticsDashboard() {
                       onClick={() => handleDeleteSnapshot(snapshot.session_id)}
                       className="text-red-600 hover:text-red-800 font-bold uppercase tracking-tighter"
                     >
-                      [Purge]
+                      [Delete]
                     </button>
+                    <button
+                        onClick={() => handleExportFacilityAuditReport(snapshot.court_id, snapshot.court_name)}
+                        className="text-red-600 hover:text-red-800 font-bold uppercase tracking-tighter"
+                        title="Generate printable facility audit PDF document from continuous postgres analytics rows"
+                      >
+                        [Executive Report]
+                      </button>
                   </div>
                 </div>
 

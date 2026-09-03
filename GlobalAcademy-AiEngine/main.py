@@ -10,6 +10,9 @@ from app.routers import pricing, maintenance, court_diagnostics, calibration, vi
 from app.routers.predictive_video_analytics import router as predictive_video_router
 from app.routers.voice_agent_analytics import router as voice_agent_router
 from app.routers.text_to_speech_analytics import router as tts_generator_router
+from app.routers.court_report_analytics import router as executive_court_report_router
+from app.routers.financial_report_analytics import router as executive_financial_router
+from app.routers.invoice_integrity_report_analytics import router as executive_integrity_router
 
 # Initialize the central application engine context using values from our config file
 app = FastAPI(
@@ -27,6 +30,9 @@ app.include_router(video_analytics.router)
 app.include_router(predictive_video_router)
 app.include_router(voice_agent_router)
 app.include_router(tts_generator_router)
+app.include_router(executive_court_report_router)
+app.include_router(executive_financial_router)
+app.include_router(executive_integrity_router)
 
 @app.get("/")
 def read_root():

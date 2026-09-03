@@ -279,6 +279,39 @@ export default function AssetHealthControlCenter() {
     return 'bg-blue-100 text-blue-700 border-blue-300';
   };
 
+  const handleExportFacilityAuditReport = async (courtId: string, courtName: string) => {
+    setStatusMessage?.(`📥 [REPORT PIPELINE]: Requesting corporate audit layout binary stream for ${courtName}...`);
+    
+    try {
+      // 🎯 CRITICAL: Must pass responseType: 'blob' so axios yields raw binary arrays instead of string objects!
+      const response = await apiClient.get(`/maintenance/courts/${courtId}/export-pdf`, {
+        responseType: 'blob'
+      });
+
+      // Wrap the incoming file bytes inside a strict application/pdf document wrapper context
+      const fileBlobContainer = new Blob([response.data], { type: 'application/pdf' });
+      const localDownloadUrl = URL.createObjectURL(fileBlobContainer);
+
+      // Instantiate a temporary, invisible DOM action node link to force a clean local file save
+      const virtualLinkElement = document.createElement('a');
+      virtualLinkElement.href = localDownloadUrl;
+      virtualLinkElement.download = `Facility_Safety_Audit_${courtName.replace(/\s+/g, '_')}.pdf`;
+      
+      document.body.appendChild(virtualLinkElement);
+      virtualLinkElement.click();
+      
+      // Secure clean up: Wipe the element rows and release the local browser object memory slot
+      document.body.removeChild(virtualLinkElement);
+      URL.revokeObjectURL(localDownloadUrl);
+
+      setStatusMessage?.(`✅ [REPORT DOWNLOADED]: Executive structural report file saved successfully for ${courtName}!`);
+    } catch (err: any) {
+      console.error("PDF download stream failed:", err);
+      setStatusMessage?.(`❌ [REPORT EXTRACTION FAULT]: Failed to render reporting binary stream over wire.`);
+      alert(`❌ Reporting Handshake Exception: Could not compile document.`);
+    }
+  };
+
   return (
     <div className="space-y-3 text-sans p-4 bg-slate-50 min-h-screen">
       <div>
@@ -421,6 +454,15 @@ export default function AssetHealthControlCenter() {
                         className="text-[8px] bg-slate-900 text-slate-100 hover:bg-purple-700 hover:text-white px-2 py-0.5 font-bold uppercase transition ml-2 border border-slate-700"
                       >
                         📐 Calibrate Camera Grid
+                      </button>
+                      {/* 📊 EXECUTIVE CORPORATE PDF REPORT DOWNLOAD BUTTON */}
+                      <button
+                        type="button"
+                        onClick={() => handleExportFacilityAuditReport(court.courtId, court.courtName)}
+                        className="text-[8px] bg-slate-900 text-slate-100 hover:bg-purple-700 hover:text-white px-2 py-0.5 font-bold uppercase transition ml-2 border border-slate-700"
+                        title="Generate printable facility audit PDF document from continuous postgres analytics rows"
+                      >
+                        📊 Executive Report
                       </button>
                     </div>
                   </div>
