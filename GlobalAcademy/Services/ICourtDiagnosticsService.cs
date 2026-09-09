@@ -33,12 +33,16 @@ public class CourtDiagnosticsService : ICourtDiagnosticsService
 {
     private readonly ApplicationDbContext _context; // Replace with your exact DbContext name
     private readonly HttpClient _client;
+    private readonly IConfiguration _configuration;
+    private readonly string baseAiEngineUrl;
 
     public CourtDiagnosticsService(ApplicationDbContext context, 
-    HttpClient client)
+    HttpClient client, IConfiguration configuration)
     {
         _context = context;
         _client = client;
+        _configuration = configuration;
+        baseAiEngineUrl = _configuration["AiEngineSettings:BaseUrl"]?.TrimEnd('/') ?? "http://localhost:8000";
     }
 
     public async Task ProcessTelemetryAsync(CourtDiagnosticsPayloadDto payload)
@@ -394,10 +398,10 @@ public class CourtDiagnosticsService : ICourtDiagnosticsService
         multiPartContent.Add(fileStreamContent, "video_file", filename);
 
         // 4. Dispatch the compiled form data bundle down to Python port 8000
-        string baseAiEngineUrl = "http://localhost:8000"; 
         string absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/predictive-video/upload-match-clip"; 
         if (processingModel == AiProcessingModel.Standard)
         {
+            // baseAiEngineUrl = "http://localhost:8001";
             absoluteEngineRoute = $"{baseAiEngineUrl}/api/ai/video/upload-match-clip";
         }
         else if (processingModel == AiProcessingModel.Predictive)

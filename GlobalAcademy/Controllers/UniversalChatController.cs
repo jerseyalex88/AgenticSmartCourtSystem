@@ -26,12 +26,16 @@ public class UniversalChatController : ControllerBase
     private readonly Kernel _kernel;
     private readonly ApplicationDbContext _dbContext;
     private readonly ITenantProvider _tenantProvider;
+    private readonly IConfiguration _configuration;
+    private readonly string baseAiEngineUrl;
 
-    public UniversalChatController(Kernel kernel, ApplicationDbContext dbContext, ITenantProvider tenantProvider)
+    public UniversalChatController(Kernel kernel, ApplicationDbContext dbContext, ITenantProvider tenantProvider, IConfiguration configuration)
     {
         _kernel = kernel;
         _dbContext = dbContext;
         _tenantProvider = tenantProvider;
+        _configuration = configuration;
+        baseAiEngineUrl = _configuration["AiEngineSettings:BaseUrl"]?.TrimEnd('/') ?? "http://localhost:8000";
         //_kernel.Plugins.AddFromObject(new Plugins.PlayerBookingPlugin(_dbContext), "PlayerBookingPlugin");
         // tomorrow we will register our custom CourtBookingPlugin directly to this kernel instance!
     }
@@ -166,7 +170,9 @@ public class UniversalChatController : ControllerBase
 
             // 🚀 🛠️ BACKEND HOOK: INTERCEPT AND GENERATE NEURAL SPEECH WAVE STRINGS
             // We pass the sanitized, clean conversational text block directly to Python
-            string? audioBase64DataStream = await SynthesizeAgentTextResponseAsync(cleanConversationalText);
+            // 🚀 PASS VOICE KEY DOWN THE SERVICE CHAIN: Forward both text and selected voice config parameters
+            // string? audioBase64DataStream = await SynthesizeAgentTextResponseAsync(cleanConversationalText);
+            string? audioBase64DataStream = await V2SynthesizeAgentTextResponseAsync(cleanConversationalText, model.VoiceKey);
 
             // 🎯 FIXED CONTAINER LAYER: Pack both text and audio elements side-by-side into a single JSON return contract!
             return Ok(new UniversalChatResponseDto(
@@ -336,8 +342,8 @@ public class UniversalChatController : ControllerBase
             // Matches the expected "audio_file" signature inside Python voice_agent_analytics.py
             multiPartForm.Add(fileStreamContent, "audio_file", dto.AudioFile.FileName);
 
-            string baseAiEngineUrl = "http://localhost:8000";
             string absoluteTranscriptionRoute = $"{baseAiEngineUrl}/api/ai/voice/transcribe-query";
+            Console.WriteLine($"🎤 [VOICE AGENT HANDSHAKE]: Forwarding audio stream to Python Whisper engine at {absoluteTranscriptionRoute}");
 
             using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
             var pythonResponse = await httpClient.PostAsync(absoluteTranscriptionRoute, multiPartForm);
@@ -404,7 +410,6 @@ public class UniversalChatController : ControllerBase
 
             using var stringContentPayload = new StringContent(serializedJsonBody, System.Text.Encoding.UTF8, "application/json");
 
-            string baseAiEngineUrl = "http://localhost:8000";
             string absoluteTtsRoute = $"{baseAiEngineUrl}/api/ai/tts/synthesize-string";
 
             using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
@@ -434,6 +439,60 @@ public class UniversalChatController : ControllerBase
             return null; // Fallback gracefully: Let the chat proceed as plain text if speech fails
         }
     }
+    private async Task<string?> V2SynthesizeAgentTextResponseAsync(string textToSpeak, string voiceKey)
+    {
+        if (string.IsNullOrWhiteSpace(textToSpeak)) return null;
+
+        // 1. Direct the network bridge to your parallel v2 Port 8001 streaming route
+        string absoluteTtsRoute = $"{baseAiEngineUrl}/api/ai/tts/synthesize-string-stream";
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, absoluteTtsRoute);
+            request.Content = JsonContent.Create(new { 
+                text_to_speak = textToSpeak,
+                voice_key = voiceKey 
+            });
+
+            // 🚀 CRUCIAL MODULE 1 STEP: Use ResponseHeadersRead to drop execution block locks instantly.
+            // This stops .NET from waiting for the entire audio payload to finish rendering before starting the processing loop.
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"⚠️ [v2 HYBRID FAULT]: Python engine rejected stream request. Status: {response.StatusCode}");
+                return null;
+            }
+
+            // 2. Open an isolated memory buffer stream directly in system RAM (Bypasses hard drive writes)
+            using var memoryStream = new MemoryStream();
+            using var pythonAudioStream = await response.Content.ReadAsStreamAsync();
+
+            byte[] buffer = new byte[4096]; // Allocate a lightweight 4KB scoop window
+            int bytesRead;
+
+            // 🚀 STEP 3: Asynchronously pull binary audio fragments right off the network card buffer
+            while ((bytesRead = await pythonAudioStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                // Dump the packet directly into our memory stream block
+                await memoryStream.WriteAsync(buffer, 0, bytesRead);
+            }
+
+            // 🚀 STEP 4: Convert the fully compiled memory buffer directly to a Base64 string block
+            byte[] totalAudioBytes = memoryStream.ToArray();
+            string base64EncodedAudio = Convert.ToBase64String(totalAudioBytes);
+
+            Console.WriteLine($"🏁 [v2 HYBRID SUCCESS]: In-Memory Base64 conversion complete. Characters synthesized: {textToSpeak.Length}");
+            return base64EncodedAudio;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ [v2 HYBRID HANDSHAKE EXCEPTION]: Failed to process voice contract: {ex.Message}");
+            return null; // Fallback gracefully: Let the chat proceed as plain text if speech fails
+        }
+    }
+
     // --- 📊 EXPORT FINANCIAL LEDGER REPORT: GET api/AiOrchestration/financial-ledger/export-pdf ---
     [HttpGet("financial-ledger/export-pdf")]
     public async Task<IActionResult> ExportFinancialLedgerAuditPdf()
@@ -494,7 +553,6 @@ public class UniversalChatController : ControllerBase
             using var stringContent = new StringContent(serializedInput, System.Text.Encoding.UTF8, "application/json");
 
             // 3. POST PAYLOAD ACROSS NETWORK GATES DIRECTLY TO PYTHON PORT 8000
-            string baseAiEngineUrl = "http://localhost:8000";
             string absoluteReportRoute = $"{baseAiEngineUrl}/api/ai/financial-report/compile-ledger-audit";
 
             using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
@@ -576,7 +634,6 @@ public class UniversalChatController : ControllerBase
             using var stringContent = new StringContent(serializedInput, System.Text.Encoding.UTF8, "application/json");
 
             // 3. POST PAYLOAD ACROSS NETWORK GATES DIRECTLY TO PYTHON PORT 8000
-            string baseAiEngineUrl = "http://localhost:8000";
             string absoluteReportRoute = $"{baseAiEngineUrl}/api/ai/invoice-integrity-report/compile-count-audit";
 
             using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
@@ -606,5 +663,5 @@ public class UniversalChatController : ControllerBase
 
 }
 
-public record UniversalChatRequestDto(string UserInput);
+public record UniversalChatRequestDto(string UserInput, string VoiceKey = "en-US-AriaNeural");
 public record UniversalChatResponseDto(string AgentResponse, string? AudioBase64 = null);

@@ -59,6 +59,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const [selectedVoiceKey, setSelectedVoiceKey] = useState<string>('en-US-AriaNeural'); // Default voice key for TTS
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -213,7 +214,8 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
 
       // 2. Dispatch request to the dynamically selected role-based backend engine
       const response = await apiClient.post(targetRoute, {
-        userInput: cleanText
+        userInput: cleanText,
+        voiceKey: selectedVoiceKey
       });
 
       const rawAgentResponse = response.data.agentResponse;
@@ -628,6 +630,33 @@ const autoplayBase64Audio = (base64String: string | null | undefined) => {
                 </div>
 
                 {/* USER INPUT TERMINAL FORM */}
+                <div className="px-3 py-1.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex items-center gap-2">
+                  <label className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">AI Voice Assistant:</label>
+                  <select
+                    disabled={loading}
+                    value={selectedVoiceKey}
+                    onChange={(e) => setSelectedVoiceKey(e.target.value)}
+                    className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 max-w-[240px]"
+                  >
+                    <optgroup label="English Accents (Male)">
+                      <option value="en-US-GuyNeural">🇺🇸 USA - Standard Male (Guy)</option>
+                      <option value="en-US-BrianNeural">🇺🇸 USA - Pro Male (Brian)</option>
+                      <option value="en-US-AndrewNeural">🇺🇸 USA - Conversational (Andrew)</option>
+                      <option value="en-GB-RyanNeural">🇬🇧 UK - British Male (Ryan)</option>
+                      <option value="en-AU-WilliamNeural">🇦🇺 AU - Australian Male (William)</option>
+                    </optgroup>
+                    <optgroup label="International Languages (Male)">
+                      <option value="es-MX-JorgeNeural">🇲🇽 Spanish (LatAm) - Jorge</option>
+                      <option value="es-ES-AlvaroNeural">🇪🇸 Spanish (Spain) - Alvaro</option>
+                      <option value="fr-CA-LiamNeural">🇨🇦 French (Canada) - Liam</option>
+                      <option value="fr-FR-RemyNeural">🇫🇷 French (France) - Remy</option>
+                      <option value="de-DE-KillianNeural">🇩🇪 German (Germany) - Killian</option>
+                      <option value="it-IT-DiegoNeural">🇮🇹 Italian (Italy) - Diego</option>
+                      <option value="ja-JP-KeitaNeural">🇯🇵 Japanese (Japan) - Keita</option>
+                      <option value="pt-BR-AntonioNeural">🇧🇷 Portuguese (Brazil) - Antonio</option>
+                    </optgroup>
+                  </select>
+                </div>
                 <form onSubmit={handleSendUniversalQuery} className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/40 flex gap-2 shrink-0">
                   <button
                     type="button"

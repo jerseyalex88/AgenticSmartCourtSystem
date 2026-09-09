@@ -7,5 +7,6 @@ class AppSettings(BaseModel):
     description: str = "Advanced Operational Brain for Global Academy ERP Ecosystem Platforms"
     version: str = "4.0.0"
     default_port: int = 8000
+    v2_default_port: int = 8001
 
 settings = AppSettings()

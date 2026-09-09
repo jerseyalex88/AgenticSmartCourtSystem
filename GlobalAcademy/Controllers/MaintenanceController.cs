@@ -21,14 +21,18 @@ public class MaintenanceController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly ICourtDiagnosticsService _diagnosticsService;
     private readonly ITenantProvider _tenantProvider;
+    private readonly IConfiguration _configuration;
+    private readonly string baseAiEngineUrl;
 
     public MaintenanceController(ApplicationDbContext context,
         ICourtDiagnosticsService diagnosticsService,
-        ITenantProvider tenantProvider)
+        ITenantProvider tenantProvider, IConfiguration configuration)
     {
         _context = context;
         _diagnosticsService = diagnosticsService;
         _tenantProvider = tenantProvider;
+        _configuration = configuration;
+        baseAiEngineUrl = _configuration["AiEngineSettings:BaseUrl"]?.TrimEnd('/') ?? "http://localhost:8000";
     }
 
     // =========================================================================
@@ -997,7 +1001,6 @@ public class MaintenanceController : ControllerBase
             string serializedInput = JsonSerializer.Serialize(reportPayload);
             using var stringContent = new StringContent(serializedInput, System.Text.Encoding.UTF8, "application/json");
 
-            string baseAiEngineUrl = "http://localhost:8000";
             string absoluteReportRoute = $"{baseAiEngineUrl}/api/ai/report/compile-facility-audit";
 
             using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };

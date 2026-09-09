@@ -13,6 +13,7 @@ from app.routers.text_to_speech_analytics import router as tts_generator_router
 from app.routers.court_report_analytics import router as executive_court_report_router
 from app.routers.financial_report_analytics import router as executive_financial_router
 from app.routers.invoice_integrity_report_analytics import router as executive_integrity_router
+from app.routers.v2_text_to_speech_analytics import router as v2_tts_router
 
 # Initialize the central application engine context using values from our config file
 app = FastAPI(
@@ -33,6 +34,8 @@ app.include_router(tts_generator_router)
 app.include_router(executive_court_report_router)
 app.include_router(executive_financial_router)
 app.include_router(executive_integrity_router)
+
+app.include_router(v2_tts_router)
 
 @app.get("/")
 def read_root():

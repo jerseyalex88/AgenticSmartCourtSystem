@@ -1,5 +1,6 @@
 # File: GlobalAcademy-AiEngine/app/services/video_tracking_service.py
 import os
+import time
 import cv2
 import threading
 import httpx
@@ -30,6 +31,9 @@ class VideoTrackingService:
 
     @classmethod
     def _execute_frame_tracking_pipeline(cls, court_id: str, academy_id: str, job_id: str, video_path: str, homography_matrix: Optional[np.ndarray] = None):
+        # ⏱️ 1. Start the High-Resolution Background Stopwatch
+        job_start_time = time.perf_counter()
+
         print(f"\n📡 [BACKGROUND WORKER START]: Executing Job {job_id} for Court {court_id}")
         
         # Hydrate local thread cache memories instantly if a matrix is passed
@@ -97,6 +101,18 @@ class VideoTrackingService:
 
             # Append the active academy identifier
             final_spatial_matrix_payload["academy_id"] = academy_id
+
+            # ⏱️ 2. Stop the Stopwatch and Compute Elapsed Execution Time
+            execution_seconds = time.perf_counter() - job_start_time
+            execution_minutes = execution_seconds / 60.0
+            
+            # Injecting the calculation metrics directly into the network payload contract to inform .NET
+            final_spatial_matrix_payload["pipeline_performance"] = {
+                "elapsed_seconds": round(execution_seconds, 2),
+                "elapsed_minutes": round(execution_minutes, 2)
+            }
+            
+            print(f"⏱️ [v2 JOB METRICS]: Job {job_id} processing finalized in {execution_minutes:.2f} minutes ({execution_seconds:.2f} seconds).")
 
             # Dispatch over network bridge straight to .NET Core gateway callback port
             base_gateway_url = os.getenv("DOTNET_GATEWAY_URL", "https://localhost:7290").strip("/")
