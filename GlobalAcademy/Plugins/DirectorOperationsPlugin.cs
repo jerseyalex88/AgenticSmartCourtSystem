@@ -5,6 +5,7 @@ using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using System.Text;
 
 namespace GlobalAcademy.Plugins;
 
@@ -714,4 +715,194 @@ public class DirectorOperationsPlugin
         return $"Success! User @{user.UserName} unlinked cleanly from court task on '{court.Name}'. [FRONTEND_ACTION:SET_DATE:{todayStr}]";
     }
 
+    [KernelFunction, Description("Queries the database for any active open unpaid invoices.")]
+    public async Task<string> GetUnpaidInvoicesAsync(Kernel kernel)
+    {
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Missing or invalid security academy perimeter claim scope.";
+        }
+
+        // Retrieve outstanding entries inside a strict multi-tenant partition firewall loop
+        var unpaidInvoices = await _dbContext.Invoices
+            .Where(i => i.AcademyId == academyId && i.Status == InvoiceStatus.Unpaid)
+            .OrderByDescending(i => i.CreatedAtUtc)
+            .ToListAsync();
+
+        if (unpaidInvoices.Count == 0)
+        {
+            return "System Scan Result: There are no outstanding or unpaid invoices on all account ledger profiles.";
+        }
+
+        var summary = "Outstanding Open Balance Items Located:\n";
+        var invoiceTotalAmount = 0.00m; 
+        foreach (var inv in unpaidInvoices)
+        {
+            summary += $"- Invoice ID: {inv.InvoiceId} | Issued: {inv.CreatedAtUtc:yyyy-MM-dd} | Total Due: ${inv.TotalAmount:F2}\n";
+            invoiceTotalAmount += inv.TotalAmount;
+        }
+
+        summary += $"  [FRONTEND_ACTION:LAUNCH_CHECKOUT:Total Invoices Amount:{invoiceTotalAmount:F2}]";
+
+        return summary;
+    }
+
+    [KernelFunction, Description("Queries the database for any active open paid invoices.")]
+    public async Task<string> GetPaidInvoicesAsync(Kernel kernel)
+    {
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Missing or invalid security academy perimeter claim scope.";
+        }
+
+        // Retrieve outstanding entries inside a strict multi-tenant partition firewall loop
+        var paidInvoices = await _dbContext.Invoices
+            .Where(i => i.AcademyId == academyId && i.Status == InvoiceStatus.Paid)
+            .OrderByDescending(i => i.CreatedAtUtc)
+            .ToListAsync();
+
+        if (paidInvoices.Count == 0)
+        {
+            return "System Scan Result: There are no outstanding or unpaid invoices on all account ledger profiles.";
+        }
+
+        var summary = "Outstanding Open Balance Items Located:\n";
+        var invoiceTotalAmount = 0.00m; 
+        foreach (var inv in paidInvoices)
+        {
+            summary += $"- Invoice ID: {inv.InvoiceId} | Issued: {inv.CreatedAtUtc:yyyy-MM-dd} | Total Due: ${inv.TotalAmount:F2}\n";
+            invoiceTotalAmount += inv.TotalAmount;
+        }
+
+        summary += $"  [FRONTEND_ACTION:LAUNCH_CHECKOUT:Total Invoices Amount:{invoiceTotalAmount:F2}]";
+
+        return summary;
+    }
+    [KernelFunction, Description("Calculates, filters, and summarizes physical court usage hours based on paid transactions. Returns distinct calculations partitioned by branch or court identifiers.")]
+    public async Task<string> GetCourtUsageAnalyticsAsync(
+        Kernel kernel,
+        [Description("The unique identifier Guid or natural name string of the target branch. Set to 'ALL' if evaluating across all academy locations.")] string branchIdentifier,
+        [Description("Optional target Court Name or Court Guid to narrow down the query parameters. Leave empty or set to 'ALL' to analyze all courts in that branch scope.")] string courtIdentifier = "ALL",
+        [Description("Optional rolling start date threshold constraint filtering transactions (e.g., '2026-01-01'). Defaults to historical inception if omitted.")] string? startDateUtcStr = null)
+    {
+        // 🚀 STEP 1: Strict Multi-Tenant Isolation Security Assertion Check
+        if (!kernel.Data.TryGetValue("academyId", out var academyIdObj) || academyIdObj is not Guid academyId)
+        {
+            return "Transaction rejected: Invalid or unverified tenant boundary identity parameters.";
+        }
+
+        // 🚀 STEP 2: Hydrate Date Threshold Parameters safely
+        DateTime startDateTimeUtc = DateTime.MinValue;
+        if (!string.IsNullOrWhiteSpace(startDateUtcStr) && DateTime.TryParse(startDateUtcStr, out var parsedDate))
+        {
+            startDateTimeUtc = DateTime.SpecifyKind(parsedDate, DateTimeKind.Utc);
+        }
+
+        // 🚀 STEP 3: Pinpoint the requested Branch scope
+        Guid? targetBranchId = null;
+        string branchDisplayName = "All Branches";
+
+        if (!string.Equals(branchIdentifier, "ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            Branch? branch = null;
+            if (Guid.TryParse(branchIdentifier, out var branchGuid))
+            {
+                branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Id == branchGuid && b.AcademyId == academyId);
+            }
+            else
+            {
+                branch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.Name.ToLower() == branchIdentifier.ToLower() && b.AcademyId == academyId);
+            }
+
+            if (branch == null)
+            {
+                return $"Validation Exception: The target branch parameter location matching '{branchIdentifier}' was not found in this academy database partitioning scheme.";
+            }
+
+            targetBranchId = branch.Id;
+            branchDisplayName = branch.Name;
+        }
+
+        // 🚀 STEP 4: Build the Unified Consolidated LINQ Aggregate Data Request
+        // Join Invoices -> LineItems -> Bookings -> Courts to ensure a clean transaction ledger match
+        var baseQuery = from invoice in _dbContext.Invoices
+                        join lineItem in _dbContext.Set<InvoiceLineItem>() on invoice.InvoiceId equals lineItem.InvoiceId
+                        join booking in _dbContext.Set<Booking>() on lineItem.AssociatedBookingId equals booking.Id
+                        join court in _dbContext.Courts on booking.CourtId equals court.Id
+                        join branch in _dbContext.Branches on court.BranchId equals branch.Id
+                        where invoice.AcademyId == academyId
+                              && invoice.Status == InvoiceStatus.Paid
+                              && invoice.CreatedAtUtc >= startDateTimeUtc
+                        select new
+                        {
+                            BranchId = branch.Id,
+                            BranchName = branch.Name,
+                            CourtId = court.Id,
+                            CourtName = court.Name,
+                            LineItemId = lineItem.LineItemId,
+                            Quantity = lineItem.Quantity // Number of hours explicitly represented in the ledger
+                        };
+
+        // Apply dynamic parameter branch segmentation filters
+        if (targetBranchId.HasValue)
+        {
+            baseQuery = baseQuery.Where(q => q.BranchId == targetBranchId.Value);
+        }
+
+        // Apply dynamic court filter parameters if specified by the AI context
+        if (!string.IsNullOrWhiteSpace(courtIdentifier) && !string.Equals(courtIdentifier, "ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            if (Guid.TryParse(courtIdentifier, out var courtGuid))
+            {
+                baseQuery = baseQuery.Where(q => q.CourtId == courtGuid);
+            }
+            else
+            {
+                baseQuery = baseQuery.Where(q => q.CourtName.ToLower() == courtIdentifier.ToLower());
+            }
+        }
+
+        // 🚀 STEP 5: Pull Data and Execute Aggregate Partition Computations in System RAM
+        var rawTransactionsMetadataList = await baseQuery.ToListAsync();
+
+        if (!rawTransactionsMetadataList.Any())
+        {
+            return $"📊 [COURT METRICS ANALYTICS]: No paid booking hours recorded inside the database context for Branch: '{branchDisplayName}', Court Filter: '{courtIdentifier}' since target date: {startDateTimeUtc:yyyy-MM-dd}.";
+        }
+
+        // Group findings logically by branch and court layers to match the director's request objectives
+        var analyticsSummaryGroups = rawTransactionsMetadataList
+            .GroupBy(g => new { g.BranchName, g.CourtName })
+            .Select(s => new
+            {
+                s.Key.BranchName,
+                s.Key.CourtName,
+                TotalRecordsCount = s.Count(), // Total invoice hits matching this cell
+                TotalHoursUtilized = s.Sum(item => item.Quantity) // Aggregated hours computation
+            })
+            .OrderBy(o => o.BranchName)
+            .ThenBy(t => t.CourtName)
+            .ToList();
+
+        // Compute overarching grand cumulative variables
+        int totalAggregatedHoursCount = rawTransactionsMetadataList.Sum(x => x.Quantity);
+
+        // 🚀 STEP 6: Structure the Return Compilation Layout
+        var stringBuilder = new StringBuilder();
+        stringBuilder.AppendLine($"📊 [ENTERPRISE COURT USAGE HOURS ANALYTICS SYSTEM BRIEF]");
+        stringBuilder.AppendLine($"========================================================================");
+        stringBuilder.AppendLine($"🏢 Target Academy Workspace  : {branchDisplayName}");
+        stringBuilder.AppendLine($"🎾 Asset Filter Criterion   : {courtIdentifier}");
+        stringBuilder.AppendLine($"📅 Inception Date Boundary  : {startDateTimeUtc:yyyy-MM-dd HH:mm} UTC");
+        stringBuilder.AppendLine($"📈 Cumulative Total Volume  : {totalAggregatedHoursCount} Total Court Operational Hours");
+        stringBuilder.AppendLine($"========================================================================");
+        stringBuilder.AppendLine("Detailed Breakdown Allocation Grid:");
+
+        foreach (var dataItem in analyticsSummaryGroups)
+        {
+            stringBuilder.AppendLine($"  👉 Branch: [{dataItem.BranchName.ToUpper()}] | Court: {dataItem.CourtName} ──► Total Usage Time: {dataItem.TotalHoursUtilized} Hours ({dataItem.TotalRecordsCount} Paid Invoice Slices Match)");
+        }
+
+        return stringBuilder.ToString();
+    }
 }

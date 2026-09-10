@@ -242,7 +242,10 @@ public class UniversalChatController : ControllerBase
                 "\n- Loop through and invoke the corresponding CRUD tool (e.g., 'AdminCreateCourtAsync' or 'AdminDecommissionCourtAsync') sequentially, once for each targeted item." +
                 "\n- Combine the text results from all looped executions into a single, succinct final response summary for the director." +
                 "\n- Do not skip items mid-loop if one fails; report both successes and failures clearly." +
-
+                "\n\nFINANCIAL & COURT USAGE ANALYTICS CONTRACTS:" +
+                "\n- If the Academy Director asks about court usage, court allocation, metrics, or runtime analysis, you MUST utilize the court usage analytics tool." +
+                "\n- Remember the core business logic rule: Court usage hours are calculated strictly based on Paid Invoices. One quantity record is mathematically equivalent to one hour of real-world use." +
+                "\n- Do not try to guess or approximate calculations. Pass the extracted location context parameters (such as the Branch Name/Guid or Court Name/Guid) directly to the function arguments and return the precise system output directly to the director." +
                 "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" +
                 "\nWhenever an operation settles successfully, you MUST preserve and append the trailing grid layout token " +
                 "'[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]' replacing YYYY-MM-DD with today's target tracking date to force immediate client rendering refreshes."
@@ -306,7 +309,8 @@ public class UniversalChatController : ControllerBase
 
             // 🚀 🛠️ BACKEND HOOK: INTERCEPT AND GENERATE NEURAL SPEECH WAVE STRINGS
             // We pass the sanitized, clean conversational text block directly to Python
-            string? audioBase64DataStream = await SynthesizeAgentTextResponseAsync(cleanConversationalText);
+            // string? audioBase64DataStream = await SynthesizeAgentTextResponseAsync(cleanConversationalText);
+            string? audioBase64DataStream = await V2SynthesizeAgentTextResponseAsync(cleanConversationalText, model.VoiceKey);
 
             // 🎯 FIXED CONTAINER LAYER: Pack both text and audio elements side-by-side into a single JSON return contract!
             return Ok(new UniversalChatResponseDto(
