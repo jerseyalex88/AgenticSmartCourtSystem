@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 
 namespace GlobalAcademy.Models {
     public class Academy
@@ -275,5 +276,38 @@ namespace GlobalAcademy.Models {
         // Foreign Key Navigation
         [ForeignKey(nameof(SessionId))]
         public CourtDiagnosticSnapshot? Snapshot { get; set; }
+    }
+    [Table("CourtMaintenanceKnowledge")]
+    public class CourtMaintenanceKnowledge : Security.IMultiTenant
+    {
+        [Key]
+        public Guid Id { get; set; }
+
+        // 🛡️ Multi-Tenant Query Filter Firewall Anchors
+        [Required]
+        public Guid AcademyId { get; set; }
+        
+        [Required]
+        public Guid BranchId { get; set; }
+        
+        // 🎯 OPTIONAL ASSET ANCHOR: Nullable Guid linking chunks directly to an individual court asset row
+        public Guid? CourtId { get; set; }
+
+        // Core Knowledge Content Tracking Columns
+        [Required]
+        public string DocumentName { get; set; } = string.Empty; // e.g., "Club_Maintenance_SOP.pdf"
+        
+        [Required]
+        public string TextChunkContent { get; set; } = string.Empty; // The actual textual paragraph slice
+        
+        public int PageNumber { get; set; }
+
+        // 🚀 THE VECTOR EMBEDDING CORE COLUMN
+        // Maps natively to a PostgreSQL 'vector(1536)' data slot matching OpenAI embedding scales
+        [Required]
+        [Column(TypeName = "vector(1536)")]
+        public Vector Embedding { get; set; }
+
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }

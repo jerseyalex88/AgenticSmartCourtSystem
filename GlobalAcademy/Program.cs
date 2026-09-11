@@ -35,7 +35,9 @@ builder.Services.AddSingleton<GlobalAcademy.Security.ILocalTimeEngine, GlobalAca
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions => npgsqlOptions.UseVector() // 🚀 THE CRUCIAL FIX: Maps type structures at the driver layer!
+    ));
 
 // =========================================================================
 // STEP 2 IMPLEMENTATION: IDENTITY & JWT ENGINE

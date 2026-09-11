@@ -39,6 +39,9 @@ public class ApplicationDbContext : IdentityDbContext
     // 2. Append this relational configuration inside your existing OnModelCreating method:
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // 🚀 DATABASE CEILING: Explicitly instruct Npgsql to automatically run 
+        // the extension setup logic directly on your PostgreSQL database engine
+        modelBuilder.HasPostgresExtension("vector");
         base.OnModelCreating(modelBuilder);
 
         // A. Define the primary key for the User-to-Branch link
@@ -67,6 +70,7 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<UserCourt>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
         modelBuilder.Entity<CourtDiagnosticSnapshot>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
         modelBuilder.Entity<CourtDiagnosticAnomaly>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<CourtMaintenanceKnowledge>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
 
         // Configure precise decimal scales for financial properties
         modelBuilder.Entity<UnifiedCatalogItem>()
@@ -96,6 +100,29 @@ public class ApplicationDbContext : IdentityDbContext
         .WithMany(s => s.Anomalies)
         .HasForeignKey(a => a.SessionId)
         .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CourtMaintenanceKnowledge>()
+            .HasIndex(k => new { k.AcademyId, k.BranchId });
+    }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // 🛡️ DESIGN-TIME SAFETY GATE: If options aren't fully initialized by the runtime dependency injector,
+        // manually construct an isolated configuration anchor to map the pgvector driver parameters cleanly
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Build a direct path pointer to find and parse your root appsettings.json file
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
+
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            optionsBuilder.UseNpgsql(
+                connectionString,
+                npgsqlOptions => npgsqlOptions.UseVector() // 🚀 FORCES TYPE REGISTRATION FOR CLI TOOLS
+            );
+        }
     }
     private System.Linq.Expressions.LambdaExpression ConvertFilterExpression(Type type)
     {

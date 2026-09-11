@@ -14,6 +14,7 @@ from app.routers.court_report_analytics import router as executive_court_report_
 from app.routers.financial_report_analytics import router as executive_financial_router
 from app.routers.invoice_integrity_report_analytics import router as executive_integrity_router
 from app.routers.v2_text_to_speech_analytics import router as v2_tts_router
+from app.routers.v2_report_analytics import router as v2_knowledge_ingestion_router
 
 # Initialize the central application engine context using values from our config file
 app = FastAPI(
@@ -36,6 +37,7 @@ app.include_router(executive_financial_router)
 app.include_router(executive_integrity_router)
 
 app.include_router(v2_tts_router)
+app.include_router(v2_knowledge_ingestion_router)
 
 @app.get("/")
 def read_root():
