@@ -1,15 +1,14 @@
 # File: GlobalAcademy-AiEngine/app/services/v2_rerank_service.py
 from typing import List, Dict
-from flashrank import Ranker, RerankRequest
+from sentence_transformers import CrossEncoder
 
 class v2RerankService:
-    # 🚀 INITIALIZE LOCAL CORES: Boots an ultra-fast, CPU-optimized cross-encoder model checkpoint
-    # Model defaults to ms-marco-MiniLM-L-6-v2, optimized for finding answers in paragraphs
+    # 🚀 SECURE FIXED INITIALIZATION: Points explicitly to the official global cross-encoder account repo path
     try:
-        _ranker = Ranker(model_name="ms-marco-MiniLM-L-6-v2", cache_dir="/tmp/flashrank_cache")
-        print("🧬 [v2 RERANK SERVICE]: Local Cross-Encoder core engine compiled successfully in memory.")
+        _ranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        print("🧬 [v2 RERANK SERVICE]: Standard Cross-Encoder core engine compiled successfully in memory.")
     except Exception as init_err:
-        print(f"⚠️ [v2 RERANK SERVICE INIT FAULT]: Failed to boot local FlashRank libraries: {init_err}")
+        print(f"⚠️ [v2 RERANK SERVICE INIT FAULT]: Failed to boot local Cross-Encoder libraries: {init_err}")
         _ranker = None
 
     @classmethod
@@ -18,65 +17,42 @@ class v2RerankService:
         query_text: str, 
         raw_hybrid_results: List[Dict], 
         top_n: int = 3, 
-        min_relevance_threshold: float = 0.25
+        min_relevance_threshold: float = 0.15
     ) -> List[Dict]:
-        """
-        Takes raw blended database outputs from Step 3, re-evaluates semantic relevance 
-        using a local Cross-Encoder model, and filters out low-quality noise blocks.
-        """
-        if not raw_hybrid_results:
-            return []
-            
-        if cls._ranker is None:
-            print("⚠️ [v2 RERANK SERVICE ALERT]: Reranker engine uninitialized. Falling back to basic dense sorting.")
+        if not raw_hybrid_results or cls._ranker is None:
+            # Fallback gracefully to standard database vector sorting if initialization fails
             return sorted(raw_hybrid_results, key=lambda x: x["dense_score"], reverse=True)[:top_n]
 
-        # 1. Format your database outputs into the precise payload contract expected by FlashRank
-        pass_through_payload = [
-            {
-                "id": item["id"],
-                "text": item["text_content"],
-                # Keep parent columns completely intact inside the metadata bag
-                "meta": {
-                    "document_name": item["document_name"],
-                    "page_number": item["page_number"],
-                    "court_id": item["court_id"],
-                    "dense_score": item["dense_score"],
-                    "sparse_score": item["sparse_score"]
-                }
-            }
-            for item in raw_hybrid_results
-        ]
-
         try:
-            # 2. Package the computational routing arguments
-            rerank_request = RerankRequest(query=query_text, passages=pass_through_payload)
+            # 1. Package the matching query/passage data pairs for evaluation
+            evaluation_pairs = [[query_text, item["text_content"]] for item in raw_hybrid_results]
             
-            # 3. Execute the local cross-evaluation pass across CPU hardware threads
-            reranked_output = cls._ranker.rerank(rerank_request)
+            # 2. Compute exact semantic prediction scores natively across local CPU layers
+            raw_scores = cls._ranker.predict(evaluation_pairs)
             
-            # 4. Filter and restructure the scores cleanly back into your portal contracts
+            # 3. Re-map and filter your objects cleanly based on the new weights
             optimized_context_blocks = []
-            for item in reranked_output:
-                score = float(item["score"])
+            for idx, item in enumerate(raw_hybrid_results):
+                score = float(raw_scores[idx])
                 
-                # Drop paragraphs that are completely irrelevant to the user's intent
+                # Filter out irrelevant text blocks
                 if score >= min_relevance_threshold:
                     optimized_context_blocks.append({
                         "id": item["id"],
-                        "text_content": item["text"],
-                        "document_name": item["meta"]["document_name"],
-                        "page_number": item["meta"]["page_number"],
-                        "court_id": item["meta"]["court_id"],
+                        "text_content": item["text_content"],
+                        "document_name": item["document_name"],
+                        "page_number": item["page_number"],
+                        "court_id": item["court_id"],
                         "rerank_score": score
                     })
 
-            # Trim the response array strictly to your top N highest-quality items
+            # Sort highest-relevance items directly to the top
+            optimized_context_blocks.sort(key=lambda x: x["rerank_score"], reverse=True)
+            
             final_trimmings = optimized_context_blocks[:top_n]
-            print(f"🧬 [v2 RERANK COMPLETE]: Compressed database context block from {len(raw_hybrid_results)} rows down to top {len(final_trimmings)} expert paragraphs.")
+            print(f"🧬 [v2 RERANK COMPLETE]: Compressed database context block down to top {len(final_trimmings)} expert paragraphs.")
             return final_trimmings
 
         except Exception as eval_err:
-            print(f"❌ [v2 RERANK ROUTINE FAILURE]: Local cross-encoder computation failed: {eval_err}")
-            # Fallback gracefully to standard database ordering to preserve uptime safety
+            print(f"❌ [v2 RERANK ROUTINE FAILURE]: Cross-encoder calculation failed: {eval_err}")
             return raw_hybrid_results[:top_n]

@@ -20,6 +20,7 @@ import CookieBanner from './components/CookieBanner';
 import ThirdPartyScriptManager from './components/ThirdPartyScriptManager';
 import CourtDiagnosticsDashboard from './pages/CourtDiagnosticsDashboard';
 import AssetHealthControlCenter from './pages/AssetHealthControlCenter';
+import { V2AiControlCenter } from './pages/V2AiControlCenter';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -225,6 +226,8 @@ export default function App() {
         return <CourtDiagnosticsDashboard />;
       case 'court-health':
         return <AssetHealthControlCenter />;
+      case 'ai-op-center':
+        return <V2AiControlCenter />;
       case 'agent-dispatch':
         return <AgentDispatchCenter />;
       case 'user-profile':
