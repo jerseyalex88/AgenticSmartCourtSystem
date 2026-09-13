@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install standard linux system compiler utilities required for native package processing
+# Install native package compiler utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libgomp1 \
@@ -18,8 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy your framework dependency version tracker requirements sheet
 COPY requirements.txt .
 
-# Install your full package grid cleanly directly onto the runtime image container core
+# 🚀 THE PIECE DE RÉSISTANCE: Force-install the headless OpenCV library wheel
+# right into the image. This bypasses the libGL.so.1 error completely!
 RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir opencv-python-headless \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy your actual application system source codebase assets 

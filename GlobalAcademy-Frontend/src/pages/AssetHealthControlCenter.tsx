@@ -25,19 +25,6 @@ interface LatestSnapshot {
   anomalies: MinimalAnomaly[];
 }
 
-interface CourtHealthOverview {
-  courtId: string;
-  courtName: string;
-  branchId: string;
-  branchName: string;
-  surfaceType: string;
-  isIndoor: boolean;
-  status: string;
-  aggregateMinutesPlayed: number;
-  maintenanceThresholdMinutes: number;
-  latestSnapshot: LatestSnapshot | null;
-}
-
 interface BranchTopologyMeta {
   id: string;
   name: string;
@@ -68,7 +55,8 @@ interface SpatialHeatmap {
   // 🛠️ Add both contract signatures to the master layout schema model
   totalProcessedBounces?: number;
   total_processed_bounces?: number;
-  
+  analyzedVideoFilename?: string;
+  analyzed_video_filename?: string;
   lastAnalyzedClipUtc?: string;
   last_analyzed_clip_utc?: string;
   
@@ -91,7 +79,8 @@ interface CourtHealthOverview {
   latestSnapshot: LatestSnapshot | null;
   
   // 🛠️ NEW COMPUTER VISION DATA PROPERTY INTERCEPT MATRIX
-  heatmap: SpatialHeatmap | null;
+  predictiveHeatmap?: SpatialHeatmap | null; // Optional property for predictive heatmap data
+  heatmap?: SpatialHeatmap | null; // Optional property for standard heatmap data
 }
 
 export default function AssetHealthControlCenter() {

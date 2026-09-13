@@ -23,7 +23,7 @@ tzdata==2026.3
 uvicorn==0.39.0
 scipy==1.13.0
 prophet==1.1.6
-opencv-python-headless==4.9.0.80
+opencv-python-headless>=4.9.0.80
 ultralytics==8.3.0
 python-multipart==0.0.12
 pypdf>=5.0.0

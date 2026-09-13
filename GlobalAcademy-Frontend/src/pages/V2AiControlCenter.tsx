@@ -393,12 +393,12 @@ export const V2AiControlCenter: React.FC = () => {
                 citations.map((c) => (
                   <div key={c.id} className="p-2.5 bg-white border border-slate-200 shadow-sm rounded-none">
                     <div className="flex justify-between items-center text-[8px] text-purple-700 font-mono font-bold mb-1.5 border-b border-slate-100 pb-1">
-                      <span>📄 FILE REF: {c.document_name} (Pg {c.page_number})</span>
+                      <span>📄 FILE REF: {c.documentName} (Pg {c.pageNumber})</span>
                       <span className="bg-emerald-50 text-emerald-700 px-1 rounded-none border border-emerald-200 uppercase font-black text-[7px]">
-                        Cross-Score: {(c.rerank_score * 100).toFixed(0)}%
+                        Cross-Score: {(c.reRankScore * 100).toFixed(0)}%
                       </span>
                     </div>
-                    <p className="text-slate-600 italic">"{c.text_content}"</p>
+                    <p className="text-slate-600 italic">"{c.textContent}"</p>
                   </div>
                 ))
               ) : (
