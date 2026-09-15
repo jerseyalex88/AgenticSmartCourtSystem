@@ -640,21 +640,22 @@ const autoplayBase64Audio = (base64String: string | null | undefined) => {
                     className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 max-w-[240px]"
                   >
                     <optgroup label="English Accents (Male)">
-                      <option value="en-US-GuyNeural">🇺🇸 USA - Standard Male (Guy)</option>
+                      <option value="en-US-JennyNeural">🇺🇸 USA - Standard Male (Jenny)</option>
                       <option value="en-US-BrianNeural">🇺🇸 USA - Pro Male (Brian)</option>
                       <option value="en-US-AndrewNeural">🇺🇸 USA - Conversational (Andrew)</option>
                       <option value="en-GB-RyanNeural">🇬🇧 UK - British Male (Ryan)</option>
                       <option value="en-AU-WilliamNeural">🇦🇺 AU - Australian Male (William)</option>
+                      <option value="en-PH-JamesNeural">🇵🇭 PH - Filipino Male (James)</option>
                     </optgroup>
                     <optgroup label="International Languages (Male)">
                       <option value="es-MX-JorgeNeural">🇲🇽 Spanish (LatAm) - Jorge</option>
                       <option value="es-ES-AlvaroNeural">🇪🇸 Spanish (Spain) - Alvaro</option>
-                      <option value="fr-CA-LiamNeural">🇨🇦 French (Canada) - Liam</option>
-                      <option value="fr-FR-RemyNeural">🇫🇷 French (France) - Remy</option>
-                      <option value="de-DE-KillianNeural">🇩🇪 German (Germany) - Killian</option>
+                      <option value="fr-CA-SylvieNeural">🇨🇦 French (Canada) - Sylvie</option>
+                      <option value="fr-FR-HenriNeural">🇫🇷 French (France) - Henri</option>
                       <option value="it-IT-DiegoNeural">🇮🇹 Italian (Italy) - Diego</option>
                       <option value="ja-JP-KeitaNeural">🇯🇵 Japanese (Japan) - Keita</option>
-                      <option value="pt-BR-AntonioNeural">🇧🇷 Portuguese (Brazil) - Antonio</option>
+                      <option value="fil-PH-AngeloNeural">🇭 Filipino (Philippines) - Angelo</option>
+                      <option value="fil-PH-BlessicaNeural">🇭 Filipino (Philippines) - Blessica</option>
                     </optgroup>
                   </select>
                 </div>

@@ -1,34 +1,28 @@
-# =========================================================================
-# 🐍 STAGE 1: DEPLOY CLEAN INTERPRETER IMAGE ENVIRONMENT
-# =========================================================================
-FROM python:3.11-slim AS base
+FROM python:3.11-slim
 
-# Prevent Python from writing .pyc compiled files and force direct console logging output
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install native package compiler utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy your framework dependency version tracker requirements sheet
 COPY requirements.txt .
 
-# 🚀 THE PIECE DE RÉSISTANCE: Force-install the headless OpenCV library wheel
-# right into the image. This bypasses the libGL.so.1 error completely!
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir opencv-python-headless \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir \
+       torch==2.7.1 \
+       torchvision==0.22.1 \
+       --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip uninstall -y opencv-python opencv-contrib-python \
+    && pip install --no-cache-dir --force-reinstall opencv-python-headless==4.10.0.84
 
-# Copy your actual application system source codebase assets 
 COPY . .
 
-# Expose your standard internal communication channel port line
 EXPOSE 8000
 
-# Fire up high-performance production-ready execution strings
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
