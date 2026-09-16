@@ -1,11 +1,14 @@
 # File: GlobalAcademy-AiEngine/app/config.py
 import os
 import json
+import warnings
 from pathlib import Path
 
 import urllib
 from pydantic import BaseModel
 from dotenv import load_dotenv # 🚀 IMPORT THE HANDSHAKE INTEGRATION
+
+warnings.filterwarnings("ignore", category=LangChainPendingDeprecationWarning) if 'LangChainPendingDeprecationWarning' in globals() else warnings.filterwarnings("ignore", message=".*allowed_objects.*")
 
 # Locate your .env file relative to this script's position
 # Adjusts cleanly to find 'GlobalAcademy-AiEngine/.env' from 'GlobalAcademy-AiEngine/app/'
