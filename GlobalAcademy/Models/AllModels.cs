@@ -148,6 +148,7 @@ namespace GlobalAcademy.Models {
         public string? BookedPlayerName { get; set; }
         public int DurationInMinutes { get; set; } = 60;
         public decimal PricePaid { get; set; } = 0.00m;
+        public BookingStatus Status { get; set; } = BookingStatus.Booked;
     }
     public class ShadowQueue : Security.IMultiTenant
     {
@@ -174,6 +175,10 @@ namespace GlobalAcademy.Models {
         public string PlayerPhoneNumber { get; set; } = string.Empty;
         public Guid? ProposedSlotId { get; set; }
         public string DispatchStatus { get; set; } = "AwaitingReply";
+        public Guid? AssociatedBookingId { get; set; }
+                
+        [ForeignKey(nameof(AssociatedBookingId))]
+        public Booking? AssociatedBooking { get; set; }
     }
     public class MaintenanceTicket : Security.IMultiTenant
     {

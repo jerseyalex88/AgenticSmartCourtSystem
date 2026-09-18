@@ -34,7 +34,47 @@ public class v2AiKnowledgeController : ControllerBase
         _pythonBaseUrl = rawUrl.TrimEnd('/');
     }
 
+// File: Controllers/v2AiKnowledgeController.cs
+
     [HttpPost("ingest-manuals")]
+    public async Task<IActionResult> IngestManuals([FromForm] List<string> branchIds, [FromForm] string? courtId, [FromForm] List<IFormFile> documentFiles)
+    {
+        Guid activeAcademyId = _tenantProvider.GetTenantId();
+
+        if (branchIds == null || branchIds.Count == 0 || documentFiles == null || documentFiles.Count == 0)
+        {
+            return BadRequest("Missing required branch parameter collections or document binary payload targets.");
+        }
+
+        // 🚀 FORWARD THE COMPLETE GRID OF SELECTION TARGETS DOWN TO PYTHON NATIVELY
+        using var multipartContent = new MultipartFormDataContent();
+        multipartContent.Add(new StringContent(activeAcademyId.ToString()), "academy_id");
+        
+        if (!string.IsNullOrEmpty(courtId)) {
+            multipartContent.Add(new StringContent(courtId), "court_id");
+        }
+
+        // Append each selected branch ID field
+        foreach (var branchId in branchIds) {
+            multipartContent.Add(new StringContent(branchId), "branch_ids");
+        }
+
+        foreach (var file in documentFiles)
+        {
+            var fileStream = file.OpenReadStream();
+            var streamContent = new StreamContent(fileStream);
+            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+            multipartContent.Add(streamContent, "files", file.FileName);
+        }
+
+        string targetRoute = $"{_pythonBaseUrl}/api/ai/knowledge/ingest-manuals";
+        var response = await _httpClient.PostAsync(targetRoute, multipartContent);
+
+        if (response.IsSuccessStatusCode) return Ok();
+        return StatusCode((int)response.StatusCode, "Python ingestion pipelines rejected packet synchronization bounds.");
+    }
+
+    [HttpPost("ingest-manuals-old")]
     public async Task<IActionResult> IngestManuals(
         [FromForm] Guid branchId, 
         [FromForm] Guid? courtId, 
@@ -124,10 +164,18 @@ public class v2AiKnowledgeController : ControllerBase
         var defaultBranch = await _dbContext.Branches.FirstOrDefaultAsync(b => b.AcademyId == activeAcademyId);
         if (defaultBranch == null) return BadRequest("No active branch configurations found to anchor diagnostic vectors.");
 
+        // var outboundPayload = new {
+        //     user_query = model.UserInput,
+        //     academy_id = activeAcademyId.ToString(),
+        //     branch_id = defaultBranch.Id.ToString(),
+        //     voice_key = model.VoiceKey
+        // };
+        
         var outboundPayload = new {
             user_query = model.UserInput,
             academy_id = activeAcademyId.ToString(),
-            branch_id = defaultBranch.Id.ToString(),
+            branch_id = model.BranchId.ToString(), // 🚀 FIXED: Respects your active UI branch selection!
+            court_id = model.CourtId?.ToString(),  // 🚀 FIXED: Passes active court context tracking!
             voice_key = model.VoiceKey
         };
 

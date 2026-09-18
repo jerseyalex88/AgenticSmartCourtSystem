@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Http;
 namespace GlobalAcademy.Models.DTOs;
 
 // Inbound text search contract
-public record v2DiagnosticChatRequestDto(string UserInput, string VoiceKey = "en-US-GuyNeural");
+public record v2DiagnosticChatRequestDto(string UserInput, Guid BranchId, Guid? CourtId, string VoiceKey = "en-US-JennyNeural");
+
 
 // Outbound list item contract
 public record v2UploadedDocumentSummaryDto(string DocumentName, Guid? CourtId, string CourtName, DateTime CreatedAtUtc);

@@ -32,20 +32,46 @@ class ChunkContentSummary(BaseModel):
     page_number: int
     text_content: str
 
-@router.post("/ingest-manuals", response_model=IngestionBatchResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/ingest-manuals", status_code=status.HTTP_202_ACCEPTED)
 async def ingest_manuals(
     background_tasks: BackgroundTasks,
-    academy_id: UUID4 = Form(...),
-    branch_id: UUID4 = Form(...),
-    court_id: Optional[UUID4] = Form(None),
-    document_files: List[UploadFile] = File(...)
+    academy_id: str = Form(...), # 🚀 FIX: Swapped UUID4 for string to gracefully absorb all cross-platform GUID inputs
+    branch_ids: List[str] = Form(None), 
+    court_id: Optional[str] = Form(None),
+    # 🚀 FIX: Re-aligned key name token to 'files' to match your C# multipartContent.Add key exactly!
+    files: List[UploadFile] = File(...) 
 ):
-    import uuid
+    """
+    Asynchronously processes unstructured PDF compliance handbooks 
+    and chunks them across one or more target branch multi-tenant contexts natively.
+    """
+    print(f"📡 [INGESTION ROUTE CALL]: Intercepted payload for Academy: {academy_id}")
+    print(f"   👉 Raw branch_ids list input: {branch_ids}")
+    print(f"   👉 Raw court_id context input: {court_id}")
+
+    # Defensive sanity step: ensure branch_ids is never None and parse out empty fields
+    if not branch_ids:
+        branch_ids = []
+        
+    # If a single item got parsed as a list containing a comma string, flatten it
+    flattened_branch_ids = []
+    for item in branch_ids:
+        if "," in item:
+            flattened_branch_ids.extend([x.strip() for x in item.split(",") if x.strip()])
+        elif item.strip():
+            flattened_branch_ids.append(item.strip())
+
+    if not flattened_branch_ids:
+        raise HTTPException(status_code=400, detail="Missing required target branch parameter collection boundaries.")
+
+    if not files or len(files) == 0:
+        raise HTTPException(status_code=400, detail="No active document file binaries uploaded.")
+
     job_id = str(uuid.uuid4())
     
     # Extract file binaries immediately into memory arrays to release request connection blocks
     prepared_files_payload = []
-    for doc in document_files:
+    for doc in files:
         if not doc.filename.lower().endswith(".pdf"):
             continue
         content_bytes = await doc.read()
@@ -54,19 +80,26 @@ async def ingest_manuals(
     if not prepared_files_payload:
         raise HTTPException(status_code=400, detail="No valid raw PDF assets discovered in file arrays.")
 
-    background_tasks.add_task(
-        v2IngestionService.process_batch_pdf_ingestion,
-        academy_id=str(academy_id),
-        branch_id=str(branch_id),
-        court_id=str(court_id) if court_id else None,
-        files_data=prepared_files_payload
-    )
-
-    return IngestionBatchResponse(
-        job_id=job_id,
-        status="ACCEPTED",
-        message=f"Batch queue locked. Processing {len(prepared_files_payload)} document elements in background cores."
-    )
+    try:
+        # Pass the cleanly flattened branch IDs directly down to your background vector execution thread
+        background_tasks.add_task(
+            v2IngestionService.process_batch_pdf_ingestion,
+            academy_id=str(academy_id),
+            branch_ids=flattened_branch_ids, 
+            court_id=str(court_id) if court_id and court_id != "ALL" else None,
+            files_data=prepared_files_payload
+        )
+        
+        # 🚀 FIX: Bypassed output model serialization bottlenecks by returning a clean direct payload
+        return {
+            "status": "success", 
+            "job_id": job_id,
+            "message": "Batch multi-branch vector sharding pipeline scheduled successfully."
+        }
+        
+    except Exception as ex:
+        print(f"❌ [ROUTE BINDING FAULT]: Ingestion dispatch failed: {ex}")
+        raise HTTPException(status_code=500, detail=str(ex))
 
 @router.get("/list-documents", response_model=List[UploadedDocSummary])
 async def list_documents(academy_id: UUID4 = Query(...)):

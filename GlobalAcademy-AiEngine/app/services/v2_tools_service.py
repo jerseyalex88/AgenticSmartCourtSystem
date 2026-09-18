@@ -3,6 +3,7 @@ import asyncpg
 from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
+import uuid
 
 from app.config import settings
 from app.services.v2_retrieval_service import v2RetrievalService
@@ -56,7 +57,6 @@ async def query_facility_knowledge_base(academy_id: str, branch_id: str, search_
         
     return formatted_context
 
-
 # =========================================================================
 # 🎛️ 2. COURT STATUS MODIFIER TOOL INPUT CONFIGURATION
 # =========================================================================
@@ -99,9 +99,103 @@ async def modify_court_operational_status(academy_id: str, court_id: str, target
     finally:
         await conn.close()
 
+class ResolveDisplacementArgs(BaseModel):
+    academy_id: str = Field(..., description="The unique cryptographic Academy/Tenant GUID string.")
+    branch_id: str = Field(..., description="The unique Branch facility GUID string.")
+    court_id: str = Field(..., description="The unique hazard Court GUID string that was locked down.")
+
+@tool("resolve_displaced_player_bookings", args_schema=ResolveDisplacementArgs)
+async def resolve_displaced_player_bookings(academy_id: str, branch_id: str, court_id: str) -> str:
+    """
+    Scans for active player bookings on a locked court and automatically re-routes them 
+    to available slots or transfers them safely into the ShadowQueue system.
+    Use this tool immediately after a court is locked down due to a safety violation or maintenance issue.
+    """
+    print(f"🛠️ [AGENT TOOL EXECUTION]: resolve_displaced_player_bookings executing fallback routines for Court {court_id}")
+    
+    conn = await asyncpg.connect(settings.postgres_connection_string)
+    try:
+        # 1. Isolate upcoming active bookings on the locked court for today
+        # Only target bookings that are currently active ('Booked')
+        bookings_query = """
+            SELECT "Id", "BookedByUserId", "StartTimeUtc", "EndTimeUtc", "BookedPlayerName"
+            FROM "Bookings"
+            WHERE "CourtId" = $1::uuid 
+              AND "AcademyId" = $2::uuid 
+              AND ("StartTimeUtc" AT TIME ZONE 'UTC') >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '12 hours'
+              AND ("Status" = 'Booked' OR "Status" IS NULL)
+            ORDER BY "StartTimeUtc" ASC;
+        """
+        displaced_rows = await conn.fetch(bookings_query, uuid.UUID(court_id), uuid.UUID(academy_id))
+        
+        if not displaced_rows:
+            return f"No upcoming active player reservations were scheduled on Court {court_id}. Scheduling metrics clear."
+
+        summary_report = f"Processing displacement for {len(displaced_rows)} active bookings:\n"
+        
+        for booking in displaced_rows:
+            b_id = booking["Id"]
+            start = booking["StartTimeUtc"]
+            end = booking["EndTimeUtc"]
+            player_name = booking["BookedPlayerName"] or "Unknown Player"
+
+            # 2. Look for an alternative open court of identical surface type with an empty slot
+            find_alt_court_query = """
+                SELECT c."Id", c."Name"
+                FROM "Courts" c
+                WHERE c."BranchId" = $1::uuid AND c."AcademyId" = $2::uuid 
+                  AND c."Status" = 'Open' AND c."Id" != $3::uuid
+                  AND c."Id" NOT IN (
+                      SELECT "CourtId" FROM "Bookings" 
+                      WHERE "StartTimeUtc" < $5 AND "EndTimeUtc" > $4
+                        AND "Status" = 'Booked'
+                  )
+                LIMIT 1;
+            """
+            alt_court = await conn.fetchrow(find_alt_court_query, uuid.UUID(branch_id), uuid.UUID(academy_id), uuid.UUID(court_id), start, end)
+
+            if alt_court:
+                # 🚀 Option A: Move booking to the open court
+                move_query = """
+                    UPDATE "Bookings"
+                    SET "CourtId" = $1, "Notes" = CONCAT("Notes", ' [Auto-Re-routed from locked court]')
+                    WHERE "Id" = $2 AND "AcademyId" = $3;
+                """
+                await conn.execute(move_query, alt_court["Id"], b_id, uuid.UUID(academy_id))
+                summary_report += f" - Moved player '{player_name}' cleanly over to '{alt_court['Name']}' ({start.strftime('%H:%M')} UTC).\n"
+            else:
+                # 🚀 Option B: Max capacity! Push into ShadowQueues WITH the new AssociatedBookingId link
+                insert_queue_query = """
+                    INSERT INTO "ShadowQueues"
+                    ("Id", "AcademyId", "OriginalCourtId", "PlayerUserId", "OriginalStartTimeUtc", "OriginalEndTimeUtc", "QueueStatus", "DisplacementReason", "PlayerName", "IsResolved", "DisplacedAtUtc", "AssociatedBookingId")
+                    VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'Pending_Reschedule', 'Safety Hazard Structural Lockout', $6, FALSE, NOW() AT TIME ZONE 'utc', $7);
+                """
+                await conn.execute(insert_queue_query, uuid.UUID(academy_id), uuid.UUID(court_id), booking["BookedByUserId"], start, end, player_name, b_id)
+                
+                # 🚀 STATE MACHINE UPDATE: Instead of a toxic row DELETE, flip status cleanly to 'Cancelled'
+                cancel_booking_query = """
+                    UPDATE "Bookings"
+                    SET "Status" = 'Cancelled',
+                        "Notes" = CONCAT("Notes", ' [CANCELLED: Displaced to ShadowQueue due to structural court lockdown]')
+                    WHERE "Id" = $1 AND "AcademyId" = $2::uuid;
+                """
+                await conn.execute(cancel_booking_query, b_id, uuid.UUID(academy_id))
+                summary_report += f" - Capacity Breach! Swapped status to 'Cancelled' and queued player '{player_name}' into ShadowQueue.\n"
+
+        return summary_report
+
+    except Exception as ex:
+        print(f"❌ [TOOL EXECUTION FAILURE]: {ex}")
+        return f"Error: Scheduling mitigation failed mid-flight: {ex}"
+    finally:
+        await conn.close()
 
 # =========================================================================
 # 📦 CENTRALIZED REGISTER MATRIX PACKAGING
 # =========================================================================
 # Bundled clean registry array mapping to be fed straight into LangGraph orchestration layers
-smart_court_tools_list = [query_facility_knowledge_base, modify_court_operational_status]
+smart_court_tools_list = [
+    query_facility_knowledge_base, 
+    modify_court_operational_status,
+    resolve_displaced_player_bookings
+]

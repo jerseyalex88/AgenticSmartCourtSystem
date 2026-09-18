@@ -7,6 +7,7 @@ namespace GlobalAcademy.Models
     public enum InvoiceStatus { Unpaid, Paid, Partially_Refunded, Refunded, Voided }
     public enum PaymentMethod { CreditCard, Cash, Crypto_USDC }
     public enum PreferredGateway { Braintree, Square }
+    public enum BookingStatus { Booked, Pending, Cancelled }
 
     public class UnifiedCatalogItem : Security.IMultiTenant
     {

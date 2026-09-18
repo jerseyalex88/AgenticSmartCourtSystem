@@ -25,13 +25,20 @@ class v2RetrievalService:
                 SELECT "Id", "DocumentName", "TextChunkContent", "PageNumber", "CourtId",
                        (1 - ("Embedding" <=> $3::vector)) AS vector_similarity_score
                 FROM "CourtMaintenanceKnowledge"
-                WHERE "AcademyId" = $1::uuid AND "BranchId" = $2::uuid AND ($4::uuid IS NULL OR "CourtId" = $4::uuid)
+                WHERE "AcademyId" = $1::uuid 
+                  AND "BranchId" = $2::uuid 
+                  -- 🚀 FIXED: Returns specific court documents OR general facility-wide manuals!
+                  AND ($4::uuid IS NULL OR "CourtId" = $4::uuid OR "CourtId" IS NULL)
                 ORDER BY "Embedding" <=> $3::vector LIMIT $5
             ),
             sparse_keyword_pool AS (
                 SELECT "Id", "DocumentName", "TextChunkContent", "PageNumber", "CourtId", 1.0 AS keyword_match_score
                 FROM "CourtMaintenanceKnowledge"
-                WHERE "AcademyId" = $1::uuid AND "BranchId" = $2::uuid AND ($4::uuid IS NULL OR "CourtId" = $4::uuid) AND "TextChunkContent" ILIKE $6 LIMIT $5
+                WHERE "AcademyId" = $1::uuid 
+                  AND "BranchId" = $2::uuid 
+                  -- 🚀 FIXED: Applies the same inclusive hierarchy to keyword searches
+                  AND ($4::uuid IS NULL OR "CourtId" = $4::uuid OR "CourtId" IS NULL)
+                  AND "TextChunkContent" ILIKE $6 LIMIT $5
             )
             SELECT COALESCE(d."Id", s."Id") AS chunk_id, COALESCE(d."DocumentName", s."DocumentName") AS document_name,
                    COALESCE(d."TextChunkContent", s."TextChunkContent") AS text_content, COALESCE(d."PageNumber", s."PageNumber") AS page_number,
@@ -51,9 +58,9 @@ class v2RetrievalService:
         """
         Executes a DISTINCT grouping query to pull unique filenames currently loaded under a tenant boundary.
         """
-        print("\n🔎 [DEBUG - FETCH_UNIQUE_DOCUMENTS START]")
-        print(f"   👉 Incoming raw academy_id string literal: '{academy_id}'")
-        print(f"   👉 Length of string: {len(academy_id)}")
+        # print("\n🔎 [DEBUG - FETCH_UNIQUE_DOCUMENTS START]")
+        # print(f"   👉 Incoming raw academy_id string literal: '{academy_id}'")
+        # print(f"   👉 Length of string: {len(academy_id)}")
         
         try:
             clean_uuid = UUID(academy_id.strip())
@@ -74,10 +81,10 @@ class v2RetrievalService:
             """
             records = await conn.fetch(query, academy_id)
 
-            print(f"   🚀 [QUERY EXECUTED]: Returned {len(records)} matching rows for AcademyId {clean_uuid}")
+            # print(f"   🚀 [QUERY EXECUTED]: Returned {len(records)} matching rows for AcademyId {clean_uuid}")
             
-            for idx, r in enumerate(records):
-                print(f"      📍 Match [{idx}]: DocumentName='{r['DocumentName']}' | CourtName='{r['court_name']}'")
+            # for idx, r in enumerate(records):
+            #     print(f"      📍 Match [{idx}]: DocumentName='{r['DocumentName']}' | CourtName='{r['court_name']}'")
 
             return [{
                 "document_name": r["DocumentName"],

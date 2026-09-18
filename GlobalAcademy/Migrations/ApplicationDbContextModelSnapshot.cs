@@ -104,6 +104,10 @@ namespace GlobalAcademy.Migrations
                     b.Property<DateTime>("StartTimeUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CourtId");
@@ -496,6 +500,9 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("AcademyId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AssociatedBookingId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("DispatchStatus")
                         .IsRequired()
                         .HasColumnType("text");
@@ -546,6 +553,8 @@ namespace GlobalAcademy.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssociatedBookingId");
 
                     b.ToTable("ShadowQueues");
                 });
@@ -896,6 +905,15 @@ namespace GlobalAcademy.Migrations
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GlobalAcademy.Models.ShadowQueue", b =>
+                {
+                    b.HasOne("GlobalAcademy.Models.Booking", "AssociatedBooking")
+                        .WithMany()
+                        .HasForeignKey("AssociatedBookingId");
+
+                    b.Navigation("AssociatedBooking");
                 });
 
             modelBuilder.Entity("GlobalAcademy.Models.UserCourt", b =>

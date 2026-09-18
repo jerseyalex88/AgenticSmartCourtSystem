@@ -41,17 +41,17 @@ reportlab>=4.0.0
 flashrank>=0.2.8
 ragas==0.4.3
 
-# langchain==1.4.0
-# langchain-core==1.6.3
-# langchain-community==0.4.1
-# langchain-openai==1.1.9
-# langgraph>=0.2.16
-# 🚀 FIXED: Re-aligned the LangChain & LangGraph ecosystem dependencies to avoid version lock collisions
-langchain>=0.3.0
-langchain-core>=0.3.0
-langchain-community>=0.3.0
-langchain-openai>=0.2.0
+langchain==1.4.0
+langchain-core==1.6.3
+langchain-community==0.4.1
+langchain-openai==1.1.9
 langgraph>=0.2.16
+# 🚀 FIXED: Re-aligned the LangChain & LangGraph ecosystem dependencies to avoid version lock collisions
+# langchain>=0.3.0
+# langchain-core>=0.3.0
+# langchain-community>=0.3.0
+# langchain-openai>=0.2.0
+# langgraph>=0.2.16
 
 datasets>=2.18.0
 sentence-transformers>=3.0.0

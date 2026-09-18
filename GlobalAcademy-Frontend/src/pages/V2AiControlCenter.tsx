@@ -51,6 +51,9 @@ export const V2AiControlCenter: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [courts, setCourts] = useState<Court[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
+    // 🚀 FIXED: Swapped single string state for a multi-select tracking array
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+
   const [selectedCourtId, setSelectedCourtId] = useState('ALL');
   const [loading, setLoading] = useState(false);
 
@@ -94,8 +97,8 @@ export const V2AiControlCenter: React.FC = () => {
       const branchRes = await apiClient.get<Branch[]>('/Facility/branches');
       setBranches(branchRes.data || []);
       
-      if (branchRes.data.length > 0 && !selectedBranchId) {
-        setSelectedBranchId(branchRes.data[0].id);
+      if (branchRes.data.length > 0 && selectedBranchIds.length === 0) {
+        setSelectedBranchIds([branchRes.data[0].id]);
       }
     } catch (err: any) {
       console.error('Failed to synchronize infrastructure branches list.', err);
@@ -123,13 +126,18 @@ export const V2AiControlCenter: React.FC = () => {
     }
   };
 
-  const handleBatchIngestionSubmit = async (e: React.FormEvent) => {
+    const handleBatchIngestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadFiles || uploadFiles.length === 0 || !selectedBranchId) return;
+    if (!uploadFiles || uploadFiles.length === 0 || selectedBranchIds.length === 0) return;
 
     setIngestionLoading(true);
     const formData = new FormData();
-    formData.append('branchId', selectedBranchId);
+    
+    // 🚀 FIXED: Append all selected branch IDs to the multi-part stream collection array
+    selectedBranchIds.forEach((id) => {
+      formData.append('branchIds', id);
+    });
+
     if (selectedCourtId !== 'ALL') formData.append('courtId', selectedCourtId);
     
     for (let i = 0; i < uploadFiles.length; i++) {
@@ -140,12 +148,11 @@ export const V2AiControlCenter: React.FC = () => {
       await apiClient.post('/v2/ai-knowledge-ops/ingest-manuals', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      alert('🚀 Ingestion package successfully committed into background extraction loops!');
+      // alert('🚀 Ingestion package successfully committed across all targeted branch assets!');
       setUploadFiles(null);
-      // Force refreshing the document summary data models
       await fetchUploadedDocumentsRepository();
     } catch (err: any) {
-      alert(`Ingestion Failure: ${err.response?.data || err.message}`);
+        console.log(`Ingestion Failure: ${err.response?.data || err.message}`);
     } finally {
       setIngestionLoading(false);
     }
@@ -158,7 +165,7 @@ export const V2AiControlCenter: React.FC = () => {
       const res = await apiClient.get(`/v2/ai-knowledge-ops/view-document-contents?documentName=${encodeURIComponent(docName)}`);
       setDocumentContents(res.data || []);
     } catch (e) {
-      alert('Failed to reconstruct structured document text chunks.');
+        console.log('Failed to reconstruct structured document text chunks.');
     } finally {
       setViewerLoading(false);
     }
@@ -170,16 +177,20 @@ export const V2AiControlCenter: React.FC = () => {
 
     setTraceLoading(true);
     try {
+      // 🚀 FIXED: Capitalized key parameter strings to align perfectly with .NET DTO models!
       const res = await apiClient.post('/v2/ai-knowledge-ops/execute-pipeline-trace', {
-        userInput: traceQuery,
-        voiceKey: 'en-US-GuyNeural'
+        UserInput: traceQuery,
+        BranchId: selectedBranchIds.length > 0 ? selectedBranchIds[0] : selectedBranchId, 
+        CourtId: selectedCourtId !== 'ALL' ? selectedCourtId : null,
+        VoiceKey: 'en-US-JennyNeural'
       });
 
       setAiAnswer(res.data.conversationalSpeechOutput);
       setCitations(res.data.retractedContextSources || []);
       setMetrics(res.data.pipelinePerformance);
     } catch (e: any) {
-      alert('Diagnostic transaction pipeline handshake broken.');
+      console.error('Trace execution failed structural validation loops:', e);
+      // alert('Diagnostic transaction pipeline handshake broken.');
     } finally {
       setTraceLoading(false);
     }
@@ -256,17 +267,37 @@ export const V2AiControlCenter: React.FC = () => {
             </div>
 
             <form onSubmit={handleBatchIngestionSubmit} className="space-y-5 text-xs max-w-2xl">
-              <div>
+                            <div>
                 <label className="block text-slate-500 font-bold mb-1.5 uppercase tracking-wide text-[9px] font-mono">
-                  Active Target Facility Branch Assignment:
+                  Active Target Facility Branch Assignment (Select One or More):
                 </label>
-                <select
-                  value={selectedBranchId}
-                  onChange={(e) => setSelectedBranchId(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-none px-3 py-2 focus:border-purple-600 focus:outline-none text-slate-800 font-medium text-xs"
-                >
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
+                
+                <div className="w-full bg-slate-50 border border-slate-300 rounded-none p-3 max-h-36 overflow-y-auto space-y-2">
+                  {branches.map((b) => {
+                    const isChecked = selectedBranchIds.includes(b.id);
+                    return (
+                      <label key={b.id} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer font-medium select-none hover:text-slate-900">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              // If checked, filter it out unless it's the last item standing (ensure at least 1 remains active)
+                              if (selectedBranchIds.length > 1) {
+                                setSelectedBranchIds(selectedBranchIds.filter(id => id !== b.id));
+                              }
+                            } else {
+                              // If unchecked, append it cleanly to the array tracking collection
+                              setSelectedBranchIds([...selectedBranchIds, b.id]);
+                            }
+                          }}
+                          className="accent-purple-600 rounded-none border-slate-300 cursor-pointer h-3.5 w-3.5"
+                        />
+                        <span>📍 {b.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
@@ -401,21 +432,28 @@ export const V2AiControlCenter: React.FC = () => {
             </div>
             
             {/* QUERY CONTROL INPUT BOX ROW */}
-            <form onSubmit={handleExecuteTrace} className="flex gap-2 mb-4 shrink-0 max-w-4xl">
-              <input
-                type="text"
+            <form onSubmit={handleExecuteTrace} className="flex gap-2 mb-4 shrink-0 max-w-4xl items-end">
+              <textarea
+                rows={3}
                 value={traceQuery}
                 disabled={traceLoading}
                 onChange={(e) => setTraceQuery(e.target.value)}
-                placeholder="Type a facility rules question to verify full pipeline execution (e.g. friction indexes, moisture sensory thresholds)..."
-                className="flex-1 bg-slate-50 border border-slate-300 rounded-none px-3 py-2 text-xs focus:outline-none focus:border-purple-600 text-slate-800 font-medium"
+                onKeyDown={(e) => {
+                  // Allows submitting the form instantly by hitting Enter, while keeping Shift+Enter open for adding new lines!
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleExecuteTrace(e);
+                  }
+                }}
+                placeholder="Type a facility rules question to verify full pipeline execution (e.g. friction indexes, moisture sensory thresholds, sub-surface asset cracks index tracking)..."
+                className="flex-1 bg-slate-50 border border-slate-300 rounded-none px-3 py-2 text-xs focus:outline-none focus:border-purple-600 text-slate-800 font-medium font-sans resize-y min-h-[60px]"
               />
               <button
                 type="submit"
                 disabled={traceLoading || !traceQuery.trim()}
-                className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 text-white font-black text-[11px] px-6 py-2 uppercase rounded-none border border-slate-950 transition tracking-wider shrink-0 shadow shadow-slate-400/40"
+                className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 text-white font-black text-[11px] px-6 py-3 uppercase rounded-none border border-slate-950 transition tracking-wider shrink-0 shadow shadow-slate-400/40 h-[60px]"
               >
-                {traceLoading ? 'Tracing System...' : 'Run Pipeline Trace'}
+                {traceLoading ? 'Tracing...' : 'Run Pipeline Trace'}
               </button>
             </form>
 

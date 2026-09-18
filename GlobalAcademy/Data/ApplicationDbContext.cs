@@ -72,6 +72,10 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<CourtDiagnosticAnomaly>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
         modelBuilder.Entity<CourtMaintenanceKnowledge>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
 
+        modelBuilder.Entity<Booking>()
+            .Property(b => b.Status)
+            .HasConversion<string>(); // Stores enum states as readable text ("Cancelled") natively in Postgres
+
         // Configure precise decimal scales for financial properties
         modelBuilder.Entity<UnifiedCatalogItem>()
             .Property(p => p.UnitPrice)

@@ -640,7 +640,7 @@ const autoplayBase64Audio = (base64String: string | null | undefined) => {
                     className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 max-w-[240px]"
                   >
                     <optgroup label="English Accents (Male)">
-                      <option value="en-US-JennyNeural">🇺🇸 USA - Standard Male (Jenny)</option>
+                      <option value="en-US-JennyNeural">🇺🇸 USA - Standard Female (Jenny)</option>
                       <option value="en-US-BrianNeural">🇺🇸 USA - Pro Male (Brian)</option>
                       <option value="en-US-AndrewNeural">🇺🇸 USA - Conversational (Andrew)</option>
                       <option value="en-GB-RyanNeural">🇬🇧 UK - British Male (Ryan)</option>
