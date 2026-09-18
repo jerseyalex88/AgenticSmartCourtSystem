@@ -19,7 +19,8 @@ class KnowledgeLookupArgs(BaseModel):
     court_id: Optional[str] = Field(None, description="Optional specific court GUID to narrow down structural documentation limits.")
 
 @tool("query_facility_knowledge_base", args_schema=KnowledgeLookupArgs)
-async def query_facility_knowledge_base(academy_id: str, branch_id: str, search_query: str, court_id: Optional[str] = None) -> str:
+async def query_facility_knowledge_base(academy_id: str, branch_id: str, search_query: str, court_id: Optional[str] = None,
+    state: Optional[dict] = None) -> str:
     """
     Queries the multi-tenant PostgreSQL vector knowledge base using hybrid search and FlashRank reranking.
     Use this tool whenever you need to lookup safety rules, warranty thresholds, maintenance manuals, 
@@ -49,7 +50,18 @@ async def query_facility_knowledge_base(academy_id: str, branch_id: str, search_
     
     if not refined_paragraphs:
         return "Reference text matched database records but fell below the semantic relevance threshold framework."
-        
+
+    # 🚀 THE UPGRADE: Save the raw structural records inside your state bag before flattening them!
+    if state is not None and "internal_metadata" in state:
+        state["internal_metadata"]["last_retrieved_citations"] = [
+            {
+                "document_name": p["document_name"],
+                "page_number": p["page_number"],
+                "text_content": p["text_content"],
+                "rerank_score": float(p.get("rerank_score", 1.0))
+            } for p in refined_paragraphs
+        ]
+
     # Format the extracted paragraphs cleanly for the agent prompt context injection
     formatted_context = ""
     for idx, p in enumerate(refined_paragraphs):
@@ -99,6 +111,9 @@ async def modify_court_operational_status(academy_id: str, court_id: str, target
     finally:
         await conn.close()
 
+# =========================================================================
+# 📅 3. BOOKING DISPLACEMENT TOOL INPUT CONFIGURATION
+# =========================================================================
 class ResolveDisplacementArgs(BaseModel):
     academy_id: str = Field(..., description="The unique cryptographic Academy/Tenant GUID string.")
     branch_id: str = Field(..., description="The unique Branch facility GUID string.")
@@ -191,11 +206,81 @@ async def resolve_displaced_player_bookings(academy_id: str, branch_id: str, cou
         await conn.close()
 
 # =========================================================================
+# 💰 4. MAINTENANCE PURCHASE ORDER TOOL INPUT CONFIGURATION
+# =========================================================================
+class PurchaseOrderArgs(BaseModel):
+    academy_id: str = Field(..., description="The unique cryptographic Academy/Tenant GUID string.")
+    court_id: str = Field(..., description="The unique target Court GUID string requiring emergency repair materials.")
+    estimated_cost: float = Field(..., description="The calculated cost estimate for materials and repair services.")
+    required_material: str = Field(..., description="The exact material description string required for the repair (e.g., 'Acrylic Resurfacer Compound Part A').")
+
+@tool("generate_emergency_maintenance_po", args_schema=PurchaseOrderArgs)
+async def generate_emergency_maintenance_po(academy_id: str, court_id: str, estimated_cost: float, required_material: str) -> str:
+    """
+    Generates an official digital Maintenance Ticket and stages a Purchase Order (PO) transaction 
+    inside the database, enforcing strict procurement ceilings and material compliance checks.
+    Use this tool immediately after diagnosing a hazard that requires budget allocation and physical maintenance.
+    """
+    print(f"🛠️ [AGENT TOOL EXECUTION]: generate_emergency_maintenance_po evaluating repair budget of ${estimated_cost:.2f}")
+    
+    # 🛡️ SYSTEM BOUNDARIES EXTRACTED NATIVELY FROM THE POLICY RAG MANUALS
+    MAX_AUTOMATED_CEILING = 1200.00
+    APPROVED_MATERIAL = "Acrylic Resurfacer Compound Part A"
+    
+    # 1. Enforce Material Compliance Guardrails
+    if APPROVED_MATERIAL.lower() not in required_material.lower():
+        return (
+            f"REJECTED: Material compliance validation failed. Requested '{required_material}', "
+            f"but facility procurement regulations strictly mandate the use of '{APPROVED_MATERIAL}' for sub-surface safety cracks."
+        )
+
+    # 2. Evaluate Financial Spending Authorization Ceilings
+    if estimated_cost <= MAX_AUTOMATED_CEILING:
+        ticket_status = "Open_Queued"  # Auto-Approved and dispatched to the grounds team
+        approval_message = f"SUCCESS: Emergency Purchase Order for ${estimated_cost:.2f} has been AUTO-APPROVED."
+    else:
+        ticket_status = "Pending_Executive_Signoff"  # Exceeds limit, hold for manual manager approval
+        approval_message = (
+            f"WARNING: Cost estimate of ${estimated_cost:.2f} exceeds the automated spending ceiling cap of ${MAX_AUTOMATED_CEILING:.2f}. "
+            f"Ticket has been flagged as 'Pending_Executive_Signoff' and held in the manager's review queue."
+        )
+
+    conn = await asyncpg.connect(settings.postgres_connection_string)
+    try:
+        # 3. Write a clean data row matching your exact C# MaintenanceTicket table column schemas!
+        insert_ticket_query = """
+            INSERT INTO "MaintenanceTickets"
+            ("Id", "AcademyId", "CourtId", "Title", "Description", "TicketStatus", "PriorityLevel", "CreatedAtUtc")
+            VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3, $4, $5, 'Emergency', NOW() AT TIME ZONE 'utc');
+        """
+        
+        title_string = f"Emergency Repair: {APPROVED_MATERIAL}"
+        description_string = f"Automated emergency work order for court repair. Materials: {required_material}. Estimated Financial Allocation: ${estimated_cost:.2f}."
+        
+        await conn.execute(
+            insert_ticket_query, 
+            uuid.UUID(academy_id), 
+            uuid.UUID(court_id), 
+            title_string, 
+            description_string, 
+            ticket_status
+        )
+        
+        return f"{approval_message} Work Order record logged inside 'MaintenanceTickets' table row successfully."
+        
+    except Exception as ex:
+        print(f"❌ [PO TOOL EXCEPTION]: Database insertion failed: {ex}")
+        return f"Error: Failed to commit maintenance ticket mutation to PostgreSQL: {ex}"
+    finally:
+        await conn.close()
+
+# =========================================================================
 # 📦 CENTRALIZED REGISTER MATRIX PACKAGING
 # =========================================================================
 # Bundled clean registry array mapping to be fed straight into LangGraph orchestration layers
 smart_court_tools_list = [
     query_facility_knowledge_base, 
     modify_court_operational_status,
-    resolve_displaced_player_bookings
+    resolve_displaced_player_bookings,
+    generate_emergency_maintenance_po
 ]

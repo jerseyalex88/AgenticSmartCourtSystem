@@ -636,7 +636,16 @@ const autoplayBase64Audio = (base64String: string | null | undefined) => {
                   <select
                     disabled={loading}
                     value={selectedVoiceKey}
-                    onChange={(e) => setSelectedVoiceKey(e.target.value)}
+                    onChange={(e) => {
+                      const nextVoiceSelection = e.target.value;
+                      
+                      // A. Commit state change to local React state hook
+                      setSelectedVoiceKey(nextVoiceSelection);
+                      
+                      // 🚀 B. THE LAYOUT UPDATE: Write the selection straight to browser localStorage!
+                      localStorage.setItem('global_app_voice_key', nextVoiceSelection);
+                      // console.log(`🔊 [GLOBAL VOICE LOCKOUT]: Synced active voice key: ${nextVoiceSelection}`);
+                    }}
                     className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 max-w-[240px]"
                   >
                     <optgroup label="English Accents (Male)">

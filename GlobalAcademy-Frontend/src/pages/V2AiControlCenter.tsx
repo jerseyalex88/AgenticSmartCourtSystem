@@ -177,17 +177,40 @@ export const V2AiControlCenter: React.FC = () => {
 
     setTraceLoading(true);
     try {
+      const activeLayoutVoiceKey = localStorage.getItem('global_app_voice_key') || 'en-US-AriaNeural';
+
       // 🚀 FIXED: Capitalized key parameter strings to align perfectly with .NET DTO models!
       const res = await apiClient.post('/v2/ai-knowledge-ops/execute-pipeline-trace', {
         UserInput: traceQuery,
         BranchId: selectedBranchIds.length > 0 ? selectedBranchIds[0] : selectedBranchId, 
         CourtId: selectedCourtId !== 'ALL' ? selectedCourtId : null,
-        VoiceKey: 'en-US-JennyNeural'
+        VoiceKey: activeLayoutVoiceKey
       });
 
       setAiAnswer(res.data.conversationalSpeechOutput);
       setCitations(res.data.retractedContextSources || []);
       setMetrics(res.data.pipelinePerformance);
+
+      // 🚀 THE AUTOPLAY ENHANCEMENT MATRIX CORE:
+      // Verify if a compiled Base64 binary audio stream track arrived from Python
+      if (res.data.audioBase64) {
+        try {
+          console.log("🔊 [AUDIO ENGINE INTERCEPT]: Initializing data uri stream play sequence...");
+          
+          // Convert the raw base64 payload into an executable data URI string element path
+          const audioUriString = `data:audio/mp3;base64,${res.data.audioBase64}`;
+          
+          // Instantiate a quick, thread-safe HTML5 sound container player block in browser memory
+          const internalSoundNode = new Audio(audioUriString);
+          
+          // Trigger immediate sound vibration playback
+          await internalSoundNode.play();
+        } catch (audioPlaybackError) {
+          console.warn("⚠️ [AUDIO BLOCK NOTICE]: Browser structural media policies restricted automated sound boot:", audioPlaybackError);
+          // Note: Modern browsers sometimes block autoplay unless a user interacts/clicks first. 
+          // Since the user explicitly clicks the "Run Pipeline Trace" button here, it satisfies policies perfectly!
+        }
+      }
     } catch (e: any) {
       console.error('Trace execution failed structural validation loops:', e);
       // alert('Diagnostic transaction pipeline handshake broken.');
@@ -432,7 +455,7 @@ export const V2AiControlCenter: React.FC = () => {
             </div>
             
             {/* QUERY CONTROL INPUT BOX ROW */}
-            <form onSubmit={handleExecuteTrace} className="flex gap-2 mb-4 shrink-0 max-w-4xl items-end">
+            <form onSubmit={handleExecuteTrace} className="flex w-full gap-2 mb-4 shrink-0 items-end">
               <textarea
                 rows={3}
                 value={traceQuery}
