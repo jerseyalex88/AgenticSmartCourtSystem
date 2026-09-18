@@ -12,6 +12,7 @@ using GlobalAcademy.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using GlobalAcademy.Security;
+using GlobalAcademy.Models;
 
 namespace GlobalAcademy.Controllers;
 
@@ -187,4 +188,77 @@ public class v2AiKnowledgeController : ControllerBase
 
         return StatusCode((int)response.StatusCode, "Diagnostic tracing loop rejected connection handshakes.");
     }
+    // 📥 1. GET ALL SAVED TEMPLATES (Respects MT Query Filters Automatically!)
+        [HttpGet("list-agentquery")]
+        public async Task<ActionResult<IEnumerable<SavedAgentQuery>>> GetSavedMacros()
+        {
+            // Due to our HasQueryFilter setup, EF Core appends the AcademyId boundary silently under the hood!
+            var templates = await _dbContext.SavedAgentQueries
+                .OrderByDescending(q => q.CreatedAtUtc)
+                .ToListAsync();
+                
+            return Ok(templates);
+        }
+
+        // 💾 2. SAVE NEW TEMPLATE TO CLIPBOARD
+        public record CreateMacroDto(string Title, string QueryText);
+        
+        [HttpPost("save-agentquery")]
+        public async Task<IActionResult> SaveNewMacro([FromBody] CreateMacroDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.QueryText))
+            {
+                return BadRequest("Template Title and Query text properties cannot be blank string containers.");
+            }
+
+            var newMacro = new SavedAgentQuery
+            {
+                Id = Guid.NewGuid(),
+                Title = dto.Title.Trim(),
+                QueryText = dto.QueryText.Trim(),
+                CreatedAtUtc = DateTime.UtcNow // Stored strictly as absolute UTC matching the Golden Rule!
+            };
+
+            _dbContext.SavedAgentQueries.Add(newMacro);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(newMacro);
+        }
+
+        // 🔄 3. UPDATE EXISTING TEMPLATE
+        public record UpdateMacroDto(string Title, string QueryText);
+
+        [HttpPut("update-agentquery/{id:guid}")]
+        public async Task<IActionResult> UpdateMacro(Guid id, [FromBody] UpdateMacroDto dto)
+        {
+            var existingMacro = await _dbContext.SavedAgentQueries.FirstOrDefaultAsync(q => q.Id == id);
+            
+            if (existingMacro == null)
+            {
+                return NotFound("Target macro blueprint not found or multi-tenant partition fence restricted modification.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Title)) existingMacro.Title = dto.Title.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.QueryText)) existingMacro.QueryText = dto.QueryText.Trim();
+            
+            await _dbContext.SaveChangesAsync();
+            return Ok(existingMacro);
+        }
+
+        // 🗑️ 4. DELETE TEMPLATE FROM CLIPBOARD
+        [HttpDelete("delete-agentquery/{id:guid}")]
+        public async Task<IActionResult> DeleteMacro(Guid id)
+        {
+            var macroToDelete = await _dbContext.SavedAgentQueries.FirstOrDefaultAsync(q => q.Id == id);
+            
+            if (macroToDelete == null)
+            {
+                return NotFound("Target macro blueprint not found or multi-tenant partition fence restricted deletion.");
+            }
+
+            _dbContext.SavedAgentQueries.Remove(macroToDelete);
+            await _dbContext.SaveChangesAsync();
+            
+            return Ok(new { Message = "Macro successfully removed from administrative clipboard memory arrays." });
+        }
 }

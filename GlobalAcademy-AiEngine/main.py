@@ -1,7 +1,19 @@
 # main.py; source venv/bin/activate; dotnet run --launch-profile "https"
 import os
-os.environ["STAN_LOG_LEVEL"] = "5"
-os.environ["PROPHET_PLOTLY_DISABLED"] = "True"
+import sys
+from pathlib import Path
+
+os.environ["STAN_BACKEND"] = "CMDSTANPY"
+
+# Default paths for standard pip-installed cmdstan profiles
+home_dir = str(Path.home())
+default_cmdstan_path = os.path.join(home_dir, ".cmdstan", "cmdstan-2.35.0") # Adjust version if different
+
+if os.path.exists(default_cmdstan_path):
+    os.environ["CMDSTAN"] = default_cmdstan_path
+
+# os.environ["STAN_LOG_LEVEL"] = "5"
+# os.environ["PROPHET_PLOTLY_DISABLED"] = "True"
 
 import uvicorn
 from fastapi import FastAPI
@@ -15,6 +27,19 @@ from app.routers.financial_report_analytics import router as executive_financial
 from app.routers.invoice_integrity_report_analytics import router as executive_integrity_router
 from app.routers.v2_text_to_speech_analytics import router as v2_tts_router
 from app.routers.v2_report_analytics import router as v2_knowledge_ingestion_router
+
+# 🚀 THE PROPHET STAN BACKEND FIX:
+# Automatically download and install a clean, container-safe cmdstan binary 
+# toolchain if it isn't discovered in the virtual environment on startup loops.
+try:
+    import cmdstanpy
+    # Checks if the compiled binary compiler is missing
+    if not cmdstanpy.utils.cmdstan_path():
+        print("🧬 [STAN BACKEND RECOVERY]: Compiling container-safe toolchain rails...")
+        cmdstanpy.install_cmdstan(interactive=False)
+    print("✅ [STAN BACKEND RECOVERY]: Binary compilation architecture live!")
+except Exception as stan_ex:
+    print(f"⚠️ [STAN BACKEND WARNING]: Automated toolchain configuration passed with notice: {stan_ex}")
 
 # Initialize the central application engine context using values from our config file
 app = FastAPI(

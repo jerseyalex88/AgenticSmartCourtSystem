@@ -491,6 +491,32 @@ namespace GlobalAcademy.Migrations
                     b.ToTable("MaintenanceTickets");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.SavedAgentQuery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("QueryText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SavedAgentQueries");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.ShadowQueue", b =>
                 {
                     b.Property<Guid>("Id")

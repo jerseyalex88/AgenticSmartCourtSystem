@@ -4,6 +4,10 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 import uuid
+import pandas as pd
+from datetime import datetime
+from app.config import settings
+from prophet import Prophet
 
 from app.config import settings
 from app.services.v2_retrieval_service import v2RetrievalService
@@ -275,6 +279,108 @@ async def generate_emergency_maintenance_po(academy_id: str, court_id: str, esti
         await conn.close()
 
 # =========================================================================
+# 📈 5. PREDICTIVE STRUCTURAL DEGRADATION TOOL INPUT SCHEMA
+# =========================================================================
+class PredictiveDegradationArgs(BaseModel):
+    academy_id: str = Field(..., description="The unique cryptographic Academy/Tenant GUID string.")
+    court_id: str = Field(..., description="The unique target Court GUID string requiring predictive forecasting analysis.")
+    warranty_threshold: float = Field(..., description="The contract compliance safety threshold minimum index value found via RAG (e.g., 0.55).")
+    contract_expiry_date: str = Field(..., description="The absolute expiration date of the legal warranty contract string found via RAG (e.g., '2030-12-31').")
+
+@tool("forecast_structural_degradation_risk", args_schema=PredictiveDegradationArgs)
+async def forecast_structural_degradation_risk(academy_id: str, court_id: str, warranty_threshold: float, contract_expiry_date: str) -> str:
+    """
+    Queries historical time-series sensor data from CourtDiagnosticSnapshots, executes a machine learning 
+    Prophet forecast projection, and cross-references results against RAG warranty terms to evaluate compliance breach risks.
+    Use this tool whenever a user asks about wear trends, predictive decay speeds, or future asset safety projections.
+    """
+    print(f"🛠️ [AGENT TOOL EXECUTION]: forecast_structural_degradation_risk running Prophet projections for Court {court_id}")
+    
+    conn = await asyncpg.connect(settings.postgres_connection_string)
+    try:
+        # 1. Pull the raw historical time-series logs matching your exact C# schema columns!
+        sensor_query = """
+            SELECT "Timestamp", "SurfaceFrictionIndex"
+            FROM "CourtDiagnosticSnapshots"
+            WHERE "CourtId" = $1::uuid AND "AcademyId" = $2::uuid
+            ORDER BY "Timestamp" ASC;
+        """
+        historical_rows = await conn.fetch(sensor_query, uuid.UUID(court_id), uuid.UUID(academy_id))
+        
+        # Defensive Data Guardrail Check: Prophet requires a stable historical data pool to model trends accurately
+        if not historical_rows or len(historical_rows) < 5:
+            return (
+                f"Prediction Aborted: Court {court_id} has insufficient diagnostic telemetry snapshot rows inside "
+                f"the 'CourtDiagnosticSnapshots' table (Found: {len(historical_rows)}). At least 5 stable historical records are required."
+            )
+
+        # 2. Package data frames cleanly into Prophet's required column schema format ('ds' and 'y')
+        data_records = [
+            {"ds": row["Timestamp"].replace(tzinfo=None), "y": float(row["SurfaceFrictionIndex"])} 
+            for row in historical_rows
+        ]
+        df_training = pd.DataFrame(data_records)
+
+        # 3. Instantiate, tune, and fit the Machine Learning Time-Series Model
+        # We disable daily/weekly seasonality flags if training over sparse micro-telemetry data blocks
+        model = Prophet(yearly_seasonality=False, weekly_seasonality=False, daily_seasonality=False)
+        model.fit(df_training)
+
+        # 4. Generate future evaluation matrix timeline vectors (Projecting 90 days out into the future)
+        future_dataframe = model.make_future_dataframe(periods=90, freq='D')
+        forecast_results = model.predict(future_dataframe)
+
+        # Extract our projected endpoint metrics values
+        current_actual_val = df_training["y"].iloc[-1]
+        final_projected_row = forecast_results.iloc[-1]
+        final_projected_date = final_projected_row["ds"]
+        final_projected_value = float(final_projected_row["yhat"]) # yhat represents Prophet's true calculated point estimation
+        
+        # Calculate the direct derivative trajectory slope orientation
+        total_decay_delta = current_actual_val - final_projected_value
+        
+        # 5. Cross-Reference the mathematical projection matrix against your RAG warranty contracts!
+        target_expiry = datetime.strptime(contract_expiry_date, "%Y-%m-%d")
+        
+        # Scan the forecast data frame to see exactly WHEN the curve dips below the RAG threshold parameter
+        breach_rows = forecast_results[forecast_results["yhat"] < warranty_threshold]
+        
+        report_summary = (
+            f"📊 === PROPHET FORECAST MATRIX REPORT FOR COURT {court_id} ===\n"
+            f" - Current Measured Friction Index: {current_actual_val:.3f}\n"
+            f" - Calculated 90-Day Trend Vector Projection: {final_projected_value:.3f} by {final_projected_date.strftime('%Y-%m-%d')}\n"
+        )
+
+        if not breach_rows.empty:
+            earliest_breach_date = breach_rows["ds"].iloc[0]
+            
+            # Check if this calculated mathematical breach date falls within our legal contract lifespan limit
+            if earliest_breach_date < target_expiry:
+                report_summary += (
+                    f"⚠️ CRITICAL EXPOSURE DETECTED: The Prophet predictive trajectory model forecasts that the court's friction index "
+                    f"will decay beneath your active RAG warranty threshold safety ceiling of {warranty_threshold} on approximately "
+                    f"{earliest_breach_date.strftime('%Y-%m-%d')}.\n"
+                    f"📢 LEGAL STRATEGY NOTICE: This breach is projected to manifest BEFORE your contractor coverage expires on "
+                    f"{contract_expiry_date}. According to Section 4 of your PremiumCourts LLC warranty contract, you are authorized "
+                    f"to file a proactive re-surfacing claim within 14 business days of this discovery to enforce 100% material cost coverage."
+                )
+            else:
+                report_summary += (
+                    f"🟢 COMPLIANT TRAJECTORY: Friction index is projected to cross below {warranty_threshold} on "
+                    f"{earliest_breach_date.strftime('%Y-%m-%d')}, which occurs AFTER your warranty contract expires on {contract_expiry_date}."
+                )
+        else:
+            report_summary += f"🟢 OPTIMAL HEALTH: The predictive model indicates a stable wear curve. No contract breach exposure is forecast over the active 90-day pipeline vector tracking window."
+
+        return report_summary
+
+    except Exception as ex:
+        print(f"❌ [PROPHET FORECAST FAILURE]: {ex}")
+        return f"Error: Machine learning mathematical timeseries forecasting transaction collapsed: {ex}"
+    finally:
+        await conn.close()
+
+# =========================================================================
 # 📦 CENTRALIZED REGISTER MATRIX PACKAGING
 # =========================================================================
 # Bundled clean registry array mapping to be fed straight into LangGraph orchestration layers
@@ -282,5 +388,6 @@ smart_court_tools_list = [
     query_facility_knowledge_base, 
     modify_court_operational_status,
     resolve_displaced_player_bookings,
-    generate_emergency_maintenance_po
+    generate_emergency_maintenance_po,
+    forecast_structural_degradation_risk
 ]

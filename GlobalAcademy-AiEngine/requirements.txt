@@ -24,6 +24,7 @@ typing_extensions==4.16.0
 tzdata==2026.3
 
 scipy==1.13.0
+cmdstanpy==1.2.5
 prophet==1.1.6
 
 opencv-python-headless==4.10.0.84

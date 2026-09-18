@@ -43,6 +43,12 @@ interface PipelineMetrics {
   contextPrecisionScore: number;
 }
 
+interface SavedMacro {
+  id: string;
+  title: string;
+  queryText: string;
+}
+
 export const V2AiControlCenter: React.FC = () => {
   // 🚀 MASTER NAVIGATION STATE: Tracks which panel section is visible
   const [activeMasterTab, setActiveMasterTab] = useState<'ingest' | 'browser' | 'trace'>('ingest');
@@ -74,6 +80,19 @@ export const V2AiControlCenter: React.FC = () => {
   const [aiAnswer, setAiAnswer] = useState('');
   const [citations, setCitations] = useState<RetrievedCitation[]>([]);
   const [metrics, setMetrics] = useState<PipelineMetrics | null>(null);
+
+  const [macros, setMacros] = useState<SavedMacro[]>([]);
+  const [selectedMacroId, setSelectedMacroId] = useState<string>('');
+  const [macroDropdownOpen, setMacroDropdownOpen] = useState<boolean>(false);
+  const [newMacroTitle, setNewMacroTitle] = useState<string>('');
+  const [isSavingNew, setIsSavingNew] = useState<boolean>(false);
+
+  // Hook into initial mount to fetch saved queries data
+  useEffect(() => {
+    if (activeMasterTab === 'trace') {
+      fetchSavedMacrosList();
+    }
+  }, [activeMasterTab]);
 
   // Synchronize infrastructure lookup trees on dashboard initialization
   useEffect(() => {
@@ -216,6 +235,77 @@ export const V2AiControlCenter: React.FC = () => {
       // alert('Diagnostic transaction pipeline handshake broken.');
     } finally {
       setTraceLoading(false);
+    }
+  };
+
+  // Fetch saved templates from your consolidated .NET controller API network route
+  const fetchSavedMacrosList = async () => {
+    try {
+      // 🚀 FIXED: Re-aligned to target your new consolidated sub-route prefix!
+      const res = await apiClient.get<SavedMacro[]>('/v2/ai-knowledge-ops/list-agentquery');
+      setMacros(res.data || []);
+    } catch (err) {
+      console.error('Failed to synchronize macro clipboard memory matrices.', err);
+    }
+  };
+
+  // UI Utility Operations Handlers
+  const handleLoadSelectedMacroText = (macroId: string) => {
+    const target = macros.find(m => m.id === macroId);
+    if (target) {
+      setTraceQuery(target.queryText); // Injects the full multi-line prompt into your textarea console!
+      setSelectedMacroId(macroId);
+    }
+  };
+
+  const handleSaveCurrentAsNewMacro = async () => {
+    if (!traceQuery.trim()) return alert('Cannot save an empty text layout prompt vector.');
+    const titleInput = prompt('Enter a short title name for this prompt blueprint macro:', 'Compliance Audit Template');
+    if (!titleInput) return;
+
+    try {
+      // 🚀 FIXED: Re-aligned to target your new consolidated sub-route prefix!
+      const res = await apiClient.post('/v2/ai-knowledge-ops/save-agentquery', {
+        Title: titleInput,
+        QueryText: traceQuery
+      });
+      alert('🚀 Macro successfully registered to your shared administrative clipboard!');
+      await fetchSavedMacrosList();
+      setSelectedMacroId(res.data.id);
+    } catch (err: any) {
+      alert('Failed to commit blueprint template parameters.');
+    }
+  };
+
+  const handleUpdateExistingSelectedMacro = async () => {
+    if (!selectedMacroId) return alert('Please select an active macro template from the list first.');
+    if (!confirm('Are you sure you want to overwrite this saved template with your current textarea modifications?')) return;
+
+    try {
+      // 🚀 FIXED: Re-aligned to target your new consolidated sub-route prefix!
+      await apiClient.put(`/v2/ai-knowledge-ops/update-agentquery/${selectedMacroId}`, {
+        QueryText: traceQuery
+      });
+      alert('🔄 Saved macro template updated successfully.');
+      await fetchSavedMacrosList();
+    } catch (err) {
+      alert('Failed to re-sync template changes.');
+    }
+  };
+
+  const handleDeleteSelectedMacro = async () => {
+    if (!selectedMacroId) return alert('Please select an active template profile to purge.');
+    if (!confirm('Warning: Are you sure you want to permanently erase this prompt blueprint macro?')) return;
+
+    try {
+      // 🚀 FIXED: Re-aligned to target your new consolidated sub-route prefix!
+      await apiClient.delete(`/v2/ai-knowledge-ops/delete-agentquery/${selectedMacroId}`);
+      alert('🗑️ Macro successfully scrubbed from clipboard arrays.');
+      setTraceQuery('');
+      setSelectedMacroId('');
+      await fetchSavedMacrosList();
+    } catch (err) {
+      alert('Purge command execution rejected.');
     }
   };
 
@@ -454,6 +544,74 @@ export const V2AiControlCenter: React.FC = () => {
               <span className="font-mono text-[8px] text-slate-400">REALTIME INTER-CONTAINER EVALUATION</span>
             </div>
             
+            <div className="w-full flex items-center justify-between bg-slate-100 border border-b-0 border-slate-300 p-2 text-xs font-sans shrink-0">
+              <div className="flex items-center gap-3 flex-1 max-w-xl">
+                <span className="font-mono text-[9px] font-black uppercase text-slate-500 tracking-wider whitespace-nowrap">
+                  📋 AI Macro Clipboard:
+                </span>
+                
+                <select
+                  value={selectedMacroId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedMacroId(val);
+                    if (val) handleLoadSelectedMacroText(val);
+                  }}
+                  className="flex-1 bg-white border border-slate-300 rounded-none px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-purple-600 font-medium"
+                >
+                  <option value="">-- Choose a pre-saved prompt blueprint macro template --</option>
+                  {macros.map((m) => {
+                    // 🚀 SCANNABLE 50-CHARACTER STRING TRUNCATION RULE COMPLIANCE BOUND
+                    const truncatedTitle = m.title.length > 50 ? `${m.title.substring(0, 50)}...` : m.title;
+                    return (
+                      <option key={m.id} value={m.id}>
+                        {truncatedTitle}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* 🚀 THE CONTEXTUAL ELLIPSIS CONSOLE RAIL */}
+              <div className="relative z-30">
+                <button
+                  type="button"
+                  onClick={() => setMacroDropdownOpen(!macroDropdownOpen)}
+                  className="text-slate-700 hover:text-slate-900 bg-white border border-slate-300 px-3 py-1 font-black text-xs uppercase tracking-widest rounded-none shadow-sm transition active:bg-slate-50"
+                >
+                  {macroDropdownOpen ? '✕ Close' : '••• Actions'}
+                </button>
+
+                {/* Dynamic Slide Down Command Selection Box List Menu */}
+                {macroDropdownOpen && (
+                  <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-300 rounded-none shadow-xl flex flex-col font-sans divide-y divide-slate-100 text-xs text-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => { setMacroDropdownOpen(false); handleSaveCurrentAsNewMacro(); }}
+                      className="px-3 py-2 text-left hover:bg-purple-50 hover:text-purple-700 font-bold transition flex items-center gap-2"
+                    >
+                      💾 Save Current Text as New
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!selectedMacroId}
+                      onClick={() => { setMacroDropdownOpen(false); handleUpdateExistingSelectedMacro(); }}
+                      className="px-3 py-2 text-left hover:bg-blue-50 hover:text-blue-700 font-bold disabled:text-slate-300 disabled:hover:bg-white transition flex items-center gap-2"
+                    >
+                      🔄 Update Existing Selected
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!selectedMacroId}
+                      onClick={() => { setMacroDropdownOpen(false); handleDeleteSelectedMacro(); }}
+                      className="px-3 py-2 text-left hover:bg-red-50 hover:text-red-700 font-bold disabled:text-slate-300 disabled:hover:bg-white transition flex items-center gap-2"
+                    >
+                      🗑️ Delete Macro from Clipboard
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
             {/* QUERY CONTROL INPUT BOX ROW */}
             <form onSubmit={handleExecuteTrace} className="flex w-full gap-2 mb-4 shrink-0 items-end">
               <textarea

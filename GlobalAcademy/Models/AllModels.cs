@@ -315,4 +315,25 @@ namespace GlobalAcademy.Models {
 
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
+    [Table("SavedAgentQueries")]
+    public class SavedAgentQuery : Security.IMultiTenant
+    {
+        [Key]
+        public Guid Id { get; set; }
+
+        // 🛡️ THE MULTI-TENANT FIREWALL ANCHOR
+        // Automatically isolated via your global DbContext Query Filters
+        [Required]
+        public Guid AcademyId { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string Title { get; set; } = string.Empty; // e.g., "90-Day Prophet Warranty Audit"
+
+        [Required]
+        public string QueryText { get; set; } = string.Empty; // Holds the full multi-line prompt
+
+        [Required]
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    }
 }

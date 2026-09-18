@@ -21,6 +21,8 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip uninstall -y opencv-python opencv-contrib-python \
     && pip install --no-cache-dir --force-reinstall opencv-python-headless==4.10.0.84
 
+RUN python -c "import cmdstanpy; cmdstanpy.install_cmdstan(interactive=False)"
+
 COPY . .
 
 EXPOSE 8000

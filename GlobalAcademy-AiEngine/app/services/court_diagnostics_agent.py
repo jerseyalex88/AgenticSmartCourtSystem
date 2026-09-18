@@ -21,14 +21,14 @@ from app.schemas.court_diagnostics import (
 # =========================================================================
 # 🛠️ FIXED: EXPLICIT STAN BACKEND WAKE-UP INTERCEPT LAYER
 # =========================================================================
-try:
-    # Forces Prophet to compile and lock its internal tracking signatures 
-    # to prevent the 'stan_backend' attribute assignment race condition crash.
-    tmp_instance = Prophet()
-    if hasattr(tmp_instance, '_load_stan_backend'):
-        tmp_instance._load_stan_backend()
-except Exception as init_err:
-    print(f"📡 [Prophet Engine Warmup Monitor]: Stan backend initialized natively. -> {init_err}")
+# try:
+#     # Forces Prophet to compile and lock its internal tracking signatures 
+#     # to prevent the 'stan_backend' attribute assignment race condition crash.
+#     tmp_instance = Prophet()
+#     if hasattr(tmp_instance, '_load_stan_backend'):
+#         tmp_instance._load_stan_backend()
+# except Exception as init_err:
+#     print(f"📡 [Prophet Engine Warmup Monitor]: Stan backend initialized natively. -> {init_err}")
 # =========================================================================
 
 def compute_court_structural_analytics(payload: CourtDiagnosticRequest) -> CourtDiagnosticResponse:
