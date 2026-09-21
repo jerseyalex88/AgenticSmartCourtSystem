@@ -1,4 +1,4 @@
-# main.py; source venv/bin/activate; dotnet run --launch-profile "https"
+# main.py; source venv/bin/activate; dotnet run --launch-profile "https"; uvicorn main:app --reload --port 8000
 import os
 import sys
 from pathlib import Path

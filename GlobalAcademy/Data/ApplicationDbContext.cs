@@ -35,6 +35,7 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<LedgerTransaction> LedgerTransactions { get; set; }
     public DbSet<CourtDiagnosticSnapshot> CourtDiagnosticSnapshots { get; set; }
     public DbSet<CourtDiagnosticAnomaly> CourtDiagnosticAnomalies { get; set; }
+    public DbSet<CourtMaintenanceKnowledge> CourtMaintenanceKnowledge { get; set; }
     public DbSet<SavedAgentQuery> SavedAgentQueries { get; set; }
 
     // 2. Append this relational configuration inside your existing OnModelCreating method:

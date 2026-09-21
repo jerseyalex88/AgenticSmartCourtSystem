@@ -157,6 +157,32 @@ public class v2AiKnowledgeController : ControllerBase
         // return Ok(await response.Content.ReadFromJsonAsync<List<v2DocumentChunkContentDto>>());
     }
 
+    // 🗑️ PURGE ENTIRE UNSTRUCTURED DOCUMENT AND ALL CORRESPONDING VECTOR CHUNKS
+    [HttpDelete("delete-document")]
+    public async Task<IActionResult> DeleteDocument([FromQuery] string documentName)
+    {
+        Guid activeAcademyId = _tenantProvider.GetTenantId();
+
+        if (string.IsNullOrWhiteSpace(documentName))
+        {
+            return BadRequest("Document name parameter cannot be empty.");
+        }
+
+        // Target the specific document table slots bound strictly to the current tenant firewall
+        var matchingChunks = _dbContext.CourtMaintenanceKnowledge
+            .Where(k => k.AcademyId == activeAcademyId && k.DocumentName == documentName);
+
+        if (!await matchingChunks.AnyAsync())
+        {
+            return NotFound("Target document not found or multi-tenant boundary isolation blocked access.");
+        }
+
+        _dbContext.CourtMaintenanceKnowledge.RemoveRange(matchingChunks);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { Message = $"Document '{documentName}' and all vector embeddings successfully purged from database storage arrays." });
+    }
+
     [HttpPost("execute-pipeline-trace")]
     public async Task<IActionResult> ExecutePipelineTrace([FromBody] v2DiagnosticChatRequestDto model)
     {

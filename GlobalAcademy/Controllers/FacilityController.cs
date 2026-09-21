@@ -114,6 +114,9 @@ public class FacilityController : ControllerBase
             SurfaceType = model.SurfaceType,
             IsIndoor = model.IsIndoor,
             DryCoefficient = model.DryCoefficient,
+            Status = model.Status,                                       // 🚀 BIND BASELINE VALUE
+            MaintenanceThresholdMinutes = model.MaintenanceThresholdMinutes, // 🚀 BIND BASELINE VALUE
+            FloodlightState = model.FloodlightState,                     // 🚀 BIND BASELINE VALUE
             CreatedAtUtc = DateTime.UtcNow
         };
 
@@ -129,11 +132,20 @@ public class FacilityController : ControllerBase
         var court = await _context.Courts.FindAsync(id);
         if (court == null) return NotFound("Target court entity configuration layout missing.");
 
+        // Apply the standard baseline identities
         court.Name = model.Name;
         court.Description = model.Description;
         court.SurfaceType = model.SurfaceType;
         court.IsIndoor = model.IsIndoor;
         court.DryCoefficient = model.DryCoefficient;
+
+        // 🚀 NEW: Apply the full administrative telemetry overrides directly to the DB entity!
+        court.Status = model.Status;
+        court.EstimatedReopenTimeUtc = model.EstimatedReopenTimeUtc;
+        court.AggregateMinutesPlayed = model.AggregateMinutesPlayed;
+        court.MaintenanceThresholdMinutes = model.MaintenanceThresholdMinutes;
+        court.FloodlightState = model.FloodlightState;
+        court.IsDecommissioned = model.IsDecommissioned;
 
         await _context.SaveChangesAsync();
         return Ok(new { Message = "Court configuration telemetry matrix updated.", Court = court });
@@ -295,7 +307,30 @@ public class FacilityController : ControllerBase
 
 public record CreateBranchDto(string Name, string Description, string TimeZoneId);
 public record UpdateBranchDto(string Name, string Description, string TimeZoneId);
-public record CreateCourtDto(Guid BranchId, string Name, string Description, string SurfaceType, bool IsIndoor, double DryCoefficient);
-public record UpdateCourtDto(string Name, string Description, string SurfaceType, bool IsIndoor, double DryCoefficient);
 public record AssignUserBranchDto(string UserId, Guid BranchId, string AssignmentRole);
 public record AssignUserCourtDto(string UserId, Guid BranchId, Guid CourtId, string AccessType);
+public record CreateCourtDto(
+    Guid BranchId, 
+    string Name, 
+    string Description, 
+    string SurfaceType, 
+    bool IsIndoor, 
+    double DryCoefficient,
+    string Status = "Open",
+    int MaintenanceThresholdMinutes = 270,
+    string FloodlightState = "Off"
+);
+
+public record UpdateCourtDto(
+    string Name, 
+    string Description, 
+    string SurfaceType, 
+    bool IsIndoor, 
+    double DryCoefficient,                   // 🚀 FIXED: Re-aligned parameter name token to match React 'dryCoefficient' perfectly!
+    string Status,                           
+    DateTime? EstimatedReopenTimeUtc,       
+    int AggregateMinutesPlayed,              
+    int MaintenanceThresholdMinutes,         
+    string FloodlightState,                  
+    bool IsDecommissioned                    
+);

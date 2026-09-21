@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
+import { useAlert } from '../context/AlertContext';
 
 // Domain Type Contracts matching your strongly-typed C# backend models exactly
 interface Branch {
@@ -86,6 +87,7 @@ export const V2AiControlCenter: React.FC = () => {
   const [macroDropdownOpen, setMacroDropdownOpen] = useState<boolean>(false);
   const [newMacroTitle, setNewMacroTitle] = useState<string>('');
   const [isSavingNew, setIsSavingNew] = useState<boolean>(false);
+  const { showAlert } = useAlert();
 
   // Hook into initial mount to fetch saved queries data
   useEffect(() => {
@@ -167,9 +169,13 @@ export const V2AiControlCenter: React.FC = () => {
       await apiClient.post('/v2/ai-knowledge-ops/ingest-manuals', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      // alert('🚀 Ingestion package successfully committed across all targeted branch assets!');
       setUploadFiles(null);
       await fetchUploadedDocumentsRepository();
+      showAlert({ 
+        title: 'Ingestion Success', 
+        message: "🚀 Ingestion package successfully committed across all targeted branch assets!",
+        type: 'success' 
+      });
     } catch (err: any) {
         console.log(`Ingestion Failure: ${err.response?.data || err.message}`);
     } finally {
@@ -188,6 +194,34 @@ export const V2AiControlCenter: React.FC = () => {
     } finally {
       setViewerLoading(false);
     }
+  };
+
+  const handleDeleteDocument = async (docName: string) => {
+    showAlert({
+      title: 'Delete Document?',
+      message: `Are you sure you want to delete "${docName}"? This will completely purge all vector embedding rows from the knowledge base.`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          // Fire DELETE to your consolidated endpoint using matching URL query parameters
+          await apiClient.delete(`/v2/ai-knowledge-ops/delete-document?documentName=${encodeURIComponent(docName)}`);
+          showAlert({ 
+            title: 'Deletion Success', 
+            message: "🗑️ Document package successfully purged from knowledge base repository!",
+            type: 'success' 
+          });
+          
+          // Refresh your active files layout list repository immediately
+          await fetchUploadedDocumentsRepository();
+        } catch (err: any) {
+          showAlert({ 
+            title: 'Error', 
+            message: "❌ Failed to delete document matrix layer layout components.",
+            type: 'error' 
+          });
+        }
+      }
+    });
   };
 
   const handleExecuteTrace = async (e: React.FormEvent) => {
@@ -269,44 +303,79 @@ export const V2AiControlCenter: React.FC = () => {
         Title: titleInput,
         QueryText: traceQuery
       });
-      alert('🚀 Macro successfully registered to your shared administrative clipboard!');
+      showAlert({ 
+        title: 'Save Success', 
+        message: "🚀 Macro successfully registered to your shared administrative clipboard!",
+        type: 'success' 
+      });
       await fetchSavedMacrosList();
       setSelectedMacroId(res.data.id);
     } catch (err: any) {
-      alert('Failed to commit blueprint template parameters.');
+      showAlert({ 
+        title: 'Error', 
+        message: "❌ Failed to commit blueprint template parameters.",
+        type: 'error' 
+      });
     }
   };
 
   const handleUpdateExistingSelectedMacro = async () => {
     if (!selectedMacroId) return alert('Please select an active macro template from the list first.');
-    if (!confirm('Are you sure you want to overwrite this saved template with your current textarea modifications?')) return;
-
-    try {
-      // 🚀 FIXED: Re-aligned to target your new consolidated sub-route prefix!
-      await apiClient.put(`/v2/ai-knowledge-ops/update-agentquery/${selectedMacroId}`, {
-        QueryText: traceQuery
-      });
-      alert('🔄 Saved macro template updated successfully.');
-      await fetchSavedMacrosList();
-    } catch (err) {
-      alert('Failed to re-sync template changes.');
-    }
+    showAlert({
+      title: 'Overwrite Macro Template?',
+      message: `Are you sure you want to overwrite this saved template with your current textarea modifications?'`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          // 🚀 FIXED: Re-aligned to target your new consolidated sub-route prefix!
+          await apiClient.put(`/v2/ai-knowledge-ops/update-agentquery/${selectedMacroId}`, {
+            QueryText: traceQuery
+          });
+          showAlert({ 
+            title: 'Save Success', 
+            message: "🔄 Saved macro template updated successfully.",
+            type: 'success' 
+          });
+          await fetchSavedMacrosList();
+        } catch (err) {
+          showAlert({ 
+            title: 'Error', 
+            message: "❌ Failed to re-sync template changes.",
+            type: 'error' 
+          });
+        }
+      }
+    });
   };
 
   const handleDeleteSelectedMacro = async () => {
     if (!selectedMacroId) return alert('Please select an active template profile to purge.');
-    if (!confirm('Warning: Are you sure you want to permanently erase this prompt blueprint macro?')) return;
 
-    try {
-      // 🚀 FIXED: Re-aligned to target your new consolidated sub-route prefix!
-      await apiClient.delete(`/v2/ai-knowledge-ops/delete-agentquery/${selectedMacroId}`);
-      alert('🗑️ Macro successfully scrubbed from clipboard arrays.');
-      setTraceQuery('');
-      setSelectedMacroId('');
-      await fetchSavedMacrosList();
-    } catch (err) {
-      alert('Purge command execution rejected.');
-    }
+    showAlert({
+      title: 'Remove Macro Template?',
+      message: `Are you sure you want to permanently erase this prompt blueprint macro?'`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          // 🚀 FIXED: Re-aligned to target your new consolidated sub-route prefix!
+          await apiClient.delete(`/v2/ai-knowledge-ops/delete-agentquery/${selectedMacroId}`);
+          showAlert({ 
+            title: 'Removed', 
+            message: "🗑️ Macro successfully scrubbed from clipboard arrays.",
+            type: 'success' 
+          });
+          setTraceQuery('');
+          setSelectedMacroId('');
+          await fetchSavedMacrosList();
+        } catch (err) {
+          showAlert({ 
+            title: 'Error', 
+            message: "❌ Failed to remove macro template.",
+            type: 'error' 
+          });
+        }
+      }
+    });
   };
 
   return (
@@ -478,18 +547,38 @@ export const V2AiControlCenter: React.FC = () => {
                   documentList.map((doc, idx) => (
                     <div
                       key={idx}
-                      onClick={() => handleViewDocument(doc.documentName)}
-                      className={`p-3 border transition text-left flex justify-between items-center rounded-none cursor-pointer ${
+                      className={`p-3 border transition text-left flex justify-between items-center rounded-none ${
                         selectedDocName === doc.documentName 
                           ? 'bg-purple-50/60 border-purple-400 text-purple-700 font-bold' 
                           : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400'
                       }`}
                     >
-                      <div className="truncate pr-2">
+                      <div className="truncate pr-2 flex-1 min-w-0">
                         <div className="text-xs truncate font-mono font-bold text-slate-900">{doc.documentName}</div>
                         <div className="text-[9px] text-slate-400 uppercase tracking-tight mt-1 font-mono">Scope: {doc.courtName}</div>
                       </div>
-                      <span className="text-[8px] font-mono uppercase bg-slate-50 border border-slate-200 px-1.5 py-0.5 text-slate-500 shrink-0">Select</span>
+                      
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        {/* 🚀 Select Option Button Trigger Panel */}
+                        <span 
+                          onClick={() => handleViewDocument(doc.documentName)}
+                          className="text-[8px] font-mono uppercase bg-slate-50 hover:bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-slate-500 cursor-pointer select-none transition active:bg-slate-200"
+                        >
+                          Select
+                        </span>
+                        
+                        {/* 🚀 THE INDEPENDENT PURGE ICON CONTROLLER */}
+                        <span 
+                          onClick={(e) => {
+                            e.stopPropagation(); // Ironclad bubble intercept prevents row click clashes
+                            handleDeleteDocument(doc.documentName);
+                          }}
+                          className="text-[9px] font-mono uppercase bg-red-50 hover:bg-red-100 border border-red-200 px-1.5 py-0.5 text-red-600 cursor-pointer select-none transition active:bg-red-200 font-black"
+                          title="Delete Document Package"
+                        >
+                          🗑️
+                        </span>
+                      </div>
                     </div>
                   ))
                 ) : (

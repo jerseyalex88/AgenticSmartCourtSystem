@@ -74,38 +74,59 @@ async def query_facility_knowledge_base(academy_id: str, branch_id: str, search_
     return formatted_context
 
 # =========================================================================
-# 🎛️ 2. COURT STATUS MODIFIER TOOL INPUT CONFIGURATION
+# 🎛️ 2. COURT STATUS MODIFIER TOOL INPUT CONFIGURATION (UPGRADED)
 # =========================================================================
 class CourtStatusArgs(BaseModel):
     academy_id: str = Field(..., description="The unique cryptographic Academy/Tenant GUID string.")
     court_id: str = Field(..., description="The unique target Court GUID string that needs an operational status shift.")
     target_status: str = Field(..., description="The exact status code string to apply. Must be either 'Open' or 'Maintenance_Locked'.")
+    # 🚀 NEW: Expose the direct light parameter control hardware override option field to the LLM agent model planner
+    floodlight_state: Optional[str] = Field(None, description="Optional hardware parameter override string to toggle court lights. Must be either 'On' or 'Off'. Use this if compliance rules dictate an immediate power state rewrite.")
 
 @tool("modify_court_operational_status", args_schema=CourtStatusArgs)
-async def modify_court_operational_status(academy_id: str, court_id: str, target_status: str) -> str:
+async def modify_court_operational_status(academy_id: str, court_id: str, target_status: str, floodlight_state: Optional[str] = None) -> str:
     """
-    Actively writes an operational status modification directly onto a specific Court asset row inside PostgreSQL.
+    Actively writes an operational status modification directly onto a specific Court asset row inside PostgreSQL, 
+    with optional support for simultaneously rewriting secondary parameters like FloodlightState.
     Use this tool immediately when a document lookup indicates a safety breach has occurred, or when 
     a court registers metrics outside compliance limits and must be locked.
     """
-    print(f"🛠️ [AGENT TOOL EXECUTION]: modify_court_operational_status transitioning Court {court_id} to '{target_status}'")
+    print(f"🛠️ [AGENT TOOL EXECUTION]: modify_court_operational_status transitioning Court {court_id} to '{target_status}' (FloodlightOverride: {floodlight_state})")
     
     if target_status not in ["Open", "Maintenance_Locked"]:
         return f"Execution rejected: '{target_status}' is an invalid state profile contract parameter."
         
+    if floodlight_state and floodlight_state not in ["On", "Off"]:
+        return f"Execution rejected: Hardware electrical state override value '{floodlight_state}' is invalid. Use 'On' or 'Off'."
+
     conn = await asyncpg.connect(settings.postgres_connection_string)
     try:
-        # Enforce multi-tenant boundaries during the data modification sweep
-        update_query = """
+        # 1. Initialize the dynamic multi-column query arrays
+        update_fields = ['"Status" = $1']
+        query_params = [target_status, uuid.UUID(court_id), uuid.UUID(academy_id)]
+        
+        # 2. 🚀 NEW: Dynamically append the FloodlightState column if specified by the agent!
+        if floodlight_state:
+            param_index = len(query_params) + 1 # Calculates correct PostgreSQL positional argument ($4)
+            update_fields.append(f'"FloodlightState" = ${param_index}')
+            query_params.append(floodlight_state)
+
+        # Build an ironclad compiled multi-column update statement string
+        set_clause = ", ".join(update_fields)
+        update_query = f"""
         UPDATE "Courts"
-        SET "Status" = $1
+        SET {set_clause}
         WHERE "Id" = $2::uuid AND "AcademyId" = $3::uuid;
         """
-        status_result = await conn.execute(update_query, target_status, court_id, academy_id)
+        
+        status_result = await conn.execute(update_query, *query_params)
         
         # Verify if an actual row was updated or if the tenant firewall blocked it
         if "UPDATE 1" in status_result:
-            return f"Success: Court asset {court_id} operational status has been updated to '{target_status}'."
+            success_msg = f"Success: Court asset {court_id} operational status has been updated to '{target_status}'."
+            if floodlight_state:
+                success_msg += f" Floodlight hardware state successfully overwritten to '{floodlight_state}'."
+            return success_msg
         else:
             return f"Failure: No matching court found or multi-tenant boundary violation blocked execution bounds."
             
@@ -225,17 +246,27 @@ async def generate_emergency_maintenance_po(academy_id: str, court_id: str, esti
     inside the database, enforcing strict procurement ceilings and material compliance checks.
     Use this tool immediately after diagnosing a hazard that requires budget allocation and physical maintenance.
     """
-    print(f"🛠️ [AGENT TOOL EXECUTION]: generate_emergency_maintenance_po evaluating repair budget of ${estimated_cost:.2f}")
+    print(f"🛠️ [AGENT TOOL EXECUTION]: generate_emergency_maintenance_po evaluating repair budget of ${estimated_cost:.2f} for '{required_material}'")
     
     # 🛡️ SYSTEM BOUNDARIES EXTRACTED NATIVELY FROM THE POLICY RAG MANUALS
     MAX_AUTOMATED_CEILING = 1200.00
-    APPROVED_MATERIAL = "Acrylic Resurfacer Compound Part A"
     
-    # 1. Enforce Material Compliance Guardrails
-    if APPROVED_MATERIAL.lower() not in required_material.lower():
+    # 🚀 DYNAMIC COMPLIANCE MATRICES:
+    # List of legally authorized parts derived directly from your facility handbooks
+    GLOBALLY_APPROVED_MATERIALS = [
+        "Acrylic Resurfacer Compound Part A",                # Document 3 (Resurfacing)
+        "Industrial High-Output Lux Ballast Assembly Part B", # Document 6 (Lighting)
+        "750W Quartz-Halogen High-Density Pod Element"       # Document 6 (Lighting)
+    ]
+    
+    # 1. Enforce dynamic material compliance validation checks
+    is_compliant = any(approved.lower() in required_material.lower() for approved in GLOBALLY_APPROVED_MATERIALS)
+
+    if not is_compliant:
         return (
             f"REJECTED: Material compliance validation failed. Requested '{required_material}', "
-            f"but facility procurement regulations strictly mandate the use of '{APPROVED_MATERIAL}' for sub-surface safety cracks."
+            f"but facility procurement regulations restrict this execution path. Please cross-reference "
+            f"our compliance manuals via a knowledge base lookup to identify the exact compliant part text string."
         )
 
     # 2. Evaluate Financial Spending Authorization Ceilings
@@ -258,7 +289,7 @@ async def generate_emergency_maintenance_po(academy_id: str, court_id: str, esti
             VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3, $4, $5, 'Emergency', NOW() AT TIME ZONE 'utc');
         """
         
-        title_string = f"Emergency Repair: {APPROVED_MATERIAL}"
+        title_string = f"Emergency Repair: {required_material[:40]}"
         description_string = f"Automated emergency work order for court repair. Materials: {required_material}. Estimated Financial Allocation: ${estimated_cost:.2f}."
         
         await conn.execute(
@@ -270,7 +301,7 @@ async def generate_emergency_maintenance_po(academy_id: str, court_id: str, esti
             ticket_status
         )
         
-        return f"{approval_message} Work Order record logged inside 'MaintenanceTickets' table row successfully."
+        return f"{approval_message} Work Order record logged inside 'MaintenanceTickets' table row successfully for '{required_material}'."
         
     except Exception as ex:
         print(f"❌ [PO TOOL EXCEPTION]: Database insertion failed: {ex}")

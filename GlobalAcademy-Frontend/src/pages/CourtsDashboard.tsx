@@ -15,10 +15,13 @@ interface Court {
   description: string;
   surfaceType: string;
   isIndoor: boolean;
-  status: string;
+  status: string;                           // 🚀 SYNCED OVERRIDE
   dryCoefficient: number;
-  aggregateMinutesPlayed: number;
-  maintenanceThresholdMinutes: number;
+  estimatedReopenTimeUtc: string | null;     // 🚀 SYNCED OVERRIDE
+  aggregateMinutesPlayed: number;           // 🚀 SYNCED OVERRIDE
+  maintenanceThresholdMinutes: number;      // 🚀 SYNCED OVERRIDE
+  floodlightState: string;                  // 🚀 SYNCED OVERRIDE
+  isDecommissioned: boolean;                // 🚀 SYNCED OVERRIDE
 }
 
 export default function CourtsDashboard() {
@@ -39,7 +42,20 @@ export default function CourtsDashboard() {
   const [editBranchData, setEditBranchData] = useState({ name: '', description: '', timeZoneId: 'Europe/London' });
   
   const [newCourt, setNewCourt] = useState({ name: '', description: '', surfaceType: 'Hard', isIndoor: false, dryCoefficient: 1.0 });
-  const [editCourtData, setEditCourtData] = useState({ name: '', description: '', surfaceType: 'Hard', isIndoor: false, dryCoefficient: 1.0 });
+  
+  const [editCourtData, setEditCourtData] = useState({
+    name: '',
+    description: '',
+    surfaceType: 'Hard',
+    isIndoor: false,
+    dryCoefficient: 1.0,
+    status: 'Open',                           // 🚀 ADDED
+    estimatedReopenTimeUtc: '',               // 🚀 ADDED
+    aggregateMinutesPlayed: 0,                // 🚀 ADDED
+    maintenanceThresholdMinutes: 270,         // 🚀 ADDED
+    floodlightState: 'Off',                   // 🚀 ADDED
+    isDecommissioned: false                  // 🚀 ADDED
+  });
 
   // FIXED FEATURE EXTENSION: Tracks the active court entity targeted for deletion
   const [courtToDeleteId, setCourtToDeleteId] = useState<string | null>(null);
@@ -140,18 +156,51 @@ export default function CourtsDashboard() {
       description: court.description,
       surfaceType: court.surfaceType,
       isIndoor: court.isIndoor,
-      dryCoefficient: court.dryCoefficient
+      dryCoefficient: court.dryCoefficient,
+      status: court.status,
+      estimatedReopenTimeUtc: court.estimatedReopenTimeUtc ? court.estimatedReopenTimeUtc.substring(0, 16) : '',
+      aggregateMinutesPlayed: court.aggregateMinutesPlayed,
+      maintenanceThresholdMinutes: court.maintenanceThresholdMinutes,
+      floodlightState: court.floodlightState || 'Off',
+      isDecommissioned: court.isDecommissioned || false
     });
   };
 
   const handleUpdateCourt = async (courtId: string) => {
     try {
       setActionError(null);
-      await apiClient.put(`/Facility/courts/${courtId}`, editCourtData);
-      setCourts(courts.map(c => c.id === courtId ? { ...c, ...editCourtData } : c));
+
+      // 🚀 FIXED: Assemble a clean, flattened serialization payload matching your backend expectations explicitly
+      const payload = {
+        name: editCourtData.name.trim(),
+        description: editCourtData.description.trim(),
+        surfaceType: editCourtData.surfaceType,
+        isIndoor: editCourtData.isIndoor,
+        dryCoefficient: parseFloat(String(editCourtData.dryCoefficient)) || 1.0,
+        status: editCourtData.status,
+        estimatedReopenTimeUtc: editCourtData.estimatedReopenTimeUtc ? new Date(editCourtData.estimatedReopenTimeUtc).toISOString() : null,
+        aggregateMinutesPlayed: parseInt(String(editCourtData.aggregateMinutesPlayed)) || 0,
+        maintenanceThresholdMinutes: parseInt(String(editCourtData.maintenanceThresholdMinutes)) || 270,
+        floodlightState: editCourtData.floodlightState,
+        isDecommissioned: editCourtData.isDecommissioned
+      };
+
+      await apiClient.put(`/Facility/courts/${courtId}`, payload);
+      
+      // Dynamically refresh local state grid values on successful callback completion
+      setCourts(courts.map(c => c.id === courtId ? { ...c, ...payload, estimatedReopenTimeUtc: payload.estimatedReopenTimeUtc } : c));
       setEditingCourtId(null);
     } catch (err: any) {
-      setActionError(err.response?.data || 'Failed to preserve court configuration changes.');
+      console.error('Court update override failed payload binding:', err);
+      
+      // 🚀 THE REACT CRASH PREVENTION FIX:
+      // Safely extract string error codes out of the .NET object matrix instead of passing the raw error node to the state!
+      const errorDetails = err.response?.data;
+      if (errorDetails && typeof errorDetails === 'object' && errorDetails.title) {
+        setActionError(`Validation Fault: ${errorDetails.title}. Check that all numeric values and thresholds conform to facility criteria.`);
+      } else {
+        setActionError(err.response?.data || err.message || 'Failed to preserve court configuration changes.');
+      }
     }
   };
 
@@ -273,6 +322,15 @@ export default function CourtsDashboard() {
                       <span className="text-[10px] bg-slate-100 px-2 py-0.5 font-sans text-slate-700 border border-slate-300">🛠️ {court.surfaceType}</span>
                       <span className="text-[10px] bg-slate-100 px-2 py-0.5 font-sans text-slate-700 border border-slate-300">{court.isIndoor ? '🏠 Indoor' : '☀️ Outdoor'}</span>
                       <span className="text-[10px] bg-slate-100 px-2 py-0.5 font-sans text-slate-700 border border-slate-300">💧 Coeff: {court.dryCoefficient}</span>
+                      <span className={`text-[10px] px-2 py-0.5 font-sans border font-medium ${court.floodlightState === 'On' ? 'bg-amber-50 border-amber-300 text-amber-800 font-bold' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                        {court.floodlightState === 'On' ? '⚡ Floodlights: Active (On)' : '💡 Floodlights: Off'}
+                      </span>
+                      
+                      {court.estimatedReopenTimeUtc && (
+                        <span className="text-[10px] bg-purple-50 border border-purple-200 px-2 py-0.5 font-mono text-purple-700 font-bold">
+                          ⏳ Reopen: {new Date(court.estimatedReopenTimeUtc).toLocaleString()}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -292,44 +350,153 @@ export default function CourtsDashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3 text-xs flex-1 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-emerald-600 border-b border-slate-300 pb-1 text-[11px] uppercase tracking-wide">Modify Court Configuration</h4>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-600 uppercase">Reference Title</label>
-                      <input type="text" value={editCourtData.name} onChange={(e) => setEditCourtData({...editCourtData, name: e.target.value})} className="w-full bg-white border border-slate-300 p-2 text-slate-800" />
+                <div className="space-y-3 text-xs flex-1 flex flex-col justify-between p-1 bg-white">
+                  <div className="space-y-3">
+                    {/* 🚀 FIXED (2): Unique Identifier Grid tracking displayed proudly at the absolute top boundary row */}
+                    <div className="bg-slate-100 border border-slate-300 p-2 font-mono text-[9px] text-slate-500 rounded-none flex items-center justify-between">
+                      <span>🆔 COURT ID:</span>
+                      <span className="font-bold text-slate-700 select-all select-none">{court.id}</span>
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          
+                          // 🚀 THE NATIVE RE-BIND FIX: Capture the button node IMMEDIATELY 
+                          // to prevent React's async event pool from wiping it to null!
+                          const btnNode = e.currentTarget;
+                          if (!btnNode) return;
+
+                          try {
+                            // Native Device Clipboard write execution pass
+                            await navigator.clipboard.writeText(court.id);
+                            
+                            // Apply your custom temporary success notification state flags safely
+                            const originalContent = btnNode.innerHTML;
+                            btnNode.innerHTML = `<span style="font-size: 9px; font-weight: bold; color: #16a34a;">✅ Copied!</span>`;
+                            btnNode.style.borderColor = "#22c55e";
+                            
+                            setTimeout(() => {
+                              btnNode.innerHTML = originalContent;
+                              btnNode.style.borderColor = "";
+                            }, 1200);
+                          } catch (clipErr) {
+                            console.error("Failed to acquire device system clipboard write privileges:", clipErr);
+                            alert(`Clipboard ID Block: ${court.id}`);
+                          }
+                        }}
+                        className="bg-transparent border border-transparent hover:border-slate-400 hover:bg-slate-200 p-1.5 transition-all duration-150 shrink-0 rounded-full flex items-center justify-center cursor-pointer select-none h-[26px] w-[26px]"
+                        title="Copy Court GUID to System Clipboard"
+                      >
+                        {/* 📊 MATCHED SNAPSHOT GRAPHIC LAYER SVG */}
+                        <svg 
+                          className="h-3.5 w-3.5 text-slate-600 hover:text-slate-900" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor" 
+                          strokeWidth={2.5}
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" 
+                          />
+                        </svg>
+                      </button>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-600 uppercase">Materials Description</label>
-                      <input type="text" value={editCourtData.description} onChange={(e) => setEditCourtData({...editCourtData, description: e.target.value})} className="w-full bg-white border border-slate-300 p-2 text-slate-800" />
-                    </div>
+
+                    <h4 className="font-black text-purple-700 border-b border-slate-300 pb-1 text-[11px] uppercase tracking-wide">
+                      Modify Court Configuration Overrides
+                    </h4>
+                    
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-600 uppercase">Type</label>
-                        <select value={editCourtData.surfaceType} onChange={(e) => setEditCourtData({...editCourtData, surfaceType: e.target.value})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800" >
-                          <option value="Grass">Grass</option>
-                          <option value="Clay">Clay</option>
-                          <option value="Hard">Hard</option>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Court Title</label>
+                        <input type="text" value={editCourtData.name} onChange={(e) => setEditCourtData({...editCourtData, name: e.target.value})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800 focus:outline-none focus:border-purple-600 font-medium" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Operational Status</label>
+                        <select value={editCourtData.status} onChange={(e) => setEditCourtData({...editCourtData, status: e.target.value})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800 font-bold focus:outline-none focus:border-purple-600">
+                          <option value="Open">Open</option>
+                          <option value="Rained_Out">Rained_Out</option>
+                          <option value="Maintenance_Locked">Maintenance_Locked</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* 🚀 FIXED (2): Surface Type and Drying Coefficient explicitly added as editable fields during edit-mode */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Surface Construction Type</label>
+                        <select value={editCourtData.surfaceType} onChange={(e) => setEditCourtData({...editCourtData, surfaceType: e.target.value})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800 font-medium focus:outline-none focus:border-purple-600">
+                          <option value="Hard">Hardcourt</option>
+                          <option value="Clay">Moisture Red Clay</option>
+                          <option value="Grass">Traditional Grass</option>
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-600 uppercase">Drying Coeff</label>
-                        <input type="number" step="0.1" value={editCourtData.dryCoefficient} onChange={(e) => setEditCourtData({...editCourtData, dryCoefficient: parseFloat(e.target.value) || 1.0})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800" />
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Drying Coefficient Multiplier</label>
+                        <input type="number" step="0.1" value={editCourtData.dryCoefficient} onChange={(e) => setEditCourtData({...editCourtData, dryCoefficient: parseFloat(e.target.value) || 1.0})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800 focus:outline-none focus:border-purple-600" />
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1.5 pt-1">
-                      <input type="checkbox" id={`editIndoor-${court.id}`} checked={editCourtData.isIndoor} onChange={(e) => setEditCourtData({...editCourtData, isIndoor: e.target.checked})} className="accent-purple-500 rounded h-3.5 w-3.5" />
-                      <label htmlFor={`editIndoor-${court.id}`} className="text-slate-700 font-semibold text-[11px] cursor-pointer">Insulated Indoor Enclosure</label>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Floodlight Hardware Relay</label>
+                        <select value={editCourtData.floodlightState} onChange={(e) => setEditCourtData({...editCourtData, floodlightState: e.target.value})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800 font-medium focus:outline-none focus:border-purple-600">
+                          <option value="Off">💡 Power Relay: Off</option>
+                          <option value="On">⚡ Power Relay: On (Ignite Grid)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Estimated Reopen (UTC)</label>
+                        <input type="datetime-local" value={editCourtData.estimatedReopenTimeUtc} onChange={(e) => setEditCourtData({...editCourtData, estimatedReopenTimeUtc: e.target.value})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800 focus:outline-none focus:border-purple-600" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Maintenance Ceiling (Mins)</label>
+                        <input type="number" value={editCourtData.maintenanceThresholdMinutes} onChange={(e) => setEditCourtData({...editCourtData, maintenanceThresholdMinutes: parseInt(e.target.value) || 270})} className="w-full bg-white border border-slate-300 p-1.5 text-slate-800 focus:outline-none focus:border-purple-600" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase">Accumulated Minutes Played</label>
+                        {/* 🚀 FIXED (3): Balanced layout flex-box wrapper containing width bounds to prevent the Reset button from protruding */}
+                        <div className="flex items-center gap-1.5 w-full">
+                          <input 
+                            type="number" 
+                            value={editCourtData.aggregateMinutesPlayed} 
+                            onChange={(e) => setEditCourtData({...editCourtData, aggregateMinutesPlayed: parseInt(e.target.value) || 0})} 
+                            className="flex-1 min-w-[60px] bg-white border border-slate-300 p-1.5 text-slate-800 focus:outline-none focus:border-purple-600" 
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => setEditCourtData({...editCourtData, aggregateMinutesPlayed: 0})} 
+                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-2 py-1.5 text-[9px] uppercase font-mono tracking-tight font-black h-[31px] transition shrink-0 rounded-none shadow-sm flex items-center justify-center gap-1"
+                          >
+                            🔄 Reset
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 pt-1">
+                      <div className="flex items-center space-x-1.5 select-none">
+                        <input type="checkbox" id={`editIndoor-${court.id}`} checked={editCourtData.isIndoor} onChange={(e) => setEditCourtData({...editCourtData, isIndoor: e.target.checked})} className="accent-purple-500 rounded h-3.5 w-3.5 cursor-pointer" />
+                        <label htmlFor={`editIndoor-${court.id}`} className="text-slate-700 font-bold text-[10px] cursor-pointer uppercase">Indoor Enclosure</label>
+                      </div>
+                      <div className="flex items-center space-x-1.5 select-none">
+                        <input type="checkbox" id={`editDecom-${court.id}`} checked={editCourtData.isDecommissioned} onChange={(e) => setEditCourtData({...editCourtData, isDecommissioned: e.target.checked})} className="accent-red-500 rounded h-3.5 w-3.5 cursor-pointer" />
+                        <label htmlFor={`editDecom-${court.id}`} className="text-red-700 font-black text-[10px] cursor-pointer uppercase tracking-tight">⚠️ Decommission Soft-Delete</label>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-end space-x-2 border-t border-slate-300 pt-3">
-                    <button type="button" onClick={() => setEditingCourtId(null)} className="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 text-slate-700 text-[10px] font-bold">Cancel</button>
-                    <button type="button" onClick={() => handleUpdateCourt(court.id)} className="bg-purple-600 hover:bg-purple-500 text-white font-black px-3 py-1.5 text-[10px]">Commit Modifications</button>
+                    <button type="button" onClick={() => setEditingCourtId(null)} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 text-slate-700 text-[10px] font-black rounded-none border border-slate-300 transition">Cancel</button>
+                    <button type="button" onClick={() => handleUpdateCourt(court.id)} className="bg-purple-600 hover:bg-purple-500 text-white font-black px-4 py-2 text-[10px] rounded-none shadow-md border border-purple-700 transition">Commit Overrides</button>
                   </div>
                 </div>
               )}
-
             </div>
           );
         })}
