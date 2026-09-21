@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
+import { Loader } from '@googlemaps/js-api-loader';
 
 interface Branch {
   id: string;
   name: string;
   description: string;
   timeZoneId: string;
+  latitude?: number;   // 🚀 SYNCED OVERRIDE
+  longitude?: number; // 🚀 SYNCED OVERRIDE
 }
 
 interface Court {
@@ -34,12 +37,21 @@ export default function CourtsDashboard() {
 
   const [showBranchModal, setShowBranchModal] = useState<boolean>(false);
   const [showCourtModal, setShowCourtModal] = useState<boolean>(false);
+
+  const [showMapModal, setShowMapModal] = useState<boolean>(false);
+  const [mapLoading, setMapLoading] = useState<boolean>(false);
   
   const [isEditingBranch, setIsEditingBranch] = useState<boolean>(false);
   const [editingCourtId, setEditingCourtId] = useState<string | null>(null);
 
   const [newBranch, setNewBranch] = useState({ name: '', description: '', timeZoneId: 'Europe/London' });
-  const [editBranchData, setEditBranchData] = useState({ name: '', description: '', timeZoneId: 'Europe/London' });
+  const [editBranchData, setEditBranchData] = useState({ 
+    name: '', 
+    description: '', 
+    timeZoneId: 'Europe/London',
+    latitude: 51.5074,  // 🚀 ADDED WITH DEFAULT FALLBACKS
+    longitude: -0.1278  // 🚀 ADDED WITH DEFAULT FALLBACKS
+  });
   
   const [newCourt, setNewCourt] = useState({ name: '', description: '', surfaceType: 'Hard', isIndoor: false, dryCoefficient: 1.0 });
   
@@ -68,11 +80,14 @@ export default function CourtsDashboard() {
       setBranches(branchRes.data);
       
       if (branchRes.data.length > 0 && !selectedBranchId) {
-        setSelectedBranchId(branchRes.data[0].id);
+        const defaultBranch = branchRes.data[0];
+        setSelectedBranchId(defaultBranch.id);
         setEditBranchData({
-          name: branchRes.data[0].name,
-          description: branchRes.data[0].description,
-          timeZoneId: branchRes.data[0].timeZoneId
+          name: defaultBranch.name,
+          description: defaultBranch.description,
+          timeZoneId: defaultBranch.timeZoneId,
+          latitude: defaultBranch.latitude || 51.5074,   // 🚀 CAPTURE DATABASE LATITUDE
+          longitude: defaultBranch.longitude || -0.1278  // 🚀 CAPTURE DATABASE LONGITUDE
         });
       }
     } catch (err: any) {
@@ -102,7 +117,13 @@ export default function CourtsDashboard() {
       fetchCourtsForSelectedBranch(selectedBranchId);
       const activeB = branches.find(b => b.id === selectedBranchId);
       if (activeB) {
-        setEditBranchData({ name: activeB.name, description: activeB.description, timeZoneId: activeB.timeZoneId });
+        setEditBranchData({ 
+          name: activeB.name, 
+          description: activeB.description, 
+          timeZoneId: activeB.timeZoneId,
+          latitude: activeB.latitude || 51.5074,   // 🚀 RE-SYNC ON TOGGLE
+          longitude: activeB.longitude || -0.1278 // 🚀 RE-SYNC ON TOGGLE
+        });
       }
       setIsEditingBranch(false);
       setEditingCourtId(null);
@@ -128,9 +149,22 @@ export default function CourtsDashboard() {
     e.preventDefault();
     try {
       setActionError(null);
-      await apiClient.put(`/Facility/branches/${selectedBranchId}`, editBranchData);
-      setBranches(branches.map(b => b.id === selectedBranchId ? { ...b, ...editBranchData } : b));
+      
+      // Assemble the clean, explicitly cast numeric request payload
+      const payload = {
+        name: editBranchData.name.trim(),
+        description: editBranchData.description.trim(),
+        timeZoneId: editBranchData.timeZoneId,
+        latitude: parseFloat(String(editBranchData.latitude)) || 0.0,
+        longitude: parseFloat(String(editBranchData.longitude)) || 0.0
+      };
+
+      await apiClient.put(`/Facility/branches/${selectedBranchId}`, payload);
+      
+      // 🚀 FIXED: Overwrite the active branches state list with your newly submitted coordinate params!
+      setBranches(branches.map(b => b.id === selectedBranchId ? { ...b, ...payload } : b));
       setIsEditingBranch(false);
+      alert('🗺️ Branch coordinates updated and synchronized successfully!');
     } catch (err: any) {
       setActionError(err.response?.data || 'Failed to update selected branch attributes.');
     }
@@ -262,6 +296,31 @@ export default function CourtsDashboard() {
               className="bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 px-4 py-2.5 text-xs font-bold transition">➕ Deploy Venue</button>
             <button disabled={!selectedBranchId} onClick={() => setShowCourtModal(true)} 
               className="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-4 py-2.5 text-xs font-black transition">➕ Provision Court</button>
+            <button 
+              disabled={!selectedBranchId}
+              onClick={(e) => {
+                e.preventDefault();
+                
+                // 1. Isolate the currently active branch node from your loaded data list array
+                const activeBranch = branches.find(b => b.id === selectedBranchId);
+                
+                // 2. Extract coordinates safely with standard fallbacks to protect against null bounds
+                const lat = activeBranch?.latitude ?? 49.2827;
+                const lng = activeBranch?.longitude ?? -123.1207;
+                
+                // 3. Compile the exact authenticated Google Navigation API target URL string path
+                const targetMapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${lat},${lng}&zoom=18&basemap=roadmap`;
+                
+                console.log(`🌐 [MAP NAVIGATION INTERCEPT]: Opening external link coordinate frame path: ${targetMapsUrl}`);
+                
+                // 4. Force browser window matrix engine to launch the path inside a secure standalone browser tab channel
+                window.open(targetMapsUrl, '_blank', 'noopener,noreferrer');
+              }}
+              // onClick={() => setShowMapModal(true)}
+              className="bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white border border-slate-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider transition rounded-none h-[38px] flex items-center gap-1.5 shadow-sm"
+            >
+              🗺️ Show on Map
+            </button>
           </div>
         </div>
 
@@ -275,6 +334,30 @@ export default function CourtsDashboard() {
             <div className="space-y-1">
               <label className="block font-bold text-slate-600 uppercase">Modify Area Focus</label>
               <input type="text" required value={editBranchData.description} onChange={(e) => setEditBranchData({...editBranchData, description: e.target.value})} className="w-full bg-white border border-slate-300 p-2 text-slate-800" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 border-t border-slate-200 pt-3">
+              <div className="space-y-1">
+                <label className="block font-bold text-slate-600 uppercase text-[10px]">Administrative GPS Latitude</label>
+                <input 
+                  type="number" 
+                  step="0.000001" 
+                  required 
+                  value={editBranchData.latitude || 51.5074} 
+                  onChange={(e) => setEditBranchData({...editBranchData, latitude: parseFloat(e.target.value) || 0.0})} 
+                  className="w-full bg-white border border-slate-300 p-2 text-slate-800 font-mono text-xs focus:outline-none focus:border-purple-600" 
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block font-bold text-slate-600 uppercase text-[10px]">Administrative GPS Longitude</label>
+                <input 
+                  type="number" 
+                  step="0.000001" 
+                  required 
+                  value={editBranchData.longitude || -0.1278} 
+                  onChange={(e) => setEditBranchData({...editBranchData, longitude: parseFloat(e.target.value) || 0.0})} 
+                  className="w-full bg-white border border-slate-300 p-2 text-slate-800 font-mono text-xs focus:outline-none focus:border-purple-600" 
+                />
+              </div>
             </div>
             <div className="space-y-1">
               <label className="block font-bold text-slate-600 uppercase">Modify Zone</label>
@@ -614,6 +697,48 @@ export default function CourtsDashboard() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {showMapModal && (
+        <div className="fixed inset-0 bg-slate-400/50 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white border border-slate-300 max-w-2xl w-full p-5 space-y-4 shadow-2xl relative rounded-none">
+            
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                🗺️ Physical Branch Location Pinpoint Map (Embed Console)
+              </h3>
+              <button 
+                onClick={() => setShowMapModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold font-sans text-sm p-1"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* 🚀 THE ZERO-INSTALLATION IFRAME: 100% Free with unlimited loads and no billing account required! */}
+            {(() => {
+              const activeBranch = branches.find(b => b.id === selectedBranchId);
+              const lat = activeBranch?.latitude || 51.5074;
+              const lng = activeBranch?.longitude || -0.1278;
+              
+              return (
+                <iframe
+                  title="Google Maps Location View"
+                  width="100%"
+                  height="380"
+                  style={{ border: "1px solid #cbd5e1" }}
+                  loading="lazy"
+                  allowFullScreen
+                  src={`https://www.google.com/maps/@?api=1&map_action=map&center=${lat},${lng}&zoom=18&basemap=roadmap`}
+                />
+              );
+            })()}
+            
+            <div className="text-[10px] text-slate-500 font-mono text-right uppercase tracking-tight">
+              Active Anchor Matrix Coordinates: {branches.find(b => b.id === selectedBranchId)?.latitude}, {branches.find(b => b.id === selectedBranchId)?.longitude}
+            </div>
           </div>
         </div>
       )}

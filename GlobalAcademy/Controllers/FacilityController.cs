@@ -51,6 +51,8 @@ public class FacilityController : ControllerBase
             Name = model.Name,
             Description = model.Description,
             TimeZoneId = model.TimeZoneId,
+            Latitude = model.Latitude,   // 🚀 BIND GEOSPATIAL PARAMETER
+            Longitude = model.Longitude, // 🚀 BIND GEOSPATIAL PARAMETER
             CreatedAtUtc = DateTime.UtcNow
         };
 
@@ -69,6 +71,9 @@ public class FacilityController : ControllerBase
         branch.Name = model.Name;
         branch.Description = model.Description;
         branch.TimeZoneId = model.TimeZoneId;
+        branch.Latitude = model.Latitude;   // 🚀 APPLY ADMINISTRATIVE OVERRIDE
+        branch.Longitude = model.Longitude; // 🚀 APPLY ADMINISTRATIVE OVERRIDE
+
 
         await _context.SaveChangesAsync();
         return Ok(new { Message = "Branch facility metadata updated smoothly.", Branch = branch });
@@ -305,8 +310,21 @@ public class FacilityController : ControllerBase
     }
 }
 
-public record CreateBranchDto(string Name, string Description, string TimeZoneId);
-public record UpdateBranchDto(string Name, string Description, string TimeZoneId);
+public record CreateBranchDto(
+    string Name, 
+    string Description, 
+    string TimeZoneId, 
+    double Latitude,  // 🚀 EXPANDED
+    double Longitude // 🚀 EXPANDED
+);
+
+public record UpdateBranchDto(
+    string Name, 
+    string Description, 
+    string TimeZoneId, 
+    double Latitude,  // 🚀 EXPANDED
+    double Longitude // 🚀 EXPANDED
+);
 public record AssignUserBranchDto(string UserId, Guid BranchId, string AssignmentRole);
 public record AssignUserCourtDto(string UserId, Guid BranchId, Guid CourtId, string AccessType);
 public record CreateCourtDto(

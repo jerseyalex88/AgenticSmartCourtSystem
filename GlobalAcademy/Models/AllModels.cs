@@ -34,6 +34,8 @@ namespace GlobalAcademy.Models {
         // --- PHASE 3 ADMINISTRATIVE METRICS ---
         // Soft-delete marker ensuring audit history persistence while unlinking from live queries
         public bool IsDecommissioned { get; set; } = false; 
+        public double Latitude { get; set; } = 51.5074;  // Defaults to London baseline coordinate
+        public double Longitude { get; set; } = -0.1278; // Defaults to London baseline coordinate
 
         // Relational navigation properties
         public Academy? Academy { get; set; }

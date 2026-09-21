@@ -134,6 +134,12 @@ namespace GlobalAcademy.Migrations
                     b.Property<bool>("IsDecommissioned")
                         .HasColumnType("boolean");
 
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
