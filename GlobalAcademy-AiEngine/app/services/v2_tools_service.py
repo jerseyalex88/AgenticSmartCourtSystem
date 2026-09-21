@@ -412,6 +412,78 @@ async def forecast_structural_degradation_risk(academy_id: str, court_id: str, w
         await conn.close()
 
 # =========================================================================
+# 🌦️ 6. CLIMATE INSURANCE AUDITOR TOOL INPUT CONFIGURATION
+# =========================================================================
+class ClimateAuditArgs(BaseModel):
+    academy_id: str = Field(..., description="The unique cryptographic Academy/Tenant GUID string.")
+    court_id: str = Field(..., description="The unique target Court GUID string requiring environmental audit tracking.")
+    insurance_humidity_ceiling: float = Field(..., description="The legal relative humidity maximum threshold percentage found via RAG (e.g., 65.0).")
+    insurance_policy_id: str = Field(..., description="The policy identification reference string extracted via RAG (e.g., 'GL-INS-2026-V9').")
+
+@tool("audit_climate_insurance_compliance", args_schema=ClimateAuditArgs)
+async def audit_climate_insurance_compliance(academy_id: str, court_id: str, insurance_humidity_ceiling: float, insurance_policy_id: str) -> str:
+    """
+    Queries real-time indoor environmental telemetry from CourtDiagnosticSnapshots, checks the latest 
+    relative humidity percentage indices, and cross-references them against active insurance policies 
+    to mitigate compliance and club liability exposures. Use this tool immediately whenever a user asks 
+    about environmental monitoring, climate dampness, mold safety, or insurance compliance.
+    """
+    print(f"🛠️ [AGENT TOOL EXECUTION]: audit_climate_insurance_compliance verifying metrics for Court {court_id} under policy {insurance_policy_id}")
+    
+    conn = await asyncpg.connect(settings.postgres_connection_string)
+    try:
+        # 1. Pull the most recent instantaneous telemetry row recorded for the target court asset row configuration!
+        telemetry_query = """
+            SELECT "Timestamp", "HumidityPercentage", "AmbientTemperatureCelsius"
+            FROM "CourtDiagnosticSnapshots"
+            WHERE "CourtId" = $1::uuid AND "AcademyId" = $2::uuid
+            ORDER BY "Timestamp" DESC
+            LIMIT 1;
+        """
+        latest_snapshot = await conn.fetchrow(telemetry_query, uuid.UUID(court_id), uuid.UUID(academy_id))
+        
+        if not latest_snapshot:
+            return (
+                f"Audit Incomplete: Target court asset '{court_id}' does not possess any operational telemetry data plot points "
+                f"inside the 'CourtDiagnosticSnapshots' table. Environmental compliance verification cannot be validated."
+            )
+
+        current_humidity = float(latest_snapshot["HumidityPercentage"])
+        current_temp = float(latest_snapshot["AmbientTemperatureCelsius"]) # 🎯 Read corrected field slot
+        snapshot_time = latest_snapshot["Timestamp"]
+
+        report_summary = (
+            f"📊 === CLIMATE LIABILITY INSURANCE RISK REPORT ===\n"
+            f" - Target Insurance Policy ID : {insurance_policy_id}\n"
+            f" - Enforced Liability Humidity Limit : {insurance_humidity_ceiling:.1f}%\n"
+            f" - Latest IoT Sensor Log Time  : {snapshot_time.strftime('%Y-%m-%d %H:%M UTC')}\n"
+            f" - Monitored Indoor Humidity    : {current_humidity:.1f}%\n"
+            f" - Monitored Ambient Temp       : {current_temp:.1f}°C\n"
+        )
+
+        # 2. Cross-reference the database telemetry readings straight against your RAG manual thresholds!
+        if current_humidity > insurance_humidity_ceiling:
+            report_summary += (
+                f"⚠️ LIABILITY BREACH EXPOSURE DETECTED: The indoor air sensor logs confirm that humidity levels are resting at {current_humidity:.1f}%, "
+                f"which explicitly violates your active liability policy limit ceiling of {insurance_humidity_ceiling:.1f}%. "
+                f"🚨 STRATEGIC RISK ACTION: Prolonged exposure will automatically suspend your mold and slip liability coverage clauses. "
+                f"You must activate ventilation networks or deploy an automated Purchase Order for HVAC Dehumidifier filters immediately."
+            )
+        else:
+            report_summary += (
+                f"🟢 COMPLIANT ENVIRONMENT: Relative humidity is securely optimized below the legal limit ceiling. "
+                f"Asset is fully covered under the terms of insurance contract {insurance_policy_id}."
+            )
+
+        return report_summary
+
+    except Exception as ex:
+        print(f"❌ [CLIMATE AUDITOR CRASH]: {ex}")
+        return f"Error: Atmospheric validation transaction collapsed: {ex}"
+    finally:
+        await conn.close()
+
+# =========================================================================
 # 📦 CENTRALIZED REGISTER MATRIX PACKAGING
 # =========================================================================
 # Bundled clean registry array mapping to be fed straight into LangGraph orchestration layers
@@ -420,5 +492,6 @@ smart_court_tools_list = [
     modify_court_operational_status,
     resolve_displaced_player_bookings,
     generate_emergency_maintenance_po,
-    forecast_structural_degradation_risk
+    forecast_structural_degradation_risk,
+    audit_climate_insurance_compliance
 ]

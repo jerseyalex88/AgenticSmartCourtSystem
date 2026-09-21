@@ -72,6 +72,42 @@ export default function CourtsDashboard() {
   // FIXED FEATURE EXTENSION: Tracks the active court entity targeted for deletion
   const [courtToDeleteId, setCourtToDeleteId] = useState<string | null>(null);
 
+  const [weatherData, setWeatherData] = useState<{ temp: number; text: string } | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
+
+  // 🚀 Asynchronously pulls live climate telemetry based on coordinate pins
+  const fetchRealTimeOutdoorTelemetry = async (lat: number, lng: number) => {
+    if (!lat || !lng) return;
+    setWeatherLoading(true);
+    try {
+      // Open-Meteo provides free, high-density weather metrics without requiring API keys or billing passes
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data && data.current_weather) {
+        const rawTemp = data.current_weather.temperature;
+        const weatherCode = data.current_weather.weathercode;
+        // console.log(`🌤️ [WEATHER TELEMETRY]: Lat=${lat}, Lng=${lng}, Temp=${rawTemp}°C, Code=${weatherCode}`);
+        // Map standard WMO meteorological weather codes to clean, scannable visual emojis
+        let conditionText = "Clear Sky ☀️";
+        if (weatherCode >= 1 && weatherCode <= 3) conditionText = "Mainly Clear 🌤️";
+        else if (weatherCode >= 45 && weatherCode <= 48) conditionText = "Foggy 🌫️";
+        else if (weatherCode >= 51 && weatherCode <= 67) conditionText = "Rainy / Drizzle 🌧️";
+        else if (weatherCode >= 71 && weatherCode <= 77) conditionText = "Snow Showers ❄️";
+        else if (weatherCode >= 80 && weatherCode <= 82) conditionText = "Rain Showers 🌦️";
+        else if (weatherCode >= 95 && weatherCode <= 99) conditionText = "Thunderstorm ⛈️";
+        
+        setWeatherData({ temp: rawTemp, text: conditionText });
+      }
+    } catch (err) {
+      console.error("Failed to acquire external environmental telemetry data matrix layers:", err);
+      setWeatherData(null);
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -124,6 +160,9 @@ export default function CourtsDashboard() {
           latitude: activeB.latitude || 51.5074,   // 🚀 RE-SYNC ON TOGGLE
           longitude: activeB.longitude || -0.1278 // 🚀 RE-SYNC ON TOGGLE
         });
+        // 🚀 THE WEATHER TRIGGER INJECTION:
+        // Instantly fire a live background metrics request over your fresh coordinate slots!
+        fetchRealTimeOutdoorTelemetry(activeB.latitude || 33.7274, activeB.longitude || -116.3952);
       }
       setIsEditingBranch(false);
       setEditingCourtId(null);
@@ -286,6 +325,20 @@ export default function CourtsDashboard() {
                   <button onClick={() => setIsEditingBranch(true)} 
                   className="bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 px-4 py-2.5 text-xs font-bold transition">📝 Edit Info</button>
                 )}
+                {weatherLoading ? (
+                  <span className="text-[10px] font-mono text-slate-400 animate-pulse uppercase tracking-tight pl-2">
+                    📡 Syncing Climate...
+                  </span>
+                ) : weatherData ? (
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 h-[38px] rounded-none shadow-sm shrink-0">
+                    <span className="text-xs font-sans font-black text-slate-800">
+                      {weatherData.temp.toFixed(1)}°C
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-tight border-l border-slate-300 pl-1.5 ml-0.5">
+                      {weatherData.text}
+                    </span>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p className="text-xs text-rose-400 italic">No facility branch locations configured yet.</p>

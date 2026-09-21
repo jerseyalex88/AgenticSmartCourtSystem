@@ -35,6 +35,25 @@ An enterprise-grade, multi-tenant SaaS Sports Director Operating System designed
 ### 6. Executive Report Generation & Capstone Analytics
 * **Headless Vector Visualization:** Uses Matplotlib and Seaborn inside isolated background workers to map real-time telemetry datasets, continuous friction velocity decay curves, and transaction status volatility metrics into high-resolution canvas elements.
 * **Programmatic PDF Compilation Core:** Leverages ReportLab's structural layout engine to compile high-density, strictly **one-page corporate executive briefs** (`SimpleDocTemplate`). It packs visual charts, environmental sensor decks, and dynamic multi-tenant anomaly logs into boardroom-ready downloadable printable assets.
+
+### 7. Autonomous Agentic AI Workflows & Multi-Tenant Knowledge RAG
+* **LangGraph Autonomous State Orchestration:** Utilizes an asynchronous state machine architecture (`smart_court_agent_engine`) to coordinate multi-step tool calls, relational database updates, and data retrieval tasks natively without human intervention.
+* **Hybrid PostgreSQL Knowledge Retrieval:** Implements an advanced multi-tenant knowledge base combining full-text lexical search and vector similarity indices to accurately query unstructured reference PDFs, warranty conditions, and structural thresholds.
+* **FlashRank Cross-Encoder Reranking:** Integrates a localized FlashRank service layer to re-score and filter raw text chunks down to the top 3 high-relevance paragraphs, completely neutralizing noise and preventing context window bloat.
+* **RAGAS Observability & Validation Telemetry:** Features real-time background evaluation tracking for RAG actions, streaming precise metrics for `Faithfulness` (No-Hallucination) and `Answer Semantic Relevance` straight to the administrative dashboard panel scoreboard.
+* **Deterministic Material Procurement Gate:** Restricts automated purchase orders to a secure database white-list catalog (e.g., `'Acrylic Resurfacer Compound Part A'`, `'Industrial High-Output Lux Ballast Assembly Part B'`) to prevent model hallucination or prompt injection exploits from staging unauthorized transactions.
+
+### 8. Real-Time Telemetry & Predictive Analytics
+* **Least-Squares Trend Trajectory Regression:** Incorporates multi-point vector trend lines over historical sensor snapshot records to extrapolate asset degradation metrics up to 90 days out into the future.
+* **Prophet Machine Learning Forecasting Engine:** Combines `prophet` (v1.1.6) and a container-safe `cmdstanpy` (v1.2.5) C++ compiler backend to train over localized telemetry rows and calculate continuous physical wear curves.
+* **Forensic Cross-Referencing:** Cross-references machine-learning trajectory curves against legal warranty expiration bounds discovered via RAG, triggering proactive structural warnings if wear thresholds are projected to breach contract ceilings.
+* **Climate Liability Insurance Auditor:** Monitors live indoor environmental telemetry sensor records (`HumidityPercentage`, `AmbientTemperatureCelsius`), cross-referencing values against liability guidelines to flag breaches before relative humidity voids active policy coverage clauses.
+
+### 9. Geospatial Mapping & Localized Climate Tracking
+* **Geospatial Location Pinpointing:** Extends facility tracking matrices by binding high-precision decimal `Latitude` and `Longitude` numerical properties directly to individual Branch infrastructure rows.
+* **Deterministic Navigation URL API Redirection:** Integrates the official Google Maps Search API scheme to allow immediate full-screen map redirection inside a standalone browser tab channel with an explicit red pin marker overlay placed precisely over the asset coordinates.
+* **Live Environmental Weather Badge:** Implements a background fetching hook that queries the open-source Open-Meteo API using precise branch coordinates, streaming real-time local temperatures and meteorological condition icons onto the dashboard header on the fly.
+
 ## 🛠️ Technology Stack & Dependencies
 
 This system relies on free, open-source enterprise frameworks and edge-computed AI libraries:
@@ -76,6 +95,7 @@ GlobalAcademy/
 │   ├── InvoiceLineItem.cs           # Sub-scoped billing links matching physical booking IDs
 │   ├── LedgerTransaction.cs         # Transaction receipts carrying gateway tracking tokens (SQ-/BT-)
 │   └── User.cs                      # Core identity accounts mapping to authorization clearance tiers
+│   └── SavedAgentQuery.cs       # Multi-tenant prompt blueprint template schemas
 ├── Security/
 │   ├── IMultiTenant.cs              # Universal data isolation boundary interface
 │   └── TenantProvider.cs            # Scoped JWT identity-extraction claim service
@@ -105,6 +125,8 @@ GlobalAcademy-AiEngine/
 │       ├── trajectory_estimation_service.py # Linear Kalman Filter Constant Velocity math handler
 │       ├── video_tracking_service.py # Baseline YOLOv11 object tracking implementation
 │       └── voice_agent_service.py   # Headless Faster-Whisper CPU inference service
+│       ├── v2_evaluation_service.py # RAGAS metric evaluation scoring layers
+│       └── v2_tools_service.py      # Core tool definitions (Prophet, Status, POs)
 ├── main.py                          # FastAPI master gateway configuration file and router manifest
 ├── requirements.txt                 # Python data science, vision, and speech dependencies list
 └── .env                             # Port configurations and loopback gateway strings
@@ -115,6 +137,50 @@ GlobalAcademy-AiEngine/
 ## 🗄️ PostgreSQL Database Entity Schema Models
 
 ```csharp
+public class Branch : Security.IMultiTenant
+{
+    public Guid Id { get; set; }
+    public Guid AcademyId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string TimeZoneId { get; set; } = "Europe/London";
+    
+    // 🚀 NEW GEOSPATIAL TELEMETRY COLUMNS
+    public double Latitude { get; set; } = 51.5074;
+    public double Longitude { get; set; } = -0.1278;
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+public class Court : Security.IMultiTenant
+{
+    public Guid Id { get; set; }
+    public Guid AcademyId { get; set; }
+    public Guid BranchId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string SurfaceType { get; set; } = "Hard";
+    public bool IsIndoor { get; set; } = false;
+    
+    // 🚀 NEW ADMINISTRATIVE TELEMETRY OVERRIDES
+    public string Status { get; set; } = "Open"; // Open, Rained_Out, Maintenance_Locked
+    public double DryCoefficient { get; set; } = 1.0;
+    public DateTime? EstimatedReopenTimeUtc { get; set; }
+    public int AggregateMinutesPlayed { get; set; } = 0;
+    public int MaintenanceThresholdMinutes { get; set; } = 270;
+    public string FloodlightState { get; set; } = "Off"; // On, Off
+    public bool IsDecommissioned { get; set; } = false;
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+[Table("SavedAgentQueries")]
+public class SavedAgentQuery : IMultiTenant
+{
+    [Key] public Guid Id { get; set; }
+    [Required] public Guid AcademyId { get; set; } // 🛡️ Multi-Tenant Isolation Lock
+    [Required] [StringLength(100)] public string Title { get; set; } = string.Empty;
+    [Required] public string QueryText { get; set; } = string.Empty; // Full prompt template text
+    [Required] public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
 public class Booking : Security.IMultiTenant
 {
     public Guid Id { get; set; }
@@ -285,6 +351,42 @@ Once running, navigate your web browser address engine straight over to `http://
 * ReportLab builds high-density, strictly **one-page executive briefs** with 5-column or 6-column KPI horizontal layout grids (e.g., mapping live fields like *Friction Index*, *Bounce Uniformity*, *Net Tension*, and *Gross Paid* counts).
 * The backend proxies the compiled PDF file stream back up the wire. React captures the raw binary bytes payload, wraps it inside an HTML5 object URL in system RAM, and simulates an invisible link click to trigger an instantaneous local file download onto your desktop with zero trailing overflow pages!
 
+### 4. Forensic RAG & Machine Learning Telemetry Traces
+* Navigate to **Tab 3: Live Pipeline Trace Lab** inside the administrative panel dashboard.
+* Copy a 36-character physical court GUID using the new high-density, rounded clipboard copy button.
+* Submit a combined analytical prompt query to challenge the agent's multi-pass processing cycle:
+  > *"Check the historical metric trends for Grass Court 1 with ID [Paste Court GUID]. First, query our warranty manuals to verify what our minimum allowed surface friction threshold is and when our contract coverage expires. Then, run a machine learning trajectory forecast over our diagnostic snapshots to determine if our current degradation velocity will breach those specific contractor terms before the absolute 2030 deadline."*
+* The agent reads the unstructured compliance documentation to parse the `0.55` friction limit and `2030` deadline, fits a **Prophet** time-series forecasting model over the PostgreSQL sensor data rows, projects the trajectory 90 days out, and flags exposure dates directly on your screen.
+
+### 5. Automated Multi-Column Status & Hardware Overrides
+* Submit an under-illumination telemetry breach scenario to trigger simultaneous asset mutations:
+  > *"I am receiving telemetry alerts indicating that the illumination levels on Grass Court 1 with ID [Court GUID] have plummeted to an average of 350 Lux. Search our luminance compliance manuals, evaluate what the hazard protocol demands, change the court status and light switch parameters accordingly, and automatically clear out and relocate any player bookings scheduled on it today."*
+* The agent scans your ingested `COURT_LIGHTING_AND_LUX_METRIC_COMPLIANCE.pdf` file, intercepts the `400 Lux` minimum safety boundary, and invokes the upgraded `modify_court_operational_status` tool.
+* This updates both the core asset status to `'Maintenance_Locked'` and rewrites the `FloodlightState` column to `'On'` inside a single transactional update pass.
+
+### 6. Dynamic RAG-Driven Procurement & Ticket Validation
+* Instruct the agent to finalize a hardware repair order to test document-driven tool barriers:
+  > *"We need to initiate a maintenance work order for the illumination failure on Court [Court GUID]. Search our newly ingested lighting procurement manuals to identify the exact compliant part required for a ballast system failure, and automatically generate an emergency purchase order assuming an allocation estimate of \$450.00."*
+* The agent references `FACILITY_LIGHTING_PROCUREMENT_MANDATES.pdf` via a vector lookup to extract the precise approved part string: `'Industrial High-Output Lux Ballast Assembly Part B'`.
+* The tool parses this argument against its corporate whitelist catalog, verifies that the `$450.00` estimate sits safely beneath your `$1,200.00` spending cap, bypasses old material restrictions, and logs a fresh row with a status of `'Open_Queued'` inside the `MaintenanceTickets` table.
+
+## 🛠️ Application Execution Terminal Sequences (Extensions)
+
+#### 1. Setup Python Engine Configurations (`GlobalAcademy-AiEngine/.env`)
+Ensure your workspace includes the strict environment paths required to lock down the C++ compilation backend smoothly:
+```env
+# Modern lightweight interface to the Stan compiler backend
+STAN_BACKEND=CMDSTANPY
+```
+
+#### 2. Re-compiling the Python Container Toolchain Environment
+Whenever adding system libraries or changing low-level C++ math dependencies, force a clean build pass to avoid race conditions:
+```bash
+cd GlobalAcademy
+docker compose down
+# Rebuild the image from scratch to install libtbb-dev and bake in cmdstan
+docker compose up --build -d ai.engine
+```
 ---
 
 ## 🛡️ Ongoing Security Verification Actions
@@ -293,3 +395,34 @@ To maintain an iron-clad multi-tenant infrastructure, every single operational f
 1. `POST /api/Auth/register-academy` initializes a unique tenant entity partition block.
 2. `POST /api/Auth/login` processes validated users credentials and outputs a signed cryptographic JWT token.
 3. Include the returned cryptographic identity token in the headers of all downstream microservice requests (`Authorization: Bearer <token>`) to allow the underlying security filter engines to automatically isolate tenant data contexts cleanly across rows and protect your endpoints.
+
+## 🛠️ Consolidated API Route Formats
+
+### 🛡️ AI Knowledge Operations (`v2AiKnowledgeController.cs`)
+* `GET /api/v2/ai-knowledge-ops/list-agentquery` - Lists multi-tenant prompt templates truncated to 50 characters.
+* `POST /api/v2/ai-knowledge-ops/save-agentquery` - Commits a new prompt blueprint macro to the database clipboard.
+* `PUT /api/v2/ai-knowledge-ops/update-agentquery/{id}` - Overwrites an existing saved macro block.
+* `DELETE /api/v2/ai-knowledge-ops/delete-agentquery/{id}` - Erases a template pattern from system memory.
+* `DELETE /api/v2/ai-knowledge-ops/delete-document` - Permanently purges an unstructured text source and all matching vector text shards.
+
+## 🎨 Advanced Frontend UI & Control Center Enhancements
+
+### 1. Unified AI Pipeline Trace Lab (Tab 3)
+* **Full-Width Console Interface:** Re-architected the main prompt input grid from a restricted width layout to a full-viewport responsive layout (`w-full`), allowing complex multi-line operational queries to be handled comfortably on screen.
+* **Brutalist Contextual Citations Matrix:** Features an expanded tracking grid that displays true document names (`SmartCourt_Safety_Threshold_2026.pdf`), matching text paragraphs, and explicit cross-encoder rerank weights with color-coded warning backgrounds.
+* **Real-Time Synchronized Scoreboard:** Displays precise performance parameters directly derived from the RAGAS service layer, maintaining a perfect visual match with the backend terminal evaluation records.
+
+### 2. Centralized AI Macro Clipboard System
+* **50-Character Scannable Truncation:** Implements a compact drop-down template selection menu that automatically applies a 50-character string slice followed by an ellipsis (`...`) to keep the interface highly scannable.
+* **Ellipsis-Driven Context Action Menu:** Replaced bulky buttons with an elegant, absolute-positioned vertical contextual action popup menu (`••• Actions`) allowing operators to execute structural management commands cleanly.
+* **Atomic Template Injection:** Selecting a pre-saved prompt instantly injects the full multi-line instruction set into the resizable text field console area, eliminating tedious copy-pasting loops.
+
+### 3. Integrated Audio & Speech Sync Pipeline
+* **Dynamic Local Storage Voice Hook:** Connected the text-to-speech parameter engine straight to the browser's `localStorage` framework, forcing the agent's vocal dialect to automatically stay synchronized with the top navbar dropdown settings.
+* **HTML5 Base64 Auto-Player:** Upgraded the client network callback layer to dynamically convert incoming Base64 binary speech streams into interactive memory audio tracks, triggering automated vocal playback through local speakers upon completion.
+
+### 4. Interactive Core Asset Matrix Overrides (Courts Dashboard)
+* **High-Density Telemetry View Badges:** Enriched the standard court grid card layouts to render visible real-time indicators for `FloodlightState` (neon amber warnings) and calculated `EstimatedReopenTimeUtc` timestamps right inside standard read-mode views.
+* **Asynchronous Coordinate Re-Sync:** Extended the branch configuration profile to display real-time weather data packets pulled from Open-Meteo, instantly binding local variables to any newly updated GPS coordinates on save.
+* **Protrusion-Free Progress Alignment:** Re-designed the accumulated played minutes section into a balanced flexbox grid container, positioning a high-density, low-padding metric override counter neatly inside the card contours.
+
