@@ -37,6 +37,7 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<CourtDiagnosticAnomaly> CourtDiagnosticAnomalies { get; set; }
     public DbSet<CourtMaintenanceKnowledge> CourtMaintenanceKnowledge { get; set; }
     public DbSet<SavedAgentQuery> SavedAgentQueries { get; set; }
+    public DbSet<GraphStateCheckpoint> GraphStateCheckpoints { get; set; }
 
     // 2. Append this relational configuration inside your existing OnModelCreating method:
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -74,6 +75,7 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<CourtDiagnosticAnomaly>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
         modelBuilder.Entity<SavedAgentQuery>().HasQueryFilter(sq => sq.AcademyId == CurrentTenantId);
         modelBuilder.Entity<CourtMaintenanceKnowledge>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<GraphStateCheckpoint>().HasQueryFilter(g => g.AcademyId == CurrentTenantId);
 
         modelBuilder.Entity<Booking>()
             .Property(b => b.Status)
@@ -110,6 +112,9 @@ public class ApplicationDbContext : IdentityDbContext
 
         modelBuilder.Entity<CourtMaintenanceKnowledge>()
             .HasIndex(k => new { k.AcademyId, k.BranchId });
+
+        modelBuilder.Entity<GraphStateCheckpoint>()
+        .HasKey(g => new { g.ThreadId, g.CheckpointId });
     }
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

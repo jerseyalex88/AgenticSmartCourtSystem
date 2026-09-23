@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using GlobalAcademy.Models;
 using GlobalAcademy.Security;
 using GlobalAcademy.Services;
@@ -446,9 +447,124 @@ public class AiOrchestrationController : ControllerBase
         return Unauthorized("Cryptographic handshake failed: Invalid email or password credentials.");
     }
 
+    // =========================================================================
+    // 🔎 1. FETCH ALL PAUSED SYSTEM CHECKPOINTS
+    // =========================================================================
+    [HttpGet("ai-harness/pending-approvals")]
+    [Authorize(Roles = "AcademyDirector, GlobalAdmin")]
+    public async Task<ActionResult<IEnumerable<PendingApprovalGraphDto>>> GetPendingApprovals()
+    {
+        // 🛡️ Universal Query Filter intercepts and appends current AcademyId context restriction across rows
+        var checkpoints = await _dbContext.GraphStateCheckpoints
+            .Where(g => g.ActiveNode != "Complete" && g.SerializedState.Contains("Paused_Pending_Approval"))
+            .OrderByDescending(g => g.CreatedAtUtc)
+            .ToListAsync();
+
+        var listings = new List<PendingApprovalGraphDto>();
+
+        foreach (var cp in checkpoints)
+        {
+            try
+            {
+                // De-serialize the raw LangGraph state text blob to safely isolate inner metrics
+                using var jsonDoc = JsonDocument.Parse(cp.SerializedState);
+                var root = jsonDoc.RootElement;
+
+                string actionType = "PlayerRefund";
+                string materialOrAmount = "$0.00";
+                string auditLog = "Staged multi-agent transaction awaiting administrative sign-off.";
+
+                // Safe parsing pass over JSON dictionary slots
+                if (root.TryGetProperty("staged_financial_actions", out var financials) && financials.GetArrayLength() > 0)
+                {
+                    var firstAction = financials.EnumerateArray().First();
+                    actionType = firstAction.TryGetProperty("type", out var t) ? t.GetString() : "PlayerRefund";
+                    materialOrAmount = firstAction.TryGetProperty("amount", out var am) ? am.GetString() : "$0.00";
+                    auditLog = firstAction.TryGetProperty("reason", out var r) ? r.GetString() : auditLog;
+                }
+
+                // Look up matching physical court metadata properties for clear front-end rendering
+                string courtIdStr = root.TryGetProperty("court_id", out var cId) ? cId.GetString() : null;
+                string targetCourtName = "Broad Facility Scope";
+                
+                if (!string.IsNullOrEmpty(courtIdStr) && Guid.TryParse(courtIdStr, out var courtGuid))
+                {
+                    var court = await _dbContext.Courts.FindAsync(courtGuid);
+                    if (court != null) targetCourtName = court.Name;
+                }
+
+                listings.Add(new PendingApprovalGraphDto(
+                    cp.ThreadId,
+                    cp.AcademyId,
+                    targetCourtName,
+                    actionType,
+                    materialOrAmount,
+                    auditLog,
+                    cp.CreatedAtUtc
+                ));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [HARNESS ROW DE-SERIALIZATION ERROR]: {ex.Message}");
+            }
+        }
+
+        return Ok(listings);
+    }
+
+    // =========================================================================
+    // 🟢 2. UNFREEZE & RESOLVE PENDING GRAPH TRANSITIONS
+    // =========================================================================
+    [HttpPost("ai-harness/resolve-approval")]
+    [Authorize(Roles = "AcademyDirector, GlobalAdmin")]
+    public async Task<IActionResult> ResolveApproval([FromBody] ResolveApprovalDto model)
+    {
+        // Query the target state tracking graph row context
+        var activeCheckpoint = await _dbContext.GraphStateCheckpoints
+            .Where(g => g.ThreadId == model.ThreadId)
+            .OrderByDescending(g => g.CreatedAtUtc)
+            .FirstOrDefaultAsync();
+
+        if (activeCheckpoint == null) 
+            return NotFound("Target paused agent conversation session thread was not discovered inside active storage arrays.");
+
+        if (model.HumanDecision == "Approve")
+        {
+            // Unfreeze execution circuits by modifying the control parameters text token
+            activeCheckpoint.SerializedState = activeCheckpoint.SerializedState.Replace("Paused_Pending_Approval", "Approved_By_Human");
+            activeCheckpoint.ActiveNode = "Supervisor_Resumed_Trigger";
+            
+            _dbContext.GraphStateCheckpoints.Update(activeCheckpoint);
+            await _dbContext.SaveChangesAsync();
+            
+            return Ok(new { Message = "Graph state unfrozen successfully. Signoff transmitted to worker queues." });
+        }
+        else
+        {
+            // Cleanly purge the stalled checkpoint from the database to halt execution paths
+            _dbContext.GraphStateCheckpoints.Remove(activeCheckpoint);
+            await _dbContext.SaveChangesAsync();
+            
+            return Ok(new { Message = "Staged transaction aborted. Graph context deleted cleanly from storage repository channels." });
+        }
+    }    
+
     // Explicit data transfer records for conversational identity handling
     public record ConversationalAuthDto(string UserInput, string CurrentStage, string? CachedEmail);
     public record ConversationalResponseDto(string NextStage, string CachedEmail, string AgentResponse, string? Token);
     public record SmsReplyPayload(string FromNumber, string Body);
+    // File: Controllers/AiOrchestrationController.cs (Bottom DTO Registry)
+
+    public record PendingApprovalGraphDto(
+        Guid ThreadId,
+        Guid AcademyId,
+        string CourtName,
+        string StagedActionType,
+        string StagedMaterialOrAmount,
+        string CalculatedAuditLog,
+        DateTime Timestamp
+    );
+
+    public record ResolveApprovalDto(Guid ThreadId, string HumanDecision);
 
 }

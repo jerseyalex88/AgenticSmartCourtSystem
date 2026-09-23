@@ -18,7 +18,7 @@ if os.path.exists(default_cmdstan_path):
 import uvicorn
 from fastapi import FastAPI
 from app.config import settings
-from app.routers import pricing, maintenance, court_diagnostics, calibration, video_analytics
+from app.routers import pricing, maintenance, court_diagnostics, calibration, video_analytics, v2_agent_router
 from app.routers.predictive_video_analytics import router as predictive_video_router
 from app.routers.voice_agent_analytics import router as voice_agent_router
 from app.routers.text_to_speech_analytics import router as tts_generator_router
@@ -63,7 +63,7 @@ app.include_router(executive_integrity_router)
 
 app.include_router(v2_tts_router)
 app.include_router(v2_knowledge_ingestion_router)
-
+app.include_router(v2_agent_router.router)
 @app.get("/")
 def read_root():
     """Service baseline landing node heartbeat validator mapping indicator."""

@@ -61,6 +61,11 @@ public class UniversalChatController : ControllerBase
                 return Unauthorized("Security Exception: Security perimeter claims unreadable.");
             }
 
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("Security Exception: Security perimeter claims unreadable (userId).");
+            }
+
             // playerBookingContext.UserId = userId ?? "";
             // playerBookingContext.UserName = currentUserName ?? "";
             // playerBookingContext.AcademyId = academyGuid;
@@ -131,6 +136,16 @@ public class UniversalChatController : ControllerBase
                 "\n- Ensure the exact '[FRONTEND_ACTION:LAUNCH_CHECKOUT:a1b2c3d4-xxxx-xxxx-xxxx-xxxxxxxxxxxx:50.00]s' token returned by the final tool execution is appended to your response text stream.."
             );
 
+            chatHistory.AddSystemMessage(
+                "You are the Smart Court OS Ambient Assistant. You have access to the 'LangGraphCompliancePlugin'.\n\n" +
+                "🚀 CRITICAL ROUTING LAW FOR LANGRAPH CALLS:\n" +
+                "Whenever a user asks about complex facility exceptions, weather rainouts, insurance liabilities, " +
+                "racquet tension decay curves, or material tickets, you MUST invoke 'CallMultiAgentComplianceSwarmAsync'.\n" +
+                "BEFORE you invoke this tool, you must rewrite the function argument to explicitly include the name of the court " +
+                "mentioned in the conversation history so that the downstream worker can isolate it.\n" +
+                "- Example: If the user says 'Check my racquet status on Court 1', you must pass 'Court 1: Check my racquet status on Court 1' as the argument.\n" +
+                "- If no court name is mentioned or inferred, pass the user statement text exactly as normal."
+            );
 
             chatHistory.AddUserMessage(userInput);
 
@@ -207,6 +222,11 @@ public class UniversalChatController : ControllerBase
             if (string.IsNullOrEmpty(currentUserName) || !Guid.TryParse(tenantIdClaim, out Guid academyGuid))
             {
                 return Unauthorized("Security Exception: Security perimeter claims unreadable.");
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("Security Exception: Security perimeter claims unreadable (userId).");
             }
 
             // 3. Inject multi-tenant partition parameters into the stateless ambient dictionary
@@ -497,6 +517,56 @@ public class UniversalChatController : ControllerBase
         }
     }
 
+    private async Task<string> ForwardQueryToLangGraphAgentAsync(string prompt, string userId, string academyId, string role)
+    {
+        try
+        {
+            // 1. Construct the exact dictionary contract payload matching your Python SmartCourtAgentState
+            var graphPayload = new PythonLangGraphRequestDto(
+                tenant_id: academyId,
+                user_id: userId,
+                user_role: role,
+                raw_user_prompt: prompt,
+                court_id: null // System automatically falls back to broad facility scope if un-passed
+            );
+
+            string serializedPayload = JsonSerializer.Serialize(graphPayload);
+            using var stringContent = new StringContent(serializedPayload, System.Text.Encoding.UTF8, "application/json");
+
+            // 2. Direct the network bridge straight to your Python LangGraph execution route
+            string absoluteAgentRoute = $"{baseAiEngineUrl}/api/v2/agent/execute-swarm-thread";
+            
+            Console.WriteLine($"📡 [MULTI-AGENT PROXY HANDSHAKE]: Forwarding {role} prompt to LangGraph Supervisor at {absoluteAgentRoute}");
+            
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+            var pythonResponse = await httpClient.PostAsync(absoluteAgentRoute, stringContent);
+
+            if (!pythonResponse.IsSuccessStatusCode)
+            {
+                var errorDetails = await pythonResponse.Content.ReadAsStringAsync();
+                Console.WriteLine($"⚠️ [LANGRAPH AGENT ENGINE REJECTION]: {errorDetails}");
+                return "📟 SYSTEM NOTIFICATION: The Multi-Agent compliance engine encountered an unexpected network handshake block. Please try your request again shortly.";
+            }
+
+            // 3. Extract the final compiled conversational answer string out of the graph state response
+            string jsonResponseString = await pythonResponse.Content.ReadAsStringAsync();
+            using var jsonDoc = JsonDocument.Parse(jsonResponseString);
+            var root = jsonDoc.RootElement;
+
+            if (root.TryGetProperty("final_response", out JsonElement textElement))
+            {
+                return textElement.GetString() ?? "Operation processed cleanly with no structural feedback outputs.";
+            }
+
+            return "Operation processed inside graph container state safely.";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [LANGRAPH GATEWAY FAULT]: Failed to communicate over internal network bridge: {ex.Message}");
+            return $"Harness Error: Failed to complete multi-agent graph state transition loops: {ex.Message}";
+        }
+    }
+
     // --- 📊 EXPORT FINANCIAL LEDGER REPORT: GET api/AiOrchestration/financial-ledger/export-pdf ---
     [HttpGet("financial-ledger/export-pdf")]
     public async Task<IActionResult> ExportFinancialLedgerAuditPdf()
@@ -669,3 +739,10 @@ public class UniversalChatController : ControllerBase
 
 public record UniversalChatRequestDto(string UserInput, string VoiceKey = "en-US-AriaNeural");
 public record UniversalChatResponseDto(string AgentResponse, string? AudioBase64 = null);
+public record PythonLangGraphRequestDto(
+    string tenant_id,
+    string user_id,
+    string user_role,
+    string raw_user_prompt,
+    string? court_id = null
+);

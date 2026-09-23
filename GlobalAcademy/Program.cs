@@ -173,6 +173,12 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
         playerCheckoutPlugin,
         "PlayerCheckoutPlugin");
 
+    var langGraphCompliancePlugin =
+        serviceProvider.GetRequiredService<LangGraphCompliancePlugin>();
+    kernelBuilder.Plugins.AddFromObject(
+        langGraphCompliancePlugin,
+        "LangGraphCompliancePlugin");
+
     return kernelBuilder.Build();
 });
 
@@ -182,6 +188,7 @@ builder.Services.AddScoped<PlayerBookingPlugin>();
 builder.Services.AddScoped<DirectorOperationsPlugin>();
 builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<PlayerCheckoutPlugin>();
+builder.Services.AddScoped<LangGraphCompliancePlugin>();
 
 // Bind and register the Braintree configuration record
 var braintreeConfig = builder.Configuration

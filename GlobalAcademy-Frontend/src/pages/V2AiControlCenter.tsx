@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/apiClient';
 import { useAlert } from '../context/AlertContext';
+import { useAuth } from '../context/AuthContext';
 
 // Domain Type Contracts matching your strongly-typed C# backend models exactly
 interface Branch {
@@ -50,9 +51,21 @@ interface SavedMacro {
   queryText: string;
 }
 
+interface PendingApprovalGraph {
+  threadId: string;
+  academyId: string;
+  courtName: string;
+  stagedActionType: 'PlayerRefund' | 'MaintenancePO';
+  stagedMaterialOrAmount: string; // e.g., "$180.00 Refund" or "Lux Ballast Part B"
+  calculatedAuditLog: string;    // Explanatory breakdown text from the agent
+  timestamp: string;
+}
+
 export const V2AiControlCenter: React.FC = () => {
   // 🚀 MASTER NAVIGATION STATE: Tracks which panel section is visible
   const [activeMasterTab, setActiveMasterTab] = useState<'ingest' | 'browser' | 'trace'>('ingest');
+  const { user: loggedInUser } = useAuth(); 
+  const isDirector = loggedInUser?.role === 'AcademyDirector' || loggedInUser?.role === 'GlobalAdmin';
 
   // Shared Core Operational Metadata States
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -88,6 +101,11 @@ export const V2AiControlCenter: React.FC = () => {
   const [newMacroTitle, setNewMacroTitle] = useState<string>('');
   const [isSavingNew, setIsSavingNew] = useState<boolean>(false);
   const { showAlert } = useAlert();
+
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApprovalGraph[]>([]);
+  const [approvingThreadId, setApprovingThreadId] = useState<string | null>(null);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [activeTraceThreadId, setActiveTraceThreadId] = useState<string | null>(null);
 
   // Hook into initial mount to fetch saved queries data
   useEffect(() => {
@@ -147,7 +165,7 @@ export const V2AiControlCenter: React.FC = () => {
     }
   };
 
-    const handleBatchIngestionSubmit = async (e: React.FormEvent) => {
+  const handleBatchIngestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadFiles || uploadFiles.length === 0 || selectedBranchIds.length === 0) return;
 
@@ -226,6 +244,11 @@ export const V2AiControlCenter: React.FC = () => {
 
   const handleExecuteTrace = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Create or retrieve a conversation thread GUID session id
+    const targetThreadId = crypto.randomUUID(); // Or your standard conversation thread id string
+    setActiveTraceThreadId(targetThreadId); // 🚀 RECORD ACTIVE SESSION FOR THE REFRESHER
+ 
     if (!traceQuery.trim()) return;
 
     setTraceLoading(true);
@@ -269,6 +292,22 @@ export const V2AiControlCenter: React.FC = () => {
       // alert('Diagnostic transaction pipeline handshake broken.');
     } finally {
       setTraceLoading(false);
+    }
+  };
+
+  const handleTriggerPipelineTraceRefresh = async () => {
+    if (!activeTraceThreadId) return;
+    console.log(`📡 [TRACE ENGINE REFRESH]: Re-syncing metrics for thread: ${activeTraceThreadId}`);
+    try {
+      // Queries the data logs for the active thread to re-populate your citations & RAGAS scores live
+      const response = await apiClient.get(`/ai/knowledge/trace-history/${activeTraceThreadId}`);
+      if (response.data) {
+        setAiAnswer(response.data.answer);
+        setCitations(response.data.citations || []);
+        setMetrics(response.data.metrics || null);
+      }
+    } catch (err) {
+      console.error("Failed to execute an automated background trace canvas refresh pass:", err);
     }
   };
 
@@ -377,6 +416,50 @@ export const V2AiControlCenter: React.FC = () => {
       }
     });
   };
+
+  const fetchPendingAgentApprovals = async () => {
+    try {
+      setApprovalError(null);
+      // Queries the .NET endpoint monitoring the GraphStateCheckpoints table rows
+      const res = await apiClient.get<PendingApprovalGraph[]>('/AiOrchestration/ai-harness/pending-approvals');
+      setPendingApprovals(res.data);
+    } catch (err: any) {
+      console.error('Failed to query paused graph checkpoint matrix:', err);
+    }
+  };
+
+  const handleResolveGraphApproval = async (threadId: string, action: 'Approve' | 'Reject') => {
+    setApprovingThreadId(threadId);
+    setApprovalError(null);
+    try {
+      // Posts the human instruction token directly back to the .NET proxy coordinator gateway
+      await apiClient.post(`/AiOrchestration/ai-harness/resolve-approval`, {
+        threadId,
+        humanDecision: action // Sends "Approve" or "Reject"
+      });
+      
+      alert(`👥 Action successfully recorded: Graph execution path has been ${action === 'Approve' ? 'Unfrozen and Committed' : 'Aborted and Cleared'}.`);
+      
+      // Refresh the queue array lists instantly on screen layout
+      await fetchPendingAgentApprovals();
+      
+      // If the active trace tab was monitoring this thread, refresh the trace results window
+      if (activeTraceThreadId === threadId) {
+        await handleTriggerPipelineTraceRefresh();
+      }
+    } catch (err: any) {
+      setApprovalError(err.response?.data || `Failed to transmit ${action.toLowerCase()} decision signal.`);
+    } finally {
+      setApprovingThreadId(null);
+    }
+  };
+
+  // Polling interval hooks to keep the human intercept queue updated in background rails
+  useEffect(() => {
+    fetchPendingAgentApprovals();
+    const pollTimer = setInterval(fetchPendingAgentApprovals, 10000); // Polls every 10 seconds
+    return () => clearInterval(pollTimer);
+  }, []);
 
   return (
     <div className="w-full max-w-[100vw] h-screen space-y-3 font-sans p-4 bg-slate-50 text-slate-800 flex flex-col overflow-hidden">
@@ -821,6 +904,97 @@ export const V2AiControlCenter: React.FC = () => {
               )}
             </div>
 
+            {/* 🛡️ ROLE GATE: Only render the Approval Panel if the user is an Executive Admin */}
+            {(isDirector) && (
+              <div className="space-y-4 w-full mt-4 shrink-0">
+                <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-none">
+                  <div className="border-b border-slate-200 pb-3 mb-4 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                        <span className="animate-pulse h-2 w-2 rounded-full bg-amber-500" />
+                        👥 Asynchronous Human-in-the-Loop Intercept Panel
+                      </h3>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5 uppercase tracking-wide">
+                        Review and authorize high-impact multi-agent financial ledger movements or asset decommissioning
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-mono font-bold bg-slate-100 border border-slate-300 px-2 py-1 uppercase text-slate-700">
+                      Queue Count: {pendingApprovals.length}
+                    </span>
+                  </div>
+
+                  {approvalError && (
+                    <div className="p-3 mb-3 bg-rose-50 border border-rose-300 text-rose-700 text-[11px] font-mono uppercase font-bold flex items-center gap-2 rounded-none">
+                      ⚠️ ERROR: {approvalError}
+                    </div>
+                  )}
+
+                  {pendingApprovals.length === 0 ? (
+                    <div className="border border-dashed border-slate-200 p-8 text-center text-xs font-sans text-slate-400 italic bg-slate-50/50">
+                      No active agent graphs are currently sitting in a paused checkpoint gate. System running fully autonomous.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse border border-slate-200">
+                        <thead>
+                          <tr className="bg-slate-900 text-white font-mono text-[9px] uppercase tracking-wider">
+                            <th className="p-2.5 border border-slate-700 font-black">Target Entity Context</th>
+                            <th className="p-2.5 border border-slate-700 font-black">Staged AI Operation</th>
+                            <th className="p-2.5 border border-slate-700 font-black">Agent RAG Audit Summary Breakdown</th>
+                            <th className="p-2.5 border border-slate-700 font-black text-right">Actions Panel Console</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 text-xs font-sans">
+                          {pendingApprovals.map((graph) => (
+                            <tr key={graph.threadId} className="hover:bg-slate-50/70 bg-white transition-colors">
+                              <td className="p-2.5 border border-slate-200 align-top max-w-[150px]">
+                                <p className="font-black text-slate-800 text-[11px] uppercase truncate">{graph.courtName}</p>
+                                <span className="text-[8px] font-mono text-slate-400 block mt-1 uppercase tracking-wider select-all">
+                                  Thread ID: {graph.threadId.substring(0, 13)}...
+                                </span>
+                              </td>
+                              <td className="p-2.5 border border-slate-200 align-top">
+                                <span className={`inline-block text-[9px] font-mono font-black uppercase tracking-tight border px-1.5 py-0.5 mb-1.5 ${
+                                  graph.stagedActionType === 'PlayerRefund' ? 'bg-purple-50 border-purple-300 text-purple-700' : 'bg-amber-50 border-amber-300 text-amber-700'
+                                }`}>
+                                  {graph.stagedActionType === 'PlayerRefund' ? '💸 Payment Reversal' : '🛠️ Purchase Order'}
+                                </span>
+                                <p className="font-mono font-bold text-slate-900 text-[11px]">{graph.stagedMaterialOrAmount}</p>
+                              </td>
+                              <td className="p-2.5 border border-slate-200 align-top max-w-sm">
+                                <div className="bg-slate-50 border border-slate-200 p-2 font-mono text-[10px] text-slate-600 whitespace-pre-wrap leading-normal shadow-inner max-h-[110px] overflow-y-auto">
+                                  {graph.calculatedAuditLog}
+                                </div>
+                              </td>
+                              <td className="p-2.5 border border-slate-200 align-top text-right shrink-0 min-w-[160px]">
+                                <div className="flex gap-2 justify-end items-center h-full pt-1">
+                                  <button
+                                    type="button"
+                                    disabled={approvingThreadId !== null}
+                                    onClick={() => handleResolveGraphApproval(graph.threadId, 'Reject')}
+                                    className="bg-white hover:bg-rose-50 text-rose-600 border-2 border-rose-600 font-black text-[10px] px-3 py-1.5 uppercase rounded-none transition cursor-pointer select-none"
+                                  >
+                                    ❌ Reject
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={approvingThreadId !== null}
+                                    onClick={() => handleResolveGraphApproval(graph.threadId, 'Approve')}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white border-2 border-emerald-700 font-black text-[10px] px-3 py-1.5 uppercase rounded-none transition cursor-pointer select-none"
+                                  >
+                                    🟢 Approve
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

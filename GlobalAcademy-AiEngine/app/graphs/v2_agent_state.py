@@ -10,21 +10,30 @@ class SmartCourtAgentState(TypedDict):
     """
     
     # 🛡️ MULTI-TENANT CONTEXT FIREWALL BOUNDARIES
-    # These parameters must be passed in by .NET on boot and are appended to ALL downstream SQL queries.
     academy_id: str
     branch_id: str
 
     # 🎾 ASSET-LEVEL FOCUS INTERCEPTOR
-    # Captures a specific court GUID context if passed down from a localized React view page.
-    # Set as Optional so it gracefully falls back to None for broad facility-wide queries.
     court_id: Optional[str]
     
     # 💬 ROLLING MESSAGE HISTORY FLOW
-    # Annotated with add_messages so LangGraph automatically appends new messages 
-    # to the running list instead of overwriting the previous conversational text.
     messages: Annotated[List[BaseMessage], add_messages]
     
     # 🗄️ INTERNAL PROCESSING MEMORY BAG
-    # Allows nodes to pass unstructured metadata flags or custom tool outputs 
-    # directly across routing edges (e.g., tracking a specific court_id discovered mid-flight).
     internal_metadata: Dict[str, Any]
+
+    # =========================================================================
+    # 🚀 NEW: MULTI-AGENT SCENARIO OVERRIDE SLOTS
+    # =========================================================================
+    user_id: str                             # The unique acting user GUID (Player or Admin)
+    user_role: str                           # Tier string determining routing: 'Player', 'AcademyDirector'
+    
+    extracted_legal_clauses: Dict[str, Any]  # RAG metrics (warranties, policy ceilings, shoe rules)
+    telemetry_snapshot_data: Dict[str, Any]  # Live IoT metrics pulled from database table rows
+    staged_operational_actions: List[Dict[str, Any]] # Proposed mutations (status locks, light relays)
+    staged_financial_actions: List[Dict[str, Any]]   # Proposed financial shifts (refunds, PO creation)
+    
+    # 🛡️ MODULE 6.5: HARNESS ENGINEERING CIRCUITS
+    agent_routing_history: List[str]         # Execution trace tracking node footsteps
+    execution_status: str                    # State descriptor: 'Processing', 'Paused_Pending_Approval', 'Complete'
+    token_budget_consumed: int               # Counter checking context window budgeting thresholds

@@ -354,6 +354,42 @@ namespace GlobalAcademy.Migrations
                     b.ToTable("CourtMaintenanceKnowledge");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.GraphStateCheckpoint", b =>
+                {
+                    b.Property<Guid>("ThreadId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CheckpointId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActiveNode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("ContextTokenCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SerializedState")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("ThreadId", "CheckpointId");
+
+                    b.ToTable("GraphStateCheckpoints");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.Invoice", b =>
                 {
                     b.Property<Guid>("InvoiceId")

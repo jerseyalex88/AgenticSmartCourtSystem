@@ -338,4 +338,36 @@ namespace GlobalAcademy.Models {
         [Required]
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
+    [Table("GraphStateCheckpoints")]
+    public class GraphStateCheckpoint : Security.IMultiTenant
+    {
+        // Composite Primary Key Component A
+        [Required]
+        public Guid ThreadId { get; set; }
+
+        // Composite Primary Key Component B
+        [Required]
+        public Guid CheckpointId { get; set; }
+
+        // 🛡️ THE MULTI-TENANT FIREWALL LOCKOUT
+        [Required]
+        public Guid AcademyId { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string UserId { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100)]
+        public string ActiveNode { get; set; } = string.Empty; // e.g., "Worker_Financial_Ledger"
+
+        [Required]
+        public string SerializedState { get; set; } = string.Empty; // Holds compressed JSON data string
+
+        [Required]
+        public int ContextTokenCount { get; set; } = 0;
+
+        [Required]
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    }
 }
