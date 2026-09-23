@@ -14,6 +14,8 @@ class v2IngestionService:
     @classmethod
     async def process_batch_pdf_ingestion(cls, academy_id: str, branch_ids: List[str], court_id: Optional[str], files_data: List[Tuple[str, bytes]]):
         openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+        # print(f"📡 [DEBUG process_batch_pdf_ingestion]: settings.postgres_connection_string: {settings.postgres_connection_string}")
         conn = await asyncpg.connect(settings.postgres_connection_string)
         
         try:

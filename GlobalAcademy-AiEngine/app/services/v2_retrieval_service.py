@@ -18,6 +18,8 @@ class v2RetrievalService:
         except Exception as ex:
             print(f"❌ Embedding Error: {ex}"); return []
 
+        # print(f"📡 [DEBUG execute_hybrid_search]: settings.postgres_connection_string: {settings.postgres_connection_string}")
+
         conn = await asyncpg.connect(settings.postgres_connection_string)
         try:
             raw_sql = """
@@ -69,7 +71,8 @@ class v2RetrievalService:
             print(f"   ❌ [DEBUG ERROR] Failed to convert string to UUID: {parse_ex}")
             return []
         
-        # print(f"\n[v2 DEBUG]: settings.postgres_connection_string: {settings.postgres_connection_string}")
+        # print(f"\n[v2 DEBUG fetch_unique_uploaded_documents]: settings.postgres_connection_string: {settings.postgres_connection_string}")
+
         conn = await asyncpg.connect(settings.postgres_connection_string)
         try:
             query = """

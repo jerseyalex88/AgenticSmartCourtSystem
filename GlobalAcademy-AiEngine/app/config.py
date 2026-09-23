@@ -16,10 +16,10 @@ dotenv_path = Path(__file__).resolve().parents[1] / ".env"
 
 # 🚀 INITIALIZE DOTENV: Forces the environment variables straight into your machine's system memory!
 if dotenv_path.exists():
-    load_dotenv(dotenv_path=dotenv_path, override=True)
+    load_dotenv(dotenv_path=dotenv_path, override=False)
     print(f"🔑 [ENV BOOT SUCCESS]: Hydrated runtime variables from file: {dotenv_path}")
 else:
-    load_dotenv() # Fallback standard sweep
+    load_dotenv(override=False) # Fallback standard sweep
 
 class AppSettings(BaseModel):
     """Global configuration settings registry for the Python AI Engine service."""
@@ -55,7 +55,9 @@ class AppSettings(BaseModel):
         """
         if not raw_str:
             return ""
-        
+
+        # print(f"🔄 [DEBUG config.py]: Translating ADO.NET connection string to PostgreSQL URI: {raw_str}")
+
         # If it's already a standard postgres:// URI, pass it through completely untouched
         if raw_str.strip().startswith(("postgresql://", "postgres://")):
             return raw_str.strip()
@@ -67,6 +69,7 @@ class AppSettings(BaseModel):
             if "=" in chunk:
                 key, val = chunk.split("=", 1)
                 kv_pairs[key.strip().lower()] = val.strip()
+                # print(f"🔑 [DEBUG config.py]: Key: {key.strip().lower()} | Value: {val.strip()}")
 
         # Extract structural variables using standardized key overrides
         host = kv_pairs.get("host") or kv_pairs.get("Host") or "localhost"
