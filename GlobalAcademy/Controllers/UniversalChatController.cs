@@ -15,6 +15,8 @@ using System.Text.Json;
 using GlobalAcademy.Security;
 using GlobalAcademy.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
+using GlobalAcademy.Hubs;
 
 namespace GlobalAcademy.Controllers;
 
@@ -28,14 +30,19 @@ public class UniversalChatController : ControllerBase
     private readonly ITenantProvider _tenantProvider;
     private readonly IConfiguration _configuration;
     private readonly string baseAiEngineUrl;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHubContext<HarnessApprovalHub> _signalrHubContext;
 
-    public UniversalChatController(Kernel kernel, ApplicationDbContext dbContext, ITenantProvider tenantProvider, IConfiguration configuration)
+    public UniversalChatController(Kernel kernel, ApplicationDbContext dbContext, ITenantProvider tenantProvider, IConfiguration configuration, IHttpClientFactory httpClientFactory, IHubContext<HarnessApprovalHub> signalrHubContext)
     {
         _kernel = kernel;
         _dbContext = dbContext;
         _tenantProvider = tenantProvider;
         _configuration = configuration;
         baseAiEngineUrl = _configuration["AiEngineSettings:BaseUrl"]?.TrimEnd('/') ?? "http://localhost:8000";
+        _httpClientFactory = httpClientFactory;
+        _signalrHubContext = signalrHubContext;
+
         //_kernel.Plugins.AddFromObject(new Plugins.PlayerBookingPlugin(_dbContext), "PlayerBookingPlugin");
         // tomorrow we will register our custom CourtBookingPlugin directly to this kernel instance!
     }
@@ -735,6 +742,111 @@ public class UniversalChatController : ControllerBase
         }
     }
 
+    // =========================================================================
+    // 🧬 MULTI-AGENT HANDSHAKE PROXY NODE ENDPOINT
+    // =========================================================================
+    [HttpPost("execute-agent-intent")]
+    public async Task<IActionResult> ExecuteAgentIntent([FromBody] ChatIntentRequestDto request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Invalid request payload.");
+        }
+
+        Console.WriteLine("📡 [DEBUG .NET] --- execute-agent-intent ENTRY REACHED ---");
+        Console.WriteLine($"📡 [DEBUG .NET] RawInputPrompt: '{request?.RawInputPrompt}'");
+        Console.WriteLine($"📡 [DEBUG .NET] ThreadId: '{request?.ThreadId}'");
+
+        // 1. EXTRACTION: Pull the authenticated user's name and multi-tenant firewall parameters
+        var currentUserName = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("username"))?.Value ?? HttpContext.User.Identity?.Name;
+        var academyIdClaim = HttpContext.User.FindFirst("AcademyId")?.Value;
+        var userRole = HttpContext.User.FindFirst(ClaimTypes.Role)?.Value ?? "Player";
+        var userIdClaim = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userEmail = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+
+        if (string.IsNullOrEmpty(currentUserName) || !Guid.TryParse(academyIdClaim, out Guid academyGuid))
+        {
+            return Unauthorized("Security Exception: Security perimeter claims unreadable.");
+        }
+
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return Unauthorized("Security Exception: Security perimeter claims unreadable (userId).");
+        }
+
+        var branch = _dbContext.Branches.FirstOrDefault(a => a.AcademyId == academyGuid);
+
+        if (string.IsNullOrEmpty(academyIdClaim) || branch == null || string.IsNullOrEmpty(userIdClaim))
+        {
+            return BadRequest(new { Error = "[FAIL-FAST IDENTITY PROTECTION] Missing cryptographic identity anchors inside execution session context." });
+        }
+
+        // 2. Formulate the out-of-process initialization contract payload mapping to Python expectations
+        var forwardPayload = new
+        {
+            thread_id = request?.ThreadId != Guid.Empty ? request?.ThreadId : Guid.NewGuid(),
+            academy_id = academyGuid,
+            branch_id = branch.Id,
+            user_id = userIdClaim,
+            user_role = userRole,
+            raw_input_prompt = request?.RawInputPrompt
+        };
+
+        try
+        {
+            Console.WriteLine($"📡 [DEBUG .NET] Resolving HttpClient.");
+            // Instantiate a resilient HTTP client runner channel targeting the Python port
+            var client = _httpClientFactory.CreateClient("PythonAiEngineClient");
+            Console.WriteLine($"📡 [DEBUG .NET] HttpClient resolved. BaseAddress boundary target: {client.BaseAddress?.ToString() ?? "NULL"}");
+            
+            // POST the execution payload asynchronously over the loopback boundary matrix
+            var response = await client.PostAsJsonAsync("/api/v3/harness/execute-agent-intent", forwardPayload);
+            Console.WriteLine($"📡 [DEBUG .NET] FastAPI Response Code parsed: {(int)response.StatusCode} ({response.StatusCode})");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                return StatusCode((int)response.StatusCode, new { Error = $"[FASTAPI MICROSERVICE FAULT]: {errorMsg}" });
+            }
+
+            // 3. Unpack and parse the returned state JSON document object string from Python
+            var rawJsonResponse = await response.Content.ReadAsStringAsync();
+            using var jsonDocument = JsonDocument.Parse(rawJsonResponse);
+            var rootElement = jsonDocument.RootElement;
+
+            // Extract the active status enum marker to determine harness gate engagement
+            string executionStatus = rootElement.GetProperty("execution_status").GetString() ?? "Active";
+
+            // 4. INTERCEPT INTERRUPT BOUNDARIES: If the state froze, push data down the SignalR line
+            if (executionStatus == "Paused_Pending_Approval" && rootElement.TryGetProperty("pending_approval_gate", out var approvalGateElement))
+            {
+                string threadId = rootElement.GetProperty("thread_id").GetString() ?? string.Empty;
+                string rationale = approvalGateElement.GetProperty("audit_rationale").GetString() ?? string.Empty;
+                string nestedPayloadJson = approvalGateElement.GetProperty("suggested_payload").GetRawText();
+
+                string tenantGroupName = $"Tenant_Group_{academyIdClaim}";
+
+                // Asynchronously broadcast the Human-In-The-Loop gate alert to the client React array
+                await _signalrHubContext.Clients.Group(tenantGroupName).SendAsync("ReceiveHarnessApprovalGate", new
+                {
+                    ThreadId = threadId,
+                    Payload = nestedPayloadJson,
+                    Rationale = rationale,
+                    TimestampUtc = DateTime.UtcNow
+                });
+
+                Console.WriteLine($"📡 [PROXY GATEWAY INTERCEPT] Real-time notification dispatched via SignalR to Group {tenantGroupName} for paused thread {threadId}.");
+            }
+
+            // Forward the evaluated engine dictionary document transparently back to the React UI caller
+            return Content(rawJsonResponse, "application/json");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [PROXY GATEWAY CRITICAL ERROR]: Handshake loop execution failed: {ex.Message}");
+            return StatusCode(500, new { Error = $"[GATEWAY ROUTING EXCEPTION]: Internal proxy bridge failure: {ex.Message}" });
+        }
+    }
 }
 
 public record UniversalChatRequestDto(string UserInput, string VoiceKey = "en-US-AriaNeural");
@@ -746,3 +858,9 @@ public record PythonLangGraphRequestDto(
     string raw_user_prompt,
     string? court_id = null
 );
+
+public class ChatIntentRequestDto
+{
+    public Guid ThreadId { get; set; }
+    public string RawInputPrompt { get; set; } = string.Empty;
+}

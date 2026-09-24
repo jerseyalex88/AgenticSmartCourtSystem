@@ -395,6 +395,7 @@ const autoplayBase64Audio = (base64String: string | null | undefined) => {
     { id: 'court-diagnostics', label: '📡 Court Diagnostics', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'court-health', label: '🛡️ Court Health Analysis', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'ai-op-center', label: '🛰️ AI Operations Center', roles: ['AcademyDirector', 'GlobalAdmin'] },
+    { id: 'ai-harness-center', label: '🛰️ AI Harness Center', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'roster', label: '👥 Staff Roster Manager', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'admin', label: '⚙️ Profiles Administration', roles: ['AcademyDirector', 'GlobalAdmin'] },
     { id: 'user-profile', label: '⚙️ Player Profile', roles: ['Player'] },

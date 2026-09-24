@@ -12,13 +12,10 @@ default_cmdstan_path = os.path.join(home_dir, ".cmdstan", "cmdstan-2.35.0") # Ad
 if os.path.exists(default_cmdstan_path):
     os.environ["CMDSTAN"] = default_cmdstan_path
 
-# os.environ["STAN_LOG_LEVEL"] = "5"
-# os.environ["PROPHET_PLOTLY_DISABLED"] = "True"
-
 import uvicorn
 from fastapi import FastAPI
 from app.config import settings
-from app.routers import pricing, maintenance, court_diagnostics, calibration, video_analytics, v2_agent_router
+from app.routers import pricing, maintenance, court_diagnostics, calibration, video_analytics, v2_agent_router, v3_harness_router
 from app.routers.predictive_video_analytics import router as predictive_video_router
 from app.routers.voice_agent_analytics import router as voice_agent_router
 from app.routers.text_to_speech_analytics import router as tts_generator_router
@@ -64,6 +61,24 @@ app.include_router(executive_integrity_router)
 app.include_router(v2_tts_router)
 app.include_router(v2_knowledge_ingestion_router)
 app.include_router(v2_agent_router.router)
+app.include_router(v3_harness_router.router)
+
+# 🚀 REGISTER THE HARNESS INFRASTRUCTURE ASYNC STARTUP HOOK
+@app.on_event("startup")
+async def configure_harness_infrastructure():
+    """
+    Startup initialization hook validating checkpointer schema configuration boundaries 
+    and preparing container networks for persistent state snapshot re-entry.
+    """
+    print("📡 [HARNESS INITIALIZATION] Pre-loading PostgreSQL LangGraph checkpointer arrays...")
+    try:
+        from app.services.v3_graph_checkpointer import PostgresGraphCheckpointer
+        # Ensure your configuration string properties are loaded into memory globally
+        app.state.graph_checkpointer = PostgresGraphCheckpointer
+        print("✅ [HARNESS INITIALIZATION] Checkpointer instance securely attached to app runtime space.")
+    except Exception as ex:
+        print(f"❌ [HARNESS INITIALIZATION ERR] Critical failure configuring checkpointer drivers: {ex}")
+        
 @app.get("/")
 def read_root():
     """Service baseline landing node heartbeat validator mapping indicator."""

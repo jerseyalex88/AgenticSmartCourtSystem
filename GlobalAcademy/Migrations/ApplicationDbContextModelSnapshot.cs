@@ -359,8 +359,9 @@ namespace GlobalAcademy.Migrations
                     b.Property<Guid>("ThreadId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CheckpointId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CheckpointId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<Guid>("AcademyId")
                         .HasColumnType("uuid");
@@ -376,9 +377,12 @@ namespace GlobalAcademy.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("LoopIterationCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("SerializedState")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -386,6 +390,8 @@ namespace GlobalAcademy.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.HasKey("ThreadId", "CheckpointId");
+
+                    b.HasIndex("AcademyId", "ThreadId");
 
                     b.ToTable("GraphStateCheckpoints");
                 });

@@ -75,7 +75,6 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<CourtDiagnosticAnomaly>().HasQueryFilter(uc => uc.AcademyId == CurrentTenantId);
         modelBuilder.Entity<SavedAgentQuery>().HasQueryFilter(sq => sq.AcademyId == CurrentTenantId);
         modelBuilder.Entity<CourtMaintenanceKnowledge>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
-        modelBuilder.Entity<GraphStateCheckpoint>().HasQueryFilter(g => g.AcademyId == CurrentTenantId);
 
         modelBuilder.Entity<Booking>()
             .Property(b => b.Status)
@@ -113,8 +112,22 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<CourtMaintenanceKnowledge>()
             .HasIndex(k => new { k.AcademyId, k.BranchId });
 
+        // =========================================================================
+        // HARNESS STATE PERSISTENCE RULE DEFINITIONS
+        // =========================================================================
+
+        // 1. Configure the strict multi-tenant global query filter firewall interceptor
         modelBuilder.Entity<GraphStateCheckpoint>()
-        .HasKey(g => new { g.ThreadId, g.CheckpointId });
+            .HasQueryFilter(g => g.AcademyId == CurrentTenantId);
+
+        // 2. Define the absolute composite primary database key mapping matrix
+        modelBuilder.Entity<GraphStateCheckpoint>()
+            .HasKey(g => new { g.ThreadId, g.CheckpointId });
+
+        // 3. Optimize lookup velocity indexes for parallel multi-tenant operations queries
+        modelBuilder.Entity<GraphStateCheckpoint>()
+            .HasIndex(g => new { g.AcademyId, g.ThreadId });
+
     }
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

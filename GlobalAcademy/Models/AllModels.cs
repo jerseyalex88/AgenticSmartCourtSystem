@@ -338,35 +338,77 @@ namespace GlobalAcademy.Models {
         [Required]
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
+
     [Table("GraphStateCheckpoints")]
     public class GraphStateCheckpoint : Security.IMultiTenant
     {
-        // Composite Primary Key Component A
+        // =========================================================================
+        // COMPOSITE PRIMARY KEY STRUCTURE
+        // =========================================================================
+        
+        /// <summary>
+        /// Unique tracking identifier matching the active agentic conversation conversation layout thread.
+        /// </summary>
         [Required]
         public Guid ThreadId { get; set; }
 
-        // Composite Primary Key Component B
+        /// <summary>
+        /// State snapshot hash iteration token generated systematically by LangGraph compilation transitions.
+        /// </summary>
         [Required]
-        public Guid CheckpointId { get; set; }
+        [StringLength(255)]
+        public string CheckpointId { get; set; } = string.Empty;
 
-        // 🛡️ THE MULTI-TENANT FIREWALL LOCKOUT
+        // =========================================================================
+        // MULTI-TENANT ISOLATION BOUNDARIES & AUDITING FOOTPRINTS
+        // =========================================================================
+        
+        /// <summary>
+        /// Cryptographic global query filter partition firewall key.
+        /// </summary>
         [Required]
         public Guid AcademyId { get; set; }
 
+        /// <summary>
+        /// IdentityUser token mapping the active physical employee or standard player executing the task.
+        /// </summary>
         [Required]
         [StringLength(100)]
         public string UserId { get; set; } = string.Empty;
 
+        /// <summary>
+        /// The explicit worker graph location snapshot processing the token payload array (e.g. Worker_Financial_Ledger).
+        /// </summary>
         [Required]
         [StringLength(100)]
-        public string ActiveNode { get; set; } = string.Empty; // e.g., "Worker_Financial_Ledger"
+        public string ActiveNode { get; set; } = string.Empty;
 
+        // =========================================================================
+        // COMPRESSED BINARY/TEXT METRIC SLOTS
+        // =========================================================================
+
+        /// <summary>
+        /// Native JSON database document block containing full state channel dictionaries, memories, and variables.
+        /// </summary>
         [Required]
-        public string SerializedState { get; set; } = string.Empty; // Holds compressed JSON data string
+        [Column(TypeName = "jsonb")]
+        public string SerializedState { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Harness Engineering Monitor Counter: Validates active total tokens consumed inside context array window.
+        /// </summary>
         [Required]
         public int ContextTokenCount { get; set; } = 0;
 
+        /// <summary>
+        /// Sequential circuit breaker execution metric to prevent cascading recursion loop leakage.
+        /// </summary>
+        [Required]
+        public int LoopIterationCount { get; set; } = 0;
+
+        /// <summary>
+        /// Auditing timestamp strictly anchored to universal coordinated timeline framework.
+        /// </summary>
         [Required]
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }

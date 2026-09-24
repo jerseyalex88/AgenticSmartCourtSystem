@@ -61,7 +61,7 @@ interface PendingApprovalGraph {
   timestamp: string;
 }
 
-export const V2AiControlCenter: React.FC = () => {
+export default function V2AiControlCenter() {
   // 🚀 MASTER NAVIGATION STATE: Tracks which panel section is visible
   const [activeMasterTab, setActiveMasterTab] = useState<'ingest' | 'browser' | 'trace'>('ingest');
   const { user: loggedInUser } = useAuth(); 

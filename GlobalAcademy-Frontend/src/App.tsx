@@ -20,7 +20,8 @@ import CookieBanner from './components/CookieBanner';
 import ThirdPartyScriptManager from './components/ThirdPartyScriptManager';
 import CourtDiagnosticsDashboard from './pages/CourtDiagnosticsDashboard';
 import AssetHealthControlCenter from './pages/AssetHealthControlCenter';
-import { V2AiControlCenter } from './pages/V2AiControlCenter';
+import V2AiControlCenter from './pages/V2AiControlCenter';
+import HarnessControlCenter from './components/HarnessControlCenter';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -228,6 +229,8 @@ export default function App() {
         return <AssetHealthControlCenter />;
       case 'ai-op-center':
         return <V2AiControlCenter />;
+      case 'ai-harness-center':
+        return <HarnessControlCenter />;
       case 'agent-dispatch':
         return <AgentDispatchCenter />;
       case 'user-profile':

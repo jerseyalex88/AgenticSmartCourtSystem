@@ -223,12 +223,17 @@ builder.Services.AddSingleton<GlobalAcademy.Services.ISmsVerificationEngine, Glo
 // =========================================================================
 // 🚀 REGISTER TYPED AI MICROSERVICE NETWORK RELAY WITH DYNAMIC CONFIG
 // =========================================================================
+// Extract the target base string url cleanly out of appsettings.json
+var aiBaseUrl = builder.Configuration["AiEngineSettings:BaseUrl"] 
+                ?? "http://localhost:8000/";   // throw new InvalidOperationException("AI Engine base URL configuration string is missing.");
+
 builder.Services.AddHttpClient<IAiEngineService, AiEngineService>(client =>
-{
-    // Extract the target base string url cleanly out of appsettings.json
-    var aiBaseUrl = builder.Configuration["AiEngineSettings:BaseUrl"] 
-                    ?? "http://localhost:8000/";   // throw new InvalidOperationException("AI Engine base URL configuration string is missing.");
-    
+{    
+    client.BaseAddress = new Uri(aiBaseUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+builder.Services.AddHttpClient("PythonAiEngineClient", client => {
     client.BaseAddress = new Uri(aiBaseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
@@ -243,7 +248,10 @@ builder.Services.AddHttpClient<ICourtDiagnosticsService, CourtDiagnosticsService
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
-// builder.Services.AddScoped<ICourtDiagnosticsService, CourtDiagnosticsService>();
+// Register real-time communication tier assemblies with built-in JSON payload support configuration
+builder.Services.AddSignalR(options => {
+    options.EnableDetailedErrors = true; // Crucial diagnostic parameters for local debugging cycles
+});
 
 var app = builder.Build();
 
@@ -290,6 +298,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// 🚀 ROUTE MAP INTERCEPTOR: Expose the SignalR socket pipeline matching client gateway expectations
+app.MapHub<GlobalAcademy.Hubs.HarnessApprovalHub>("/hubs/v3/harness-approval-gate");
 
 // =========================================================================
 // AUTOMATED SEED DATA INJECTION PIPELINE
