@@ -131,10 +131,26 @@ export default function HarnessControlCenter() {
   // ⚡ SIGNALR SOCKET SUBSCRIPTION LIFECYCLE HOOK
   // =========================================================================
   useEffect(() => {
+    const baseUriToken = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7290/api';
+    const hubRootUri = baseUriToken.endsWith('/api') 
+      ? baseUriToken.slice(0, -4) 
+      : baseUriToken.endsWith('/api/') 
+        ? baseUriToken.slice(0, -5) 
+        : baseUriToken; 
+    const targetHubAddress = `${hubRootUri}/hubs/v3/harness-approval-gate`;
+
+    // console.log(`[DEBUG] hubRootUri: ${hubRootUri}`);
+    // console.log(`[DEBUG] targetHubAddress: ${targetHubAddress}`);
+
+    // 🚀 RESOLVE AUTH TOKEN: Fetch your active authorization token directly from storage
+    const activeJwtToken = localStorage.getItem('global_academy_jwt_token') || ''; 
     // Instantiate an active real-time socket map tracking your custom push endpoint route
     const signalrConnection = new HubConnectionBuilder()
-      .withUrl('/hubs/v3/harness-approval-gate', {
-        withCredentials: true
+      .withUrl(targetHubAddress, {
+        withCredentials: true,
+        accessTokenFactory: () => {
+          return activeJwtToken.replace(/"/g, '').trim();
+        }
       })
       .withAutomaticReconnect()
       .build();

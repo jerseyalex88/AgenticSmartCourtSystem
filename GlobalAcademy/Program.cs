@@ -83,6 +83,24 @@ builder.Services.AddAuthentication(options => {
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
+    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            // Extract the access token out of the incoming query string parameters collection array
+            var accessToken = context.Request.Query["access_token"];
+
+            // Isolate and identify if the incoming request path targets our Hub routes allocation channel
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                // Inject the parameter value directly into the authentication context token slot!
+                context.Token = accessToken;
+            }
+            
+            return Task.CompletedTask;
+        }
+    };
 })
 .AddGoogle(googleOptions => {
     // This safely pulls from your appsettings.json structure matching the path above
@@ -290,6 +308,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting(); // 🔥 ADD THIS FIRST: Initializes the structural endpoint routing engine map
 
 // Enforce CORS right at the gateway before hitting identity verification tracks
 app.UseCors("AllowReactFrontend");

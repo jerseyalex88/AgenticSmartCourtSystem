@@ -455,11 +455,11 @@ export default function V2AiControlCenter() {
   };
 
   // Polling interval hooks to keep the human intercept queue updated in background rails
-  useEffect(() => {
-    fetchPendingAgentApprovals();
-    const pollTimer = setInterval(fetchPendingAgentApprovals, 10000); // Polls every 10 seconds
-    return () => clearInterval(pollTimer);
-  }, []);
+  // useEffect(() => {
+  //   fetchPendingAgentApprovals();
+  //   const pollTimer = setInterval(fetchPendingAgentApprovals, 10000); // Polls every 10 seconds
+  //   return () => clearInterval(pollTimer);
+  // }, []);
 
   return (
     <div className="w-full max-w-[100vw] h-screen space-y-3 font-sans p-4 bg-slate-50 text-slate-800 flex flex-col overflow-hidden">

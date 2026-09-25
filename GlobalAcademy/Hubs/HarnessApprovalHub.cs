@@ -9,7 +9,7 @@ namespace GlobalAcademy.Hubs
     /// Real-time gateway hub proxying asynchronous Harness Engineering alert updates 
     /// and Human-In-The-Loop validation gates cleanly to authenticated director panels.
     /// </summary>
-    [Authorize(Roles = "AcademyDirector")]
+    [Authorize(Roles = "AcademyDirector,GlobalAdmin")]
     public class HarnessApprovalHub : Hub
     {
         // =========================================================================
