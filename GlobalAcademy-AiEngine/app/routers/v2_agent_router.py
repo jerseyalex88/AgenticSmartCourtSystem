@@ -65,12 +65,23 @@ async def execute_swarm_thread(payload: SwarmExecutionPayload):
         
         # 4. Extract the last AI message from the message history stack to forward back up the wire
         output_messages = final_output_state.get("messages", [])
-        final_answer = "Operation completed inside the multi-agent graph mesh with clear data states."
+        final_answer = ""
         
-        if output_messages:
-            final_answer = output_messages[-1].content
+        # 🚀 FIXED: Scan backward through the message array to extract the true worker response,
+        # completely ignoring structural supervisor planning tokens!
+        for msg in reversed(output_messages):
+            msg_content = getattr(msg, "content", str(msg))
+            # Skip empty entries or internal supervisor planning messages
+            if not msg_content or "[planning trace]" in msg_content.lower():
+                continue
+            
+            # The first non-planning text block we hit is the real worker response!
+            final_answer = msg_content
+            break
 
-        # Pack the compiled data metrics alongside the text and return straight back to .NET
+        if not final_answer:
+            final_answer = "Operation finalized inside the multi-agent graph mesh safely with verified data states."
+
         return {
             "final_response": final_answer,
             "execution_status": final_output_state.get("execution_status", "Complete"),

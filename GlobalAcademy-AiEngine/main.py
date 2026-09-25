@@ -63,21 +63,21 @@ app.include_router(v2_knowledge_ingestion_router)
 app.include_router(v2_agent_router.router)
 app.include_router(v3_harness_router.router)
 
-# 🚀 REGISTER THE HARNESS INFRASTRUCTURE ASYNC STARTUP HOOK
-@app.on_event("startup")
-async def configure_harness_infrastructure():
-    """
-    Startup initialization hook validating checkpointer schema configuration boundaries 
-    and preparing container networks for persistent state snapshot re-entry.
-    """
-    print("📡 [HARNESS INITIALIZATION] Pre-loading PostgreSQL LangGraph checkpointer arrays...")
-    try:
-        from app.services.v3_graph_checkpointer import PostgresGraphCheckpointer
-        # Ensure your configuration string properties are loaded into memory globally
-        app.state.graph_checkpointer = PostgresGraphCheckpointer
-        print("✅ [HARNESS INITIALIZATION] Checkpointer instance securely attached to app runtime space.")
-    except Exception as ex:
-        print(f"❌ [HARNESS INITIALIZATION ERR] Critical failure configuring checkpointer drivers: {ex}")
+# # 🚀 REGISTER THE HARNESS INFRASTRUCTURE ASYNC STARTUP HOOK
+# @app.on_event("startup")
+# async def configure_harness_infrastructure():
+#     """
+#     Startup initialization hook validating checkpointer schema configuration boundaries 
+#     and preparing container networks for persistent state snapshot re-entry.
+#     """
+#     print("📡 [HARNESS INITIALIZATION] Pre-loading PostgreSQL LangGraph checkpointer arrays...")
+#     try:
+#         from app.services.v3_graph_checkpointer import PostgresGraphCheckpointer
+#         # Ensure your configuration string properties are loaded into memory globally
+#         app.state.graph_checkpointer = PostgresGraphCheckpointer
+#         print("✅ [HARNESS INITIALIZATION] Checkpointer instance securely attached to app runtime space.")
+#     except Exception as ex:
+#         print(f"❌ [HARNESS INITIALIZATION ERR] Critical failure configuring checkpointer drivers: {ex}")
         
 @app.get("/")
 def read_root():

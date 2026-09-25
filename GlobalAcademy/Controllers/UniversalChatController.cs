@@ -73,11 +73,6 @@ public class UniversalChatController : ControllerBase
                 return Unauthorized("Security Exception: Security perimeter claims unreadable (userId).");
             }
 
-            // playerBookingContext.UserId = userId ?? "";
-            // playerBookingContext.UserName = currentUserName ?? "";
-            // playerBookingContext.AcademyId = academyGuid;
-            // playerBookingContext.UserRole = userRole ?? "Player";
-
             // 3. EXECUTE INTEGRATION LOOP
             var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
             var chatHistory = new ChatHistory();
