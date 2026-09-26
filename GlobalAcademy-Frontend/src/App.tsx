@@ -22,6 +22,7 @@ import CourtDiagnosticsDashboard from './pages/CourtDiagnosticsDashboard';
 import AssetHealthControlCenter from './pages/AssetHealthControlCenter';
 import V2AiControlCenter from './pages/V2AiControlCenter';
 import HarnessControlCenter from './components/HarnessControlCenter';
+import V3SwarmControlCenter from './pages/V3SwarmControlCenter';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -230,7 +231,8 @@ export default function App() {
       case 'ai-op-center':
         return <V2AiControlCenter />;
       case 'ai-harness-center':
-        return <HarnessControlCenter />;
+        return <V3SwarmControlCenter />;
+        // return <HarnessControlCenter />;
       case 'agent-dispatch':
         return <AgentDispatchCenter />;
       case 'user-profile':
