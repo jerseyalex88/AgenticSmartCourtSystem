@@ -18,6 +18,8 @@ class V3SwarmExecutionPayload(BaseModel):
     user_role: str = Field(..., description="The acting authority role context tier (Player or Admin).")
     raw_user_prompt: str = Field(..., description="The natural language string statement input query.")
     court_id: Optional[str] = Field(None, description="Focused court context, defaults to facility-wide scope.")
+    # 🚀 FIXED: Register branch_id cleanly to accept the incoming C# wire string!
+    branch_id: Optional[str] = Field(None, description="The parent branch GUID extracted via C# pre-flight lookups.")
 
 @router.post("/execute-swarm-thread")
 async def execute_swarm_thread(payload: V3SwarmExecutionPayload):
@@ -30,7 +32,7 @@ async def execute_swarm_thread(payload: V3SwarmExecutionPayload):
         # 1. Map out the initial memory state schema contract matching your new TypedDict fields exactly
         initial_state = {
             "academy_id": payload.tenant_id,
-            "branch_id": "", # Will be dynamically populated down specialized worker tracks
+            "branch_id": payload.branch_id or "", # 🚀 FIXED: Direct injection from the request payload
             "court_id": payload.court_id,
             "messages": [HumanMessage(content=payload.raw_user_prompt)],
             "internal_metadata": {"next_worker": "v3_supervisor_coordinator_node"},
@@ -43,7 +45,7 @@ async def execute_swarm_thread(payload: V3SwarmExecutionPayload):
             "staged_operational_actions": [],
             "staged_financial_actions": [],
             
-            # 🛡️ Harness Engineering circuit tracking nodes
+            # Harness Engineering circuit tracking nodes
             "agent_routing_history": [],
             "execution_status": "Processing",
             "token_budget_consumed": 0

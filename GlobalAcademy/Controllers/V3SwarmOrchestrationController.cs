@@ -14,6 +14,8 @@ using Microsoft.EntityFrameworkCore;
 using GlobalAcademy.Data;
 using GlobalAcademy.Models;
 using GlobalAcademy.Security;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace GlobalAcademy.Controllers
 {
@@ -22,16 +24,19 @@ namespace GlobalAcademy.Controllers
     [Authorize] // Enforces secure multi-tenant cryptographic verification automatically
     public class V3SwarmOrchestrationController : ControllerBase
     {
+        private readonly Kernel _kernel;
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _configuration;
         private readonly ITenantProvider _tenantProvider;
         private readonly string _baseAiEngineUrl;
 
         public V3SwarmOrchestrationController(
+            Kernel kernel, 
             ApplicationDbContext dbContext, 
             IConfiguration configuration,
             ITenantProvider tenantProvider)
         {
+            _kernel = kernel;
             _dbContext = dbContext;
             _configuration = configuration;
             _tenantProvider = tenantProvider;
@@ -110,6 +115,75 @@ namespace GlobalAcademy.Controllers
             {
                 Console.WriteLine($"❌ [V3 SWARM EXECUTION ERROR]: {ex.Message} {ex.InnerException}");
                 return StatusCode(500, $"V3 Gateway Handshake Failure: {ex.Message}");
+            }
+        }
+
+        [HttpPost("universal-chat")]
+        public async Task<IActionResult> DispatchUniversalQuery([FromBody] V3SwarmRequestDto model)
+        {
+            try
+            {
+                string userInput = model.raw_user_prompt.Trim();
+                if (string.IsNullOrEmpty(userInput)) return BadRequest("Input text vector empty.");
+
+                // 1. EXTRACTION: Pull the authenticated user's profile context tokens safely out of HTTP claims
+                var currentUserName = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("username"))?.Value ?? HttpContext.User.Identity?.Name;
+                var tenantIdClaim = HttpContext.User.FindFirst("AcademyId")?.Value;
+                var userRole = HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Player";
+                var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value ?? HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userEmail = HttpContext.User.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+
+                if (string.IsNullOrEmpty(currentUserName) || !Guid.TryParse(tenantIdClaim, out Guid academyGuid))
+                {
+                    return Unauthorized("Security Exception: Security perimeter claims unreadable.");
+                }
+
+                // 2. CONSTRUCT EXCLUSIVE CONVERSATIONAL BOUNDS HISTORY
+                var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>(); 
+                var chatHistory = new ChatHistory(); 
+
+                // Establish strict role-based guardrails so the LLM acts as an assistant within boundaries 
+                chatHistory.AddSystemMessage( 
+                    $"You are the Smart Court OS Ambient Assistant. You are currently talking to {currentUserName}, user Id is {userId} who is a {userRole}. " + 
+                    $"Your tenant partition boundary is hardlocked to AcademyId: {academyGuid}. " + 
+                    "\n\nINTENT CLASSIFICATION RULES:" + 
+                    "\n1. EXPLORATORY (Checking Availability): If the user asks to see open slots, check availability, or scan what is free (e.g., 'find me slots on july 21...'), you MUST use 'CheckCourtAvailabilityAsync'. This function does NOT require a court name or court ID. Call it immediately with the extracted target date." + 
+                    "\n2. TRANSACTIONAL (Booking/Reserving): Only enforce mandatory parameter slot-filling rules (courtId, courtName, targetDate, startHour) if the user explicitly states they want to book, secure, reserve, or claim a specific slot." + 
+                    "\n\n🚀 3. COMPLIANCE AUDITING / WEATHER EXCEPTIONS:" +
+                    "\nIf the user query targets a weather cancellation, rain-out match recovery priority, racquet string performance decay curves, or lighting ballast procurement purchase orders, you MUST immediately call 'CallMultiAgentComplianceSwarmAsync' to execute the advanced LangGraph worker swarms layout paths." +
+                    "\n\nCRITICAL RULES FOR FRONTEND SYNCHRONIZATION:" + 
+                    "\nWhenever a plugin returns a response containing a structural action token like '[FRONTEND_ACTION:SET_DATE:YYYY-MM-DD]', you MUST preserve and append that exact token string at the absolute end of your final markdown text response to the user." 
+                ); 
+
+                chatHistory.AddUserMessage(userInput); 
+
+                var openAiPromptExecutionSettings = new Microsoft.SemanticKernel.Connectors.OpenAI.OpenAIPromptExecutionSettings 
+                { 
+                    ToolCallBehavior = Microsoft.SemanticKernel.Connectors.OpenAI.ToolCallBehavior.AutoInvokeKernelFunctions 
+                }; 
+
+                // ========================================================================= 
+                // INJECT VARIABLES INTO THE KERNEL'S STATE DATA DICTIONARY 
+                // ========================================================================= 
+                _kernel.Data["currentUserName"] = currentUserName; 
+                _kernel.Data["academyId"] = academyGuid; 
+                _kernel.Data["userRole"] = userRole; 
+                _kernel.Data["userId"] = userId; 
+                _kernel.Data["userEmail"] = userEmail; 
+
+                var agentResponseContent = await chatCompletionService.GetChatMessageContentAsync( 
+                    chatHistory: chatHistory, 
+                    executionSettings: openAiPromptExecutionSettings, 
+                    kernel: _kernel); 
+
+                string rawAgentText = agentResponseContent.Content ?? "Operation processed cleanly with no text feedback output lines.";
+
+                return Ok(new { final_response = rawAgentText });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Debug: {ex.Message} {ex.InnerException} ");
+                return StatusCode(500, $"V3 Ingestion Pipeline Exception: {ex.Message}");
             }
         }
 
@@ -214,4 +288,7 @@ namespace GlobalAcademy.Controllers
             }
         }
     }
+
+    public record V3UniversalChatRequestDto(string UserInput, string VoiceKey = "en-US-AriaNeural");
+    public record V3UniversalChatResponseDto(string AgentResponse, string? AudioBase64 = null);
 }

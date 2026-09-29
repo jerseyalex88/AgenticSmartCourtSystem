@@ -58,13 +58,13 @@ export default function V3SwarmControlCenter() {
     setAdminError(null);
 
     try {
-        console.log("Debug promptQuery", promptQuery);
+        // console.log("Debug promptQuery", promptQuery);
       const payload = {
         raw_user_prompt: promptQuery,
         court_id: null
       };
 
-      const res = await apiClient.post('/v3/swarm-orchestration/execute-swarm-thread', payload);
+      const res = await apiClient.post('/v3/swarm-orchestration/universal-chat', payload);
       console.log("aiResponse: ", res.data.final_response);
       setAiResponse(res.data.final_response);
       setActiveTraceThreadId(res.data.thread_id);
