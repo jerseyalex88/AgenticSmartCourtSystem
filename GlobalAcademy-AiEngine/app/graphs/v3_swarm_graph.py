@@ -134,7 +134,6 @@ class V3PostgresGraphCheckpointer(BaseCheckpointSaver):
             if not thread_id or not checkpoint_id:
                 return config
 
-            # Wrap the message arrays safely into JSON-compliant structures
             raw_payload_dict = {
                 "checkpoint": checkpoint,
                 "metadata": metadata,
@@ -142,10 +141,19 @@ class V3PostgresGraphCheckpointer(BaseCheckpointSaver):
             }
             serialized_payload = json.dumps(dumpd(raw_payload_dict))
 
-            # 🚀 FIXED: Aggressive null-checking guardrails to prevent terminal step integer crashes!
-            source_val = metadata.get("source") if metadata else None
-            active_node = str(source_val) if source_val is not None else "v3_supervisor_coordinator_node"
+            # 🚀 FIXED: Robust deep parameter extraction to pull real, high-utility node names!
+            # If "source" says loop, we fall back to reading the explicit "node" key from langgraph metadata tracking dictionaries
+            node_name_val = None
+            if metadata:
+                node_name_val = metadata.get("node") or metadata.get("langgraph_node") or metadata.get("source")
+                
+            active_node = str(node_name_val) if node_name_val is not None else "v3_supervisor_coordinator_node"
             
+            # Prune generic fallback strings to make them hyper-scannable
+            if active_node.strip().lower() == "loop":
+                # Scrapes active execution paths directly from checkpoint channel histories if metadata drops
+                active_node = str(checkpoint.get("metadata", {}).get("node", "v3_supervisor_coordinator_node"))
+
             step_val = metadata.get("step") if metadata else None
             loop_count = int(step_val) if step_val is not None else 0
 
@@ -188,17 +196,9 @@ class V3PostgresGraphCheckpointer(BaseCheckpointSaver):
 
             print(f"💾 [V3 DB CHECKPOINT SAVED]: Thread {thread_id} | Checkpoint {checkpoint_id} committed to PostgreSQL successfully.")
             return {"configurable": {"thread_id": thread_id, "checkpoint_id": checkpoint_id}}
+
         except Exception as checkpointer_ex:
-            # 🚀 THE DEEP DIAGNOSTIC INTERCEPTOR: Capture the absolute true line break code!
-            print("\n❌ ========================================================================")
-            print("❌ [V3 CHECKPOINT ENGINE CRITICAL SAVING EXCEPTION INTERCEPTED]")
-            print(f"❌ Error Message: {str(checkpointer_ex)}")
-            print(traceback.format_exc())
-            print("❌ ========================================================================\n")
-            
-            # 🛡️ RESILIENCY SAFETY INTERCEPT: Return the config contract back to the engine.
-            # This completely shields the main execution flow from crashing, allowing a 200 OK 
-            # to pass down the wire even if a database metadata column serialization slips.
+            print(f"\n❌ [V3 CHECKPOINT ENGINE EXCEPTION]: {str(checkpointer_ex)}")
             return config
 
     def list(self, config: Optional[dict], *, filter: Optional[dict] = None, before: Optional[dict] = None, limit: Optional[int] = None) -> Iterator[CheckpointTuple]:

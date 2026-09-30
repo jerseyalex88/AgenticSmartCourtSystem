@@ -178,7 +178,17 @@ namespace GlobalAcademy.Controllers
 
                 string rawAgentText = agentResponseContent.Content ?? "Operation processed cleanly with no text feedback output lines.";
 
-                return Ok(new { final_response = rawAgentText });
+                string? activeThreadId = null;
+                if (_kernel.Data.TryGetValue("active_swarm_thread_id", out var cachedThreadIdObj) && cachedThreadIdObj is string cachedThreadId)
+                {
+                    activeThreadId = cachedThreadId;
+                }
+
+                // Deliver a complete JSON object matching what your React timeline component expects!
+                return Ok(new { 
+                    final_response = rawAgentText,
+                    thread_id = activeThreadId // 🚀 SHIPPED SECURELY DOWN TO THE REACT FRONTEND CANVAS
+                });
             }
             catch (Exception ex)
             {
@@ -287,7 +297,64 @@ namespace GlobalAcademy.Controllers
                 return Ok(new { Message = "Staged transaction aborted. Graph context deleted cleanly from storage repository channels." });
             }
         }
+
+        [HttpGet("threads/{threadId}/footprints")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(System.Collections.Generic.IEnumerable<SwarmFootprintStepDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetSwarmExecutionFootprints([FromRoute] Guid threadId)
+        {
+            try
+            {
+                // 1. EXTRACTION: Securely extract multi-tenant partition scope from user claims token
+                var tenantIdClaim = HttpContext.User.FindFirst("AcademyId")?.Value;
+                if (!Guid.TryParse(tenantIdClaim, out Guid academyGuid))
+                {
+                    return Unauthorized(new { message = "Security Exception: Multi-tenant perimeter claims unreadable." });
+                }
+
+                // 2. QUERY DESIGN: Pull all recorded snapshot steps matching this specific conversation trace
+                // Explicitly typing Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions to clear any IAsyncEnumerable compiler conflicts
+                var checkpointSteps = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+                    .ToListAsync(_dbContext.Set<GlobalAcademy.Models.GraphStateCheckpoint>()
+                        .Where(c => c.ThreadId == threadId && c.AcademyId == academyGuid)
+                        .OrderBy(c => c.CreatedAtUtc) // Arrange chronologically so the timeline reads step 0 to step 31 down the screen
+                        .Select(c => new SwarmFootprintStepDto(
+                            c.ThreadId,
+                            c.CheckpointId,
+                            c.UserId,
+                            c.ActiveNode,
+                            c.LoopIterationCount,
+                            c.CreatedAtUtc
+                        ))
+                    );
+
+                if (checkpointSteps == null || !checkpointSteps.Any())
+                {
+                    return NotFound(new { message = $"No agentic execution footprints discovered matching ThreadId '{threadId}'." });
+                }
+
+                Console.WriteLine($"📡 [C# AUDIT TRACE]: Successfully loaded {checkpointSteps.Count} swarm checkpoint steps for Thread {threadId}");
+                return Ok(checkpointSteps);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Failed to extract graph tracking snapshot datasets: {ex.Message}" });
+            }
+        }
+
     }
+
+    // 🧾 DTO to project a scannable, lightweight footprint metadata object
+    public record SwarmFootprintStepDto(
+        Guid ThreadId,
+        string CheckpointId,
+        string UserId,
+        string ActiveNode,
+        int LoopIterationCount,
+        string SerializedState,
+        DateTime CreatedAtUtc
+    );
 
     public record V3UniversalChatRequestDto(string UserInput, string VoiceKey = "en-US-AriaNeural");
     public record V3UniversalChatResponseDto(string AgentResponse, string? AudioBase64 = null);

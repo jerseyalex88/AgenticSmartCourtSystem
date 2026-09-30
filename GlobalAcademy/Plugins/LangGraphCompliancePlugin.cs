@@ -115,6 +115,14 @@ namespace GlobalAcademy.Plugins
                     return "📟 CONTROL NOTICE: The advanced operational audit network layer returned an execution block.";
 
                 var resultData = await response.Content.ReadFromJsonAsync<PythonSwarmResponse>();
+
+                if (resultData != null && !string.IsNullOrEmpty(resultData.thread_id))
+                {
+                    // 🚀 FIXED: Cache the live multi-agent thread ID securely inside the Kernel's state data loop!
+                    kernel.Data["active_swarm_thread_id"] = resultData.thread_id;
+                    Console.WriteLine($"💾 [C# CORE PLUGIN]: Cached Active Swarm Thread GUID inside Kernel state: {resultData.thread_id}");
+                }
+
                 return resultData?.final_response ?? "System validation settled successfully.";
             }
             catch (Exception ex)

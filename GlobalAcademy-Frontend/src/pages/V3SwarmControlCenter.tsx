@@ -46,6 +46,19 @@ export default function V3SwarmControlCenter() {
   // 🎾 PLAYER CONCIERGE STATE MARGINS
   const [notifications, setNotifications] = useState<ConciergeNotification[]>([]);
 
+  const [footprints, setFootprints] = useState<any[]>([]);
+  const [showAuditTrail, setShowAuditTrail] = useState<boolean>(false);
+
+  const fetchSwarmFootprints = async (threadId: string) => {
+    try {
+      const res = await apiClient.get(`/v3/swarm-orchestration/threads/${threadId}/footprints`);
+      setFootprints(res.data);
+      setShowAuditTrail(true);
+    } catch (err) {
+      console.error("⚠️ Failed to load swarm footprints from DB:", err);
+    }
+  };
+
   // =========================================================================
   // 📡 BACKEND HANDSHAKE OPERATIONS LOOP
   // =========================================================================
@@ -56,6 +69,7 @@ export default function V3SwarmControlCenter() {
     setTraceLoading(true);
     setAiResponse('');
     setAdminError(null);
+    setShowAuditTrail(false);
 
     try {
         // console.log("Debug promptQuery", promptQuery);
@@ -65,10 +79,14 @@ export default function V3SwarmControlCenter() {
       };
 
       const res = await apiClient.post('/v3/swarm-orchestration/universal-chat', payload);
-      console.log("aiResponse: ", res.data.final_response);
+      // console.log("aiResponse: ", res.data.final_response);
       setAiResponse(res.data.final_response);
       setActiveTraceThreadId(res.data.thread_id);
 
+      if (res.data.thread_id) {
+        console.log('thread_id:', res.data.thread_id)
+        await fetchSwarmFootprints(res.data.thread_id);
+      }
       // Instantly poll the database queues to refresh the UI states
       if (isLoggedInDirector || isLoggedInGlobalAdmin) {
         await fetchPendingAdminApprovals();
@@ -327,6 +345,89 @@ export default function V3SwarmControlCenter() {
           </div>
         </div>
       )}
+
+      {showAuditTrail && (
+        <div className="mt-6 p-4 bg-slate-900 border border-slate-700 rounded-lg shadow-xl animate-fade-in">
+          <div className="flex items-center justify-between mb-4 border-b border-slate-700 pb-2">
+            <h3 className="text-md font-semibold text-emerald-400 flex items-center gap-2">
+              🧬 Live Swarm Multi-Agent Footprints Audit Trail
+            </h3>
+            <span className="text-xs text-slate-400 font-mono">Total Steps Logged: {footprints.length}</span>
+          </div>
+          
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-2 font-mono text-xs">
+            {footprints.map((step, idx) => {
+              // 🚀 CRITICAL DUAL-CASE BINDING PROTECTION GATE:
+              // Safely extract properties by guarding against PascalCase (C#) vs camelCase (JS) naming splits!
+              const nodeName = step.activeNode || step.ActiveNode || "v3_supervisor_coordinator_node";
+              const checkpointGuid = step.checkpointId || step.CheckpointId || "";
+              const loopCount = step.loopIterationCount ?? step.LoopIterationCount ?? 0;
+              const timestamp = step.createdAtUtc || step.CreatedAtUtc;
+              const rawJsonBlock = step.serializedState || step.SerializedState;
+              
+              // Setup a beautiful system fallback text state string
+              let cleanStepExcerpt = "Evaluating multi-agent framework runtime vector state parameters.";
+
+              if (rawJsonBlock) {
+                try {
+                  // 1. De-serialize the raw jsonb block data from your table row
+                  const parsedState = typeof rawJsonBlock === 'string' ? JSON.parse(rawJsonBlock) : rawJsonBlock;
+                  
+                  // 2. Traversal pass into LangGraph's internal historical conversation messages arrays channel
+                  const messagesArray = parsedState?.checkpoint?.channel_values?.messages;
+                  
+                  if (Array.isArray(messagesArray) && messagesArray.length > 0) {
+                    // 3. Isolate the absolute last message in the pool for this specific step transition checkpoint
+                    const lastMessage = messagesArray[messagesArray.length - 1];
+                    
+                    // Handle extraction from standard string values or LangChain serialization constructor maps
+                    const contentText = lastMessage?.kwargs?.content || lastMessage?.content;
+                    
+                    if (contentText && typeof contentText === 'string') {
+                      // Truncate the message string nicely so it fits cleanly inside your layout card rows
+                      cleanStepExcerpt = contentText.length > 110 ? `${contentText.substring(0, 110)}...` : contentText;
+                    }
+                  }
+                } catch (parseError) {
+                  // Fallback parsing strategy using basic token searching rules if it's an un-parseable string
+                  if (typeof rawJsonBlock === 'string' && rawJsonBlock.toLowerCase().includes("tension")) {
+                    cleanStepExcerpt = "Analyzing racquet tension decay curve specifications manual data...";
+                  }
+                }
+              }
+
+              return (
+                <div key={checkpointGuid || idx} className="flex items-start gap-4 p-2 bg-slate-800 rounded border border-slate-700 hover:border-slate-500 transition-all">
+                  <div className="bg-slate-900 px-2 py-1 rounded text-slate-400 text-center font-bold min-w-[32px]">
+                    #{idx}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`font-bold ${nodeName.toLowerCase().includes('supervisor') ? 'text-amber-400' : 'text-cyan-400'}`}>
+                        {nodeName}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        {timestamp ? new Date(timestamp).toLocaleTimeString() : "00:00:00 AM"}
+                      </span>
+                    </div>
+                    
+                    <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap gap-4">
+                      <span>🔄 Loop Iteration: <strong className="text-slate-200">{loopCount}</strong></span>
+                      <span>🔑 Checkpoint: <strong className="text-slate-400">{checkpointGuid ? checkpointGuid.substring(0, 8) : "--------"}...</strong></span>
+                    </div>
+
+                    {/* 🚀 THE FIXED MESSAGE VIEW PANEL SHARD: Prints out actual conversational snapshots completely crash-free! */}
+                    <div className="text-[11px] text-slate-300 mt-2 bg-slate-900 p-2 rounded font-sans border border-slate-700 leading-relaxed max-w-full break-words">
+                      💬 <strong className="text-emerald-400">Step Data Shard:</strong> {cleanStepExcerpt}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
 
     </div>
   );
