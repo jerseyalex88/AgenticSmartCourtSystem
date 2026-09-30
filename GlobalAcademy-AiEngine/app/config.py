@@ -31,6 +31,9 @@ class AppSettings(BaseModel):
 
     # 🚀 SECURE ISOLATED ENVIRONMENT BUCKETS: Sourced exclusively from system environment variables
     postgres_connection_string: str = ""
+
+    # 🚀 Version 2. SECURE ISOLATED ENVIRONMENT BUCKETS: Sourced exclusively from system environment variables
+    postgres_connection_string_2: str = ""
     
     openai_api_key: str = os.getenv(
         "OPENAI_API_KEY", 
@@ -46,9 +49,10 @@ class AppSettings(BaseModel):
         )
         # print(f"\n[v2 DEBUG]: raw_connection: {raw_connection}")
         # Run our automatic translation gate step
-        self.postgres_connection_string = self._translate_ado_to_uri(raw_connection)
+        self.postgres_connection_string = self._translate_ado_to_uri(raw_connection, "v1")
+        self.postgres_connection_string_2 = self._translate_ado_to_uri(raw_connection, "v2")
 
-    def _translate_ado_to_uri(self, raw_str: str) -> str:
+    def _translate_ado_to_uri(self, raw_str: str, version: str) -> str:
         """
         Dynamically cross-translates a C# ADO.NET semicolon-delimited connection 
         string into a standard, operational PostgreSQL URI schema layout.
@@ -83,6 +87,10 @@ class AppSettings(BaseModel):
 
         # Assemble the clean, asyncpg-permissive URI string configuration safely!
         uri_output = f"postgresql://{username}:{safe_password}@{host}:{port}/{database}"
+
+        if version == "v2":
+            uri_output = f"postgresql+asyncpg://{username}:{safe_password}@{host}:{port}/{database}"
+
         # print(f"🗄️ [CONNECTION STRING TRANSLATOR]: Translated ADO.NET config and safely URL-encoded special characters.")
         return uri_output
     
