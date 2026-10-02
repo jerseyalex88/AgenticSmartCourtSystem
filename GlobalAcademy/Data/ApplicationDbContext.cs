@@ -38,6 +38,11 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<CourtMaintenanceKnowledge> CourtMaintenanceKnowledge { get; set; }
     public DbSet<SavedAgentQuery> SavedAgentQueries { get; set; }
     public DbSet<GraphStateCheckpoint> GraphStateCheckpoints { get; set; }
+    public DbSet<EquipmentInventory> EquipmentInventories { get; set; }
+    public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+    public DbSet<CommunicationLog> CommunicationLogs { get; set; }
+    public DbSet<IncidentReport> IncidentReports { get; set; }
+
 
     // 2. Append this relational configuration inside your existing OnModelCreating method:
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -76,6 +81,11 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<SavedAgentQuery>().HasQueryFilter(sq => sq.AcademyId == CurrentTenantId);
         modelBuilder.Entity<CourtMaintenanceKnowledge>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
 
+        modelBuilder.Entity<EquipmentInventory>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<PurchaseOrder>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<CommunicationLog>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<IncidentReport>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
+
         modelBuilder.Entity<Booking>()
             .Property(b => b.Status)
             .HasConversion<string>(); // Stores enum states as readable text ("Cancelled") natively in Postgres
@@ -111,6 +121,10 @@ public class ApplicationDbContext : IdentityDbContext
 
         modelBuilder.Entity<CourtMaintenanceKnowledge>()
             .HasIndex(k => new { k.AcademyId, k.BranchId });
+        
+        modelBuilder.Entity<IncidentReport>()
+        .HasIndex(r => r.ThreadId)
+        .IsUnique();
 
         // =========================================================================
         // HARNESS STATE PERSISTENCE RULE DEFINITIONS

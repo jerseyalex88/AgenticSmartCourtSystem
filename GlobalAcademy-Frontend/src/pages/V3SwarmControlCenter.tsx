@@ -73,9 +73,11 @@ export default function V3SwarmControlCenter() {
 
     try {
         // console.log("Debug promptQuery", promptQuery);
+      const activeLayoutVoiceKey = localStorage.getItem('global_app_voice_key') || 'en-US-AriaNeural';
       const payload = {
         raw_user_prompt: promptQuery,
-        court_id: null
+        court_id: null,
+        voice_key: activeLayoutVoiceKey
       };
 
       const res = await apiClient.post('/v3/swarm-orchestration/universal-chat', payload);
@@ -87,6 +89,26 @@ export default function V3SwarmControlCenter() {
         console.log('thread_id:', res.data.thread_id)
         await fetchSwarmFootprints(res.data.thread_id);
       }
+
+      if (res.data.audio_base64) {
+        try {
+          console.log("🔊 [AUDIO ENGINE INTERCEPT]: Initializing data uri stream play sequence...");
+          
+          // Convert the raw base64 payload into an executable data URI string element path
+          const audioUriString = `data:audio/mp3;base64,${res.data.audio_base64}`;
+          
+          // Instantiate a quick, thread-safe HTML5 sound container player block in browser memory
+          const internalSoundNode = new Audio(audioUriString);
+          
+          // Trigger immediate sound vibration playback
+          await internalSoundNode.play();
+        } catch (audioPlaybackError) {
+          console.warn("⚠️ [AUDIO BLOCK NOTICE]: Browser structural media policies restricted automated sound boot:", audioPlaybackError);
+          // Note: Modern browsers sometimes block autoplay unless a user interacts/clicks first. 
+          // Since the user explicitly clicks the "Run Pipeline Trace" button here, it satisfies policies perfectly!
+        }
+      }
+
       // Instantly poll the database queues to refresh the UI states
       if (isLoggedInDirector || isLoggedInGlobalAdmin) {
         await fetchPendingAdminApprovals();

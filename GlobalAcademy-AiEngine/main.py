@@ -25,6 +25,7 @@ from app.routers.invoice_integrity_report_analytics import router as executive_i
 from app.routers.v2_text_to_speech_analytics import router as v2_tts_router
 from app.routers.v2_report_analytics import router as v2_knowledge_ingestion_router
 from app.routers import v3_swarm_router
+from app.routers.deluge_swarm_router import router as deluge_swarm_router
 
 # 🚀 THE PROPHET STAN BACKEND FIX:
 # Automatically download and install a clean, container-safe cmdstan binary 
@@ -64,6 +65,7 @@ app.include_router(v2_knowledge_ingestion_router)
 app.include_router(v2_agent_router.router)
 app.include_router(v3_harness_router.router)
 app.include_router(v3_swarm_router.router)
+app.include_router(deluge_swarm_router)
 
 # # 🚀 REGISTER THE HARNESS INFRASTRUCTURE ASYNC STARTUP HOOK
 # @app.on_event("startup")

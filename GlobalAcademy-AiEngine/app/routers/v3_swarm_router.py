@@ -1,4 +1,5 @@
 # File: GlobalAcademy-AiEngine/app/routers/v3_swarm_router.py
+import base64
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -9,6 +10,7 @@ from langchain_core.load import load
 import uuid
 import traceback
 import sys
+from app.services.v2_text_to_speech_service import v2TextToSpeechService
 
 router = APIRouter(prefix="/api/v3/swarm", tags=["V3 Swarm Engine"])
 
@@ -23,6 +25,7 @@ class V3SwarmExecutionPayload(BaseModel):
     court_id: Optional[str] = Field(None, description="Focused court context, defaults to facility-wide scope.")
     # 🚀 FIXED: Register branch_id cleanly to accept the incoming C# wire string!
     branch_id: Optional[str] = Field(None, description="The parent branch GUID extracted via C# pre-flight lookups.")
+    voice_key: Optional[str] = Field(None, description="The default global voice key.")
 
 @router.post("/execute-swarm-thread")
 async def execute_swarm_thread(payload: V3SwarmExecutionPayload):
@@ -122,8 +125,15 @@ async def execute_swarm_thread(payload: V3SwarmExecutionPayload):
         if not final_answer or final_answer.strip() == "":
             final_answer = "V3 Multi-Agent graph engine successfully synchronized and committed transaction history parameters."
 
+        audio_bytes_accumulator = b""
+        async for chunk in v2TextToSpeechService.stream_text_to_memory_chunks(final_answer, payload.voice_key):
+            audio_bytes_accumulator += chunk
+            
+        base64_audio_result = base64.b64encode(audio_bytes_accumulator).decode("utf-8") if audio_bytes_accumulator else None
+        
         return {
             "final_response": final_answer,
+            "audio_base64": base64_audio_result,
             "execution_status": "Complete",
             "thread_id": execution_config["configurable"]["thread_id"]
         }

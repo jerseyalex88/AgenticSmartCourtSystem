@@ -33,12 +33,14 @@ namespace GlobalAcademy.Plugins
             string user_role,
             string raw_user_prompt,
             string? court_id,
-            string? branch_id 
+            string? branch_id,
+            string? voice_key
         );
 
         // Strongly typed return format container matching Python response shapes
         public record PythonSwarmResponse(
             string final_response,
+            string? audio_base64,
             string execution_status,
             string thread_id
         );
@@ -61,6 +63,9 @@ namespace GlobalAcademy.Plugins
             if (!kernel.Data.TryGetValue("userRole", out var userRoleObj) || userRoleObj is not string userRole)
                 return "Transaction rejected: User context mapping verification fault (userRole).";
 
+            if (!kernel.Data.TryGetValue("voiceKey", out var voiceKeyObj) || voiceKeyObj is not string voiceKey)
+                voiceKey = "";
+
             string? derivedCourtId = null;
             string? derivedBranchId = null;
 
@@ -71,8 +76,8 @@ namespace GlobalAcademy.Plugins
                     .Where(c => c.AcademyId == academyGuid && !c.IsDecommissioned)
                     .ToListAsync<Court>();
 
-                Console.WriteLine($"Debug Courts count: {activeCourts.Count}");
-                Console.WriteLine($"Debug rawUserQuery: {rawUserQuery}");
+                // Console.WriteLine($"Debug Courts count: {activeCourts.Count}");
+                // Console.WriteLine($"Debug rawUserQuery: {rawUserQuery}");
 
                 var matchedCourt = activeCourts.FirstOrDefault(c => 
                     !string.IsNullOrEmpty(c.Name) && 
@@ -104,7 +109,8 @@ namespace GlobalAcademy.Plugins
                     user_role: userRole,
                     raw_user_prompt: rawUserQuery,
                     court_id: derivedCourtId,
-                    branch_id: derivedBranchId
+                    branch_id: derivedBranchId,
+                    voice_key: voiceKey
                 );
 
                 string absoluteExecutionRoute = $"{_baseAiEngineUrl}/api/v3/swarm/execute-swarm-thread";
@@ -120,6 +126,7 @@ namespace GlobalAcademy.Plugins
                 {
                     // 🚀 FIXED: Cache the live multi-agent thread ID securely inside the Kernel's state data loop!
                     kernel.Data["active_swarm_thread_id"] = resultData.thread_id;
+                    kernel.Data["audio_base64"] = resultData.audio_base64;
                     Console.WriteLine($"💾 [C# CORE PLUGIN]: Cached Active Swarm Thread GUID inside Kernel state: {resultData.thread_id}");
                 }
 

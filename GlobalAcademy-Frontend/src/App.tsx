@@ -23,6 +23,7 @@ import AssetHealthControlCenter from './pages/AssetHealthControlCenter';
 import V2AiControlCenter from './pages/V2AiControlCenter';
 import HarnessControlCenter from './components/HarnessControlCenter';
 import V3SwarmControlCenter from './pages/V3SwarmControlCenter';
+import V3DelugeControlCenter from './pages/V3DelugeControlCenter';
 
 export default function App() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -233,6 +234,8 @@ export default function App() {
       case 'ai-harness-center':
         return <V3SwarmControlCenter />;
         // return <HarnessControlCenter />;
+      case 'flood-control-center':
+        return <V3DelugeControlCenter />;
       case 'agent-dispatch':
         return <AgentDispatchCenter />;
       case 'user-profile':

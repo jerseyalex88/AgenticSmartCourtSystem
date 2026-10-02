@@ -48,7 +48,7 @@ namespace GlobalAcademy.Controllers
         // =========================================================================
         // 📋 GREENFIELD STRONGLY TYPED DATA TRANSFER MATRIX RECORDS
         // =========================================================================
-        public record V3SwarmRequestDto(string raw_user_prompt, string? court_id);
+        public record V3SwarmRequestDto(string raw_user_prompt, string? court_id, string? voice_key);
         public record PythonV3Payload(string tenant_id, string user_id, string user_role, string raw_user_prompt, string? court_id);
         public record PythonV3Response(string final_response, string execution_status, string thread_id);
         
@@ -170,6 +170,7 @@ namespace GlobalAcademy.Controllers
                 _kernel.Data["userRole"] = userRole; 
                 _kernel.Data["userId"] = userId; 
                 _kernel.Data["userEmail"] = userEmail; 
+                _kernel.Data["voiceKey"] = model.voice_key;
 
                 var agentResponseContent = await chatCompletionService.GetChatMessageContentAsync( 
                     chatHistory: chatHistory, 
@@ -184,9 +185,16 @@ namespace GlobalAcademy.Controllers
                     activeThreadId = cachedThreadId;
                 }
 
+                string? audio_base64 = null;
+                if (_kernel.Data.TryGetValue("audio_base64", out var cachedAudioBase64Obj) && cachedAudioBase64Obj is string cachedAudioBase64)
+                {
+                    audio_base64 = cachedAudioBase64;
+                }
+
                 // Deliver a complete JSON object matching what your React timeline component expects!
                 return Ok(new { 
                     final_response = rawAgentText,
+                    audio_base64 = audio_base64,
                     thread_id = activeThreadId // 🚀 SHIPPED SECURELY DOWN TO THE REACT FRONTEND CANVAS
                 });
             }
@@ -325,6 +333,7 @@ namespace GlobalAcademy.Controllers
                             c.UserId,
                             c.ActiveNode,
                             c.LoopIterationCount,
+                            c.SerializedState,
                             c.CreatedAtUtc
                         ))
                     );
