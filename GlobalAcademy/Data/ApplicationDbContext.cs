@@ -42,6 +42,7 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
     public DbSet<CommunicationLog> CommunicationLogs { get; set; }
     public DbSet<IncidentReport> IncidentReports { get; set; }
+    public DbSet<HistoricGraphStateCheckpointsArchive> HistoricGraphStateCheckpointsArchive { get; set; }
 
 
     // 2. Append this relational configuration inside your existing OnModelCreating method:
@@ -85,6 +86,7 @@ public class ApplicationDbContext : IdentityDbContext
         modelBuilder.Entity<PurchaseOrder>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
         modelBuilder.Entity<CommunicationLog>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
         modelBuilder.Entity<IncidentReport>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
+        modelBuilder.Entity<HistoricGraphStateCheckpointsArchive>().HasQueryFilter(k => k.AcademyId == CurrentTenantId);
 
         modelBuilder.Entity<Booking>()
             .Property(b => b.Status)

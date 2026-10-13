@@ -485,6 +485,54 @@ namespace GlobalAcademy.Migrations
                     b.ToTable("GraphStateCheckpoints");
                 });
 
+            modelBuilder.Entity("GlobalAcademy.Models.HistoricGraphStateCheckpointsArchive", b =>
+                {
+                    b.Property<Guid>("ArchiveId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActiveNode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("ArchivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CheckpointId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("ContextTokenCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LoopIterationCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SerializedState")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("ThreadId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("ArchiveId");
+
+                    b.ToTable("HistoricGraphStateCheckpointsArchive");
+                });
+
             modelBuilder.Entity("GlobalAcademy.Models.IncidentReport", b =>
                 {
                     b.Property<Guid>("Id")

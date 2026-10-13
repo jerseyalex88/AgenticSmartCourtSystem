@@ -170,4 +170,46 @@ namespace GlobalAcademy.Models
         [Required]
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
+
+    [Table("HistoricGraphStateCheckpointsArchive")]
+    public class HistoricGraphStateCheckpointsArchive : Security.IMultiTenant
+    {
+        [Key]
+        [Required]
+        public Guid ArchiveId { get; set; } = Guid.NewGuid();
+
+        [Required]
+        public Guid ThreadId { get; set; }
+
+        [Required]
+        [StringLength(255)]
+        public string CheckpointId { get; set; } = string.Empty;
+
+        [Required]
+        public Guid AcademyId { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string UserId { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100)]
+        public string ActiveNode { get; set; } = string.Empty;
+
+        [Required]
+        [Column(TypeName = "jsonb")]
+        public string SerializedState { get; set; } = string.Empty;
+
+        [Required]
+        public int ContextTokenCount { get; set; } = 0;
+
+        [Required]
+        public int LoopIterationCount { get; set; } = 0;
+
+        [Required]
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        [Required]
+        public DateTime ArchivedAtUtc { get; set; } = DateTime.UtcNow;
+    }
 }

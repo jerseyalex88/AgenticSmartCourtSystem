@@ -31,12 +31,12 @@ class v2EvaluationService:
             "contexts": [retrieved_contexts],
             "answer": [generated_answer]
         }
-
+        # _model = ChatOpenAI(model="gpt-5.4-mini", api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0)
         try:
             evaluation_dataset = Dataset.from_dict(transaction_data)
 
             raw_llm = ChatOpenAI(
-                model="gpt-4o-mini", 
+                model="gpt-5.4-mini", 
                 api_key=os.getenv("OPENAI_API_KEY"),
                 temperature=0.0
             )

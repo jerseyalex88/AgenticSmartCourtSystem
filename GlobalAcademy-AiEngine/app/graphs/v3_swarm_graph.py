@@ -280,7 +280,8 @@ class V3SwarmOrchestrator:
     conditional edge branching, and isolated step tracing.
     """
     # Initialize the LLM execution layer model
-    _model = ChatOpenAI(model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0)
+    _model = ChatOpenAI(model="gpt-5.4-mini", api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0)
+    # _model = ChatOpenAI(model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0)
 
     # =========================================================================
     # 🔍 GREENFIELD LOG DIAGNOSTIC INTERCEPTOR NODE

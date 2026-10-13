@@ -1,22 +1,23 @@
 # =========================================================================
-# FILE 2: INDOOR DELUGE CRISIS API REST ROUTER
+# FILE 2 UPGRADE: INDOOR DELUGE CRISIS REST ROUTER (PERMANENT IDEMPOTENCY)
 # PATH: GlobalAcademy-AiEngine/app/routers/deluge_swarm_router.py
-# DESCRIPTION: Enforces entry validation rules and orchestrates pause-unfreezes
+# DESCRIPTION: Manages court-tenant thread locking and automated DB archiving
 # =========================================================================
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
 from app.graphs.deluge_swarm_graph import v3_deluge_swarm_engine
+from app.database import async_session_factory
 from langchain_core.messages import HumanMessage, AIMessage
+from sqlalchemy import text
 import uuid
+import datetime
+import json
 import traceback
 
 router = APIRouter(prefix="/api/v3/deluge-swarm", tags=["V3 Indoor Deluge Swarm Engine"])
 
-# =========================================================================
-# 🧾 PYDANTIC REQUEST CONTRACT BODIES
-# =========================================================================
 class DelugeTriggerPayload(BaseModel):
     tenant_id: str = Field(..., description="The unique cryptographic multi-tenant Academy GUID.")
     branch_id: str = Field(..., description="The physical operational branch location GUID.")
@@ -32,18 +33,87 @@ class DelugeApprovalPayload(BaseModel):
     user_id: str = Field(..., description="The authorized manager ID committing the action.")
 
 # =========================================================================
-# 📡 HTTP POST ENDPOINT A: SENSOR ALARM FRONTON INGESTION
+# 📡 HTTP POST ENDPOINT A: PERMANENT IDEMPOTENT SURGE INGESTION
 # =========================================================================
 @router.post("/execute")
 async def execute_deluge_incident_swarm(payload: DelugeTriggerPayload):
-    print(f"📡 [DELUGE ROUTER]: Ingesting real-time telemetry breach value: {payload.telemetry_reading_value}%")
+    print(f"📡 [DELUGE ROUTER]: Ingesting telemetry breach value: {payload.telemetry_reading_value}%")
     
     if payload.telemetry_reading_value < 65.0:
-        raise HTTPException(status_code=400, detail="Operational Guardrail: Humidity values below the 65% critical ceiling cannot trigger this emergency protocol.")
+        raise HTTPException(status_code=400, detail="Operational Guardrail: Humidity values below 65% cannot trigger this emergency protocol.")
 
-    active_thread_guid = str(uuid.uuid4())
-    
-    # 1. Map out the initial memory state canvas schema contract
+    # 🚀 1. TIME-INDEPENDENT IDEMPOTENCY KEY DERIVATION:
+    # Hash input binds strictly to the court asset and tenant partition scope only.
+    # This guarantees total state layout persistence regardless of how many hours/days pass!
+    idempotency_hash_input = f"{payload.court_id}-{payload.tenant_id}"
+    active_thread_guid = str(uuid.uuid5(uuid.NAMESPACE_DNS, idempotency_hash_input))
+    print(f"🛡️ [PERMANENT LOCK]: Computed Court-Tenant Idempotency Key Thread GUID = '{active_thread_guid}'")
+
+    # 🚀 2. UNCONDITIONAL PRE-FLIGHT CHECKPOINTER LOOKUP:
+    # Query database to re-hydrate the existing frozen state directly from PostgreSQL row fields.
+    existing_snapshot = await v3_deluge_swarm_engine.checkpointer.aget_tuple(
+        {"configurable": {"thread_id": active_thread_guid}}
+    )
+
+    if existing_snapshot is not None:
+        raw_messages = existing_snapshot.checkpoint.get("channel_values", {}).get("messages", [])
+        current_status = existing_snapshot.checkpoint.get("channel_values", {}).get("execution_status", "Paused_Pending_Approval")
+        last_checkpoint_id = existing_snapshot.config["configurable"].get("checkpoint_id", "staged_snapshot")
+
+        # 🚀 3. LIFECYCLE MANAGEMENT ROUTINE: AUTOMATED INCIDENT ARCHIVING
+        # If the existing row tracking this court says "Complete", a previous historical incident closed out.
+        # Clone it and archive it to HistoricGraphStateCheckpointsArchive before resetting the slot for a fresh storm!
+        if current_status == "Complete":
+            print(f"♻️ [DB LIFECYCLE]: Discovered closed incident row for Court {payload.court_id}. Migrating to Historic Archive...")
+            
+            async with async_session_factory() as session:
+                # Select the matching active checkpoints block data
+                fetch_query = text('SELECT "CheckpointId", "AcademyId", "UserId", "ActiveNode", "SerializedState", "ContextTokenCount", "LoopIterationCount" FROM "GraphStateCheckpoints" WHERE "ThreadId" = :tid')
+                rows = (await session.execute(fetch_query, {"tid": active_thread_guid})).fetchall()
+                
+                for r in rows:
+                    db_cid, db_aid, db_uid, db_node, db_state, db_tokens, db_loops = r
+                    
+                    # Insert clones into your new physical EF Core archive table layout
+                    archive_query = text("""
+                        INSERT INTO "HistoricGraphStateCheckpointsArchive" 
+                        ("ArchiveId", "ThreadId", "CheckpointId", "AcademyId", "UserId", "ActiveNode", "SerializedState", "ContextTokenCount", "LoopIterationCount", "CreatedAtUtc", "ArchivedAtUtc")
+                        VALUES (:arch_id, :tid, :cid, :aid, :uid, :node, :state, :tokens, :loops, :now, :now)
+                    """)
+                    await session.execute(archive_query, {
+                        "arch_id": str(uuid.uuid4()), "tid": active_thread_guid, "cid": db_cid,
+                        "aid": db_aid, "uid": db_uid, "node": db_node, "state": db_state,
+                        "tokens": db_tokens, "loops": db_loops, "now": datetime.datetime.utcnow()
+                    })
+                
+                # Wipe the active checkpoint slot to allow a clean, fresh workflow loop to instantiate!
+                delete_query = text('DELETE FROM "GraphStateCheckpoints" WHERE "ThreadId" = :tid')
+                await session.execute(delete_query, {"tid": active_thread_guid})
+                await session.commit()
+                
+            print(f"✨ [DB LIFECYCLE]: Active slot cleared for Court {payload.court_id}. Initializing fresh storm swarm threads.")
+        
+        else:
+            # 🚀 UNCONDITIONAL PAUSED RE-ENTRY INTERCEPT GATE:
+            # If it is NOT complete, it means the thread is currently sitting inside our frozen Harness approval fence.
+            # Return the existing text shards back to the screen panels immediately, blocking duplicate financial refund mutations!
+            print(f"🛡️ [IDEMPOTENCY RE-ENTRY INTERCEPT]: Court {payload.court_id} is currently locked inside an active validation gate.")
+            final_answer = "V3 Deluge state graph re-entry intercepted safely. Workflow sits safely inside active checkpointer gates."
+            
+            for msg in reversed(raw_messages):
+                msg_content = msg.get("kwargs", {}).get("content", "") if isinstance(msg, dict) else getattr(msg, "content", "")
+                if msg_content and not str(msg_content).startswith("[planning"):
+                    final_answer = str(msg_content)
+                    break
+
+            return {
+                "final_response": final_answer,
+                "execution_status": current_status,
+                "thread_id": active_thread_guid,
+                "checkpoint_id": last_checkpoint_id
+            }
+
+    # Initialize a clean initial state model if it's a brand new environmental emergency
     initial_state = {
         "academy_id": payload.tenant_id,
         "branch_id": payload.branch_id,
@@ -62,7 +132,6 @@ async def execute_deluge_incident_swarm(payload: DelugeTriggerPayload):
         "shadow_queue_cancellations_count": 0
     }
 
-    # 2. Package explicit configuration criteria boundaries
     execution_config = {
         "configurable": {
             "thread_id": active_thread_guid,
@@ -73,19 +142,17 @@ async def execute_deluge_incident_swarm(payload: DelugeTriggerPayload):
     }
 
     try:
-        print(f"🧬 [V3 ENGINE ACTIVATE]: Launching Deluge Swarm Thread Pipeline: {active_thread_guid}")
-        
-        # 3. Fire the live state graph thread execution ring natively
+        print(f"🧬 [V3 ENGINE ACTIVATE]: Launching Permanent Idempotent Deluge Swarm: {active_thread_guid}")
         final_output_state = await v3_deluge_swarm_engine.ainvoke(initial_state, execution_config)
         
-        # 4. Read back active execution status flags to detect if Harness layer paused the thread
         current_status = final_output_state.get("execution_status", "Complete")
         
-        # Pull checkpoint metrics dynamically out of internal configuration objects
-        last_checkpoint_id = execution_config["configurable"].get("checkpoint_id", "staged_snapshot")
+        last_checkpoint_id = "staged_snapshot"
+        latest_config = final_output_state.get("metadata", {}).get("config") or execution_config
+        if latest_config and "configurable" in latest_config:
+            last_checkpoint_id = latest_config["configurable"].get("checkpoint_id", "staged_snapshot")
 
-        # 5. Compile conversational output blocks
-        raw_messages = final_output_state.get("messages", [])
+        raw_messages = final_output_state.get("messages",)
         final_answer = "Continuous Indoor Deluge crisis routing loop settled safely."
         
         for msg in reversed(raw_messages):
@@ -107,36 +174,36 @@ async def execute_deluge_incident_swarm(payload: DelugeTriggerPayload):
         raise HTTPException(status_code=500, detail=f"Graph Orchestration Exception: {str(ex)}")
 
 # =========================================================================
-# 📡 HTTP POST ENDPOINT B: HUMAN-IN-THE-LOOP APPROVAL MANAGER
+# 📡 HTTP POST ENDPOINT B: RESUME INTERCEPT OVERRIDE HANDSHAKE
 # =========================================================================
 @router.post("/approve")
 async def approve_staged_ledger_refund(payload: DelugeApprovalPayload):
     print(f"🔐 [DELUGE APPROVAL HUB]: Received refund execution override for Thread: {payload.thread_id}")
 
-    # 1. Target the exact snapshot generation block stored in your PostgreSQL checkpointer table
+    # Enforce strict configuration parameters. 
+    # The approval marker token is passed solely in the configurable namespace dictionary pool.
     execution_config = {
         "configurable": {
             "thread_id": payload.thread_id,
-            # Re-hydration layer: pulls the frozen state from this specific point in time
             "checkpoint_id": payload.checkpoint_id, 
-            "academy_id": payload.tenant_id,
-            "user_id": payload.user_id
+            "tenant_id": payload.tenant_id,
+            "user_id": payload.user_id,
+            "harness_approved_token": "harness_approved_token" # 🚀 Safe scalar variable channel
+        },
+        "metadata": {
+            "source": "v3_deluge_supervisor_coordinator_node",
+            "step": 0
         },
         "recursion_limit": 50
     }
 
     try:
-        # 2. Inject a secure verification token directly into history to bypass the supervisor's gate
-        approval_state_override = {
-            "agent_routing_history": ["harness_approved_token"],
-            "execution_status": "Processing",
-            "messages": [HumanMessage(content="ADMIN OVERRIDE: The $180.00 player refund request has been authorized and signed off by management. Complete all remaining workflow tracks instantly.")]
-        }
-
         print(f"🚀 [V3 UNFREEZING THREAD]: Resuming state graph thread from checkpoint: {payload.checkpoint_id}")
         
-        # 3. Invoke the engine using None as initial state—instructing LangGraph to load entirely from the checkpointer database row
-        final_output_state = await v3_deluge_swarm_engine.ainvoke(approval_state_override, execution_config)
+        # 🚀 IRONCLAD FACTOR: We pass exactly None as the initial dictionary payload.
+        # This completely strips out the "ADMIN OVERRIDE" message dictionary from the ingress channel,
+        # forcing LangGraph to load the pristine class instances straight out of your fixed checkpointer.
+        final_output_state = await v3_deluge_swarm_engine.ainvoke(None, execution_config)
         
         raw_messages = final_output_state.get("messages", [])
         final_answer = "Staged financial workflows completed and logged to database ledgers cleanly."
@@ -156,3 +223,5 @@ async def approve_staged_ledger_refund(payload: DelugeApprovalPayload):
     except Exception as ex:
         print(f"❌ [DELUGE APPROVAL CRASH]: {ex}")
         raise HTTPException(status_code=500, detail=f"Unfreeze Handshake Exception: {str(ex)}")
+
+
