@@ -9,7 +9,7 @@ import { apiClient } from '../api/apiClient';
 
 export default function V3DelugeControlCenter() {
   // Target sandbox state monitoring configurations
-  const [targetCourtId, setTargetCourtId] = useState<string>("51a6e84f-1678-4f70-bb5d-b03345c3dd47");
+  const [targetCourtId, setTargetCourtId] = useState<string>("54825e79-02a9-47ba-a1ef-5691fe2e4a73");
   const [inputHumidity, setInputHumidity] = useState<number>(72.0);
   
   // Graph engine feedback parameters tracking state strings

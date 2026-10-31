@@ -1,0 +1,16 @@
+================================================================================
+GLOBAL ACADEMY INSTITUTIONAL STANDARDS: TENNIS FACILITY RISK & MAINTENANCE MANAGEMENT
+DOCUMENT REF: GA-SOP-V3-2026
+================================================================================
+
+SECTION 1: ENVIRONMENTAL AND MOISTURE CONTROL CEILINGS
+Rule 1.1 [Moisture Threshold]: For safety and traction liability mitigation, indoor tennis court facilities must maintain a controlled moisture coefficient strictly below 65.0%. Any indoor court reporting a MoistureCoefficient equal to or exceeding 65.0% represents an immediate hydrodynamic slip hazard. 
+Action Required: The targeted court must be flagged immediately as "Action_Required" and routed to "Maintenance_Locked" status until commercial dehumidifiers reduce levels back below 45.0%.
+
+SECTION 2: SURFACE INTEGRITY AND STRUCTURAL DEFECTS
+Rule 2.4 [Surface Cracking Mitigation]: Acrylic hardcourt structures are subject to thermal shearing. Any court record displaying the terms "cracking", "crack", "fissure", or "shearing" within its physical defects description field poses a severe player joint twist and ball-redirection hazard.
+Action Required: Regardless of current moisture or played minutes, any court with visible active surface cracks must be explicitly flagged as "Action_Required". The asset must be isolated, locked for play, and scheduled for dynamic substrate filling.
+
+SECTION 3: CAPACITY AND USAGE GAUGES
+Rule 3.2 [Preventative Maintenance Overhaul]: Hardcourts and clay surfaces require preventative surface re-coating or professional grooming upon reaching 30,000 aggregate minutes played. While not an immediate shutdown trigger on its own, a court exceeding 30,000 minutes must be flagged for priority review during the next operational closing window.
+Action Required: Note usage metrics in the executive summary, but reserve the "Action_Required" critical status for direct safety violations under Rule 1.1 or Rule 2.4.

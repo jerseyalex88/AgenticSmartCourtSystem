@@ -1,0 +1,72 @@
+[
+  {
+    "Id": "c001-51a6e84f-1678-4f70-bb5d-b03345c3dd47",
+    "AcademyId": "org-60186569-a432-4375-9bee-485c69f086d5",
+    "BranchId": "br-4c073a7a-7864-4341-85ce-869914b3c117",
+    "Name": "Center Stadium Court 1",
+    "SurfaceType": "Acrylic Hardcourt",
+    "IsIndoor": true,
+    "Status": "Open",
+    "IsDecommissioned": false,
+    "DryCoefficient": 0.72,
+    "MoistureCoefficient": 34.2,
+    "PhysicalDefects": "None",
+    "AggregateMinutesPlayed": 14200
+  },
+  {
+    "Id": "c002-9bc5f32a-2184-4014-ba28-b83bd2dd78fe",
+    "AcademyId": "org-60186569-a432-4375-9bee-485c69f086d5",
+    "BranchId": "br-4c073a7a-7864-4341-85ce-869914b3c117",
+    "Name": "West Covered Court 2",
+    "SurfaceType": "Cushioned Acrylic",
+    "IsIndoor": true,
+    "Status": "Open",
+    "IsDecommissioned": false,
+    "DryCoefficient": 0.58,
+    "MoistureCoefficient": 68.5,
+    "PhysicalDefects": "Slight condensation buildup near northwest baseline fence",
+    "AggregateMinutesPlayed": 8900
+  },
+  {
+    "Id": "c003-3e28a5d6-e221-4014-8ae1-b83bd2dd78fe",
+    "AcademyId": "org-60186569-a432-4375-9bee-485c69f086d5",
+    "BranchId": "br-4c073a7a-7864-4341-85ce-869914b3c117",
+    "Name": "East Clay Court 3",
+    "SurfaceType": "Red Clay",
+    "IsIndoor": false,
+    "Status": "Open",
+    "IsDecommissioned": false,
+    "DryCoefficient": 0.65,
+    "MoistureCoefficient": 48.1,
+    "PhysicalDefects": "None",
+    "AggregateMinutesPlayed": 21000
+  },
+  {
+    "Id": "c004-7a0835ea-a146-7ec0-244a-4976dcf0df54",
+    "AcademyId": "org-60186569-a432-4375-9bee-485c69f086d5",
+    "BranchId": "br-4c073a7a-7864-4341-85ce-869914b3c117",
+    "Name": "North Gate Court 4",
+    "SurfaceType": "Acrylic Hardcourt",
+    "IsIndoor": false,
+    "Status": "Open",
+    "IsDecommissioned": false,
+    "DryCoefficient": 0.69,
+    "MoistureCoefficient": 12.4,
+    "PhysicalDefects": "Visible linear structural surface cracking propagating 1.2 meters from the service T-line",
+    "AggregateMinutesPlayed": 31500
+  },
+  {
+    "Id": "c005-1f1c6a68-d1b8-61de-8008-02b9df69f87b",
+    "AcademyId": "org-60186569-a432-4375-9bee-485c69f086d5",
+    "BranchId": "br-a1b2c3d4-5678-90ab-cdef-1234567890ab",
+    "Name": "South Executive Court 5",
+    "SurfaceType": "Grass",
+    "IsIndoor": false,
+    "Status": "Maintenance_Locked",
+    "IsDecommissioned": false,
+    "DryCoefficient": 0.60,
+    "MoistureCoefficient": 55.0,
+    "PhysicalDefects": "Scheduled baseline leveling re-seeding pass",
+    "AggregateMinutesPlayed": 4300
+  }
+]

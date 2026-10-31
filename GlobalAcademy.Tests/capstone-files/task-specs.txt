@@ -1,0 +1,96 @@
+PostgreSQL Tables:
+
+CREATE TABLE public."SavedAgentQueries" (
+	"Id" uuid NOT NULL,
+	"AcademyId" uuid NOT NULL,
+	"Title" varchar(100) NOT NULL,
+	"QueryText" text NOT NULL,
+	"CreatedAtUtc" timestamptz NOT NULL,
+	CONSTRAINT "PK_SavedAgentQueries" PRIMARY KEY ("Id"),
+	CONSTRAINT "SavedAgentQueries_AcademyId_not_null" NOT NULL "AcademyId",
+	CONSTRAINT "SavedAgentQueries_CreatedAtUtc_not_null" NOT NULL "CreatedAtUtc",
+	CONSTRAINT "SavedAgentQueries_Id_not_null" NOT NULL "Id",
+	CONSTRAINT "SavedAgentQueries_QueryText_not_null" NOT NULL "QueryText",
+	CONSTRAINT "SavedAgentQueries_Title_not_null" NOT NULL "Title"
+);
+
+CREATE TABLE public."CourtMaintenanceKnowledge" (
+	"Id" uuid NOT NULL,
+	"AcademyId" uuid NOT NULL,
+	"BranchId" uuid NOT NULL,
+	"CourtId" uuid NULL,
+	"DocumentName" text NOT NULL,
+	"TextChunkContent" text NOT NULL,
+	"PageNumber" int4 NOT NULL,
+	"Embedding" public.vector NOT NULL,
+	"CreatedAtUtc" timestamptz NOT NULL,
+	CONSTRAINT "CourtMaintenanceKnowledge_AcademyId_not_null" NOT NULL "AcademyId",
+	CONSTRAINT "CourtMaintenanceKnowledge_BranchId_not_null" NOT NULL "BranchId",
+	CONSTRAINT "CourtMaintenanceKnowledge_CreatedAtUtc_not_null" NOT NULL "CreatedAtUtc",
+	CONSTRAINT "CourtMaintenanceKnowledge_DocumentName_not_null" NOT NULL "DocumentName",
+	CONSTRAINT "CourtMaintenanceKnowledge_Embedding_not_null" NOT NULL "Embedding",
+	CONSTRAINT "CourtMaintenanceKnowledge_Id_not_null" NOT NULL "Id",
+	CONSTRAINT "CourtMaintenanceKnowledge_PageNumber_not_null" NOT NULL "PageNumber",
+	CONSTRAINT "CourtMaintenanceKnowledge_TextChunkContent_not_null" NOT NULL "TextChunkContent",
+	CONSTRAINT "PK_CourtMaintenanceKnowledge" PRIMARY KEY ("Id")
+);
+CREATE INDEX "IX_CourtMaintenanceKnowledge_AcademyId_BranchId" ON public."CourtMaintenanceKnowledge" USING btree ("AcademyId", "BranchId");
+
+
+C# Entity Models:
+
+	[Table("CourtMaintenanceKnowledge")]
+    public class CourtMaintenanceKnowledge : Security.IMultiTenant
+    {
+        [Key]
+        public Guid Id { get; set; }
+
+        // 🛡️ Multi-Tenant Query Filter Firewall Anchors
+        [Required]
+        public Guid AcademyId { get; set; }
+        
+        [Required]
+        public Guid BranchId { get; set; }
+        
+        // 🎯 OPTIONAL ASSET ANCHOR: Nullable Guid linking chunks directly to an individual court asset row
+        public Guid? CourtId { get; set; }
+
+        // Core Knowledge Content Tracking Columns
+        [Required]
+        public string DocumentName { get; set; } = string.Empty; // e.g., "Club_Maintenance_SOP.pdf"
+        
+        [Required]
+        public string TextChunkContent { get; set; } = string.Empty; // The actual textual paragraph slice
+        
+        public int PageNumber { get; set; }
+
+        // 🚀 THE VECTOR EMBEDDING CORE COLUMN
+        // Maps natively to a PostgreSQL 'vector(1536)' data slot matching OpenAI embedding scales
+        [Required]
+        [Column(TypeName = "vector(1536)")]
+        public Vector Embedding { get; set; }
+
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    }
+    [Table("SavedAgentQueries")]
+    public class SavedAgentQuery : Security.IMultiTenant
+    {
+        [Key]
+        public Guid Id { get; set; }
+
+        // 🛡️ THE MULTI-TENANT FIREWALL ANCHOR
+        // Automatically isolated via your global DbContext Query Filters
+        [Required]
+        public Guid AcademyId { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string Title { get; set; } = string.Empty; // e.g., "90-Day Prophet Warranty Audit"
+
+        [Required]
+        public string QueryText { get; set; } = string.Empty; // Holds the full multi-line prompt
+
+        [Required]
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    }
+

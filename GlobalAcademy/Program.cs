@@ -201,6 +201,11 @@ builder.Services.AddScoped<Kernel>(serviceProvider =>
     kernelBuilder.Plugins.AddFromObject(
         delugeCompliancePlugin,
         "DelugeCompliancePlugin");
+    
+    var delugeSwarmOrchestratorPlugin = serviceProvider.GetRequiredService<DelugeSwarmOrchestratorPlugin>();
+    kernelBuilder.Plugins.AddFromObject(
+        delugeSwarmOrchestratorPlugin,
+        "DelugeSwarmOrchestratorPlugin");
 
     return kernelBuilder.Build();
 });
@@ -213,6 +218,7 @@ builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<PlayerCheckoutPlugin>();
 builder.Services.AddScoped<LangGraphCompliancePlugin>();
 builder.Services.AddScoped<DelugeCompliancePlugin>();
+builder.Services.AddScoped<DelugeSwarmOrchestratorPlugin>();
 
 // Bind and register the Braintree configuration record
 var braintreeConfig = builder.Configuration
