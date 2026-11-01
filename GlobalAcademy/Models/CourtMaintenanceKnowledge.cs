@@ -46,6 +46,7 @@ namespace GlobalAcademy.Models {
         public string MimeType { get; set; } = "application/pdf";
         [Required]
         public bool IsProcessing { get; set; } = true;
+        public DateTime UpdatedAtUtc { get; set; } = DateTime.Now;
     }
     [Table("SavedAgentQueries")]
     public class SavedAgentQuery : Security.IMultiTenant
@@ -72,5 +73,6 @@ namespace GlobalAcademy.Models {
         public string Category { get; set; } = "General";
         [Required]
         public string Keyword { get; set; } = string.Empty;
+        public DateTime UpdatedAtUtc { get; set; } = DateTime.Now;
     }
 }
