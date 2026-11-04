@@ -426,11 +426,13 @@ To maintain an iron-clad multi-tenant infrastructure, every single operational f
 * **Asynchronous Coordinate Re-Sync:** Extended the branch configuration profile to display real-time weather data packets pulled from Open-Meteo, instantly binding local variables to any newly updated GPS coordinates on save.
 * **Protrusion-Free Progress Alignment:** Re-designed the accumulated played minutes section into a balanced flexbox grid container, positioning a high-density, low-padding metric override counter neatly inside the card contours.
 
-## 🚀 Todo Future Projects
+## 🚀 Future Projects
 
 ### 1. Knowledge Engine as a Service (KaaS)
 * **Knowledge Management Console:** A platform that acts as a universal, private AI retrieval gateway—comparable to a self-hosted, enterprise-controlled alternatives. For more information, see folder FutureExpansions/Case_Study_KaaS.pdf
 
 ### 2. Agentic Smart Court System (SaaS Sports Director OS)
-* **Smart Court Management System:** An enterprise, multi-tenant system developed for tennis academies.  For more information, see folder FutureExpansions/SmartCourtManagementSystem.pdf
+* **Smart Court Management System:** An ongoing project for an enterprise, multi-tenant system developed for tennis academies.  For more information, see folder FutureExpansions/SmartCourtManagementSystem.pdf
 
+### 3. Scalable Multi-Tenant Tennis Training Program
+* **Training Program & Roster Management System:** A sub-system that decouples legacy management tools of the tennis academy curriculum definitions with calendar scheduling and billing. For more information, see folder FutureExpansions/Case_Study_Training_Programs.pdf
